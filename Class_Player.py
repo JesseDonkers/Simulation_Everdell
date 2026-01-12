@@ -1,6 +1,6 @@
 class Player:
     def __init__(self):
-        self.cards = [] # Initiate a hand without cards
+        self.hand = [] # Initiate a hand without cards
         self.city = [] # Initiate an empty city without cards
         self.workers = 0 # Initiate the number of workers to zero
         self.season = 'winter' # A player starts in winter
@@ -9,17 +9,22 @@ class Player:
         self.resources = dict(twig=0, resin=0, pebble=0, berry=0) # Initiate the resources
 
     def __str__(self):
-        return str(self.cards, self.city, self.season, self.workers, self.points, self.resources)
+        return str(self.hand)
 
-    # Function to add a card to the player's hand
-    def cards_add(self, card):
-        self.cards.append(card)
-        return self.cards
+    # Function to add cards to the player's hand or city
+    def cards_add(self, listofcards, handorcity):
+        self.handorcity.extend(listofcards)
+        return self.handorcity
     
-    # Function to remove a card from the player's hand
-    def cards_discard(self, card):
-        self.cards.remove(card)
-        return self.cards
+    # Function to remove cards from the player's hand or city
+    def cards_remove(self, listofcards, handorcity):
+        for card in listofcards:
+            self.handorcity.remove(card)
+        return self.handorcity
+    
+    # Function to count the number of cards in hand or city
+    def cards_count(self, handorcity):
+        return len(self.handorcity)
 
     # Function to advance to the next season
     def season_advance(self):
@@ -28,13 +33,15 @@ class Player:
         self.season = seasons[(current_index + 1)]
         return self.season
 
-
-# Add card to city
-# Remove card from city
-
-# Add workers
-# Remove workers
-
+    # Function to add workers
+    def workers_add(self, amount):
+        self.workers += amount
+        return self.workers
+    
+    # Function to remove workers
+    def workers_remove(self, amount):
+        self.workers -= amount
+        return self.workers
 
     # Function to add resources to a specific category
     def resources_add(self, resource, amount):
