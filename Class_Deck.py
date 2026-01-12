@@ -9,12 +9,12 @@ class Deck:
         return str(self.deck)
     
     # Deck can be shuffled at the start of a game
-    def shuffleDeck(self):
+    def shuffle_deck(self):
         random.shuffle(self.deck)
         return self.deck
 
     # A player can draw one or multiple cards from the deck
-    def drawCards(self, nrCards, discardpile):
+    def draw_cards(self, nrCards, discardpile):
         if nrCards > len(self.deck): # If a player wants to draw more cards than the pile size
             random.shuffle(discardpile) # the discardpile is shuffled
             self.deck.extend(discardpile) # and added to the deck
