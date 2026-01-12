@@ -1,9 +1,9 @@
-from numpy import append, delete, random
+from numpy import random
 from collections import deque
 
 class Deck:
     def __init__(self):
-        self.deck = deque(["Architect", "Bard", "Barge Toad", "Chip Sweep"])
+        self.deck = deque([])
         
     def __str__(self):
         return str(self.deck)
@@ -18,6 +18,7 @@ class Deck:
         if nrCards > len(self.deck): # If a player wants to draw more cards than the pile size
             random.shuffle(discardpile) # the discardpile is shuffled
             self.deck.extend(discardpile) # and added to the deck
+            discardpile.clearDiscardPile() # The discard pile is cleared
 
         cards = []
         for i in range(nrCards):
