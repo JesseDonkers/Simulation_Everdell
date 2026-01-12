@@ -4,27 +4,35 @@ class Player:
         self.city = [] # Initiate an empty city without cards
         self.workers = 0 # Initiate the number of workers to zero
         self.season = 'winter' # A player starts in winter
-
         self.points = dict(cards=0, tokens=0, prosperity=0, journey=0, events=0) # Initiate the points
         self.resources = dict(twig=0, resin=0, pebble=0, berry=0) # Initiate the resources
 
     def __str__(self):
-        return str(self.hand)
+        hand = str("Hand: " + str(self.hand))
+        city = str("City: " + str(self.city))
+        workers = str("Workers: " + str(self.workers))
+        season = str("Season: " + str(self.season))
+        points = str("Points: " + str(self.points))
+        resources = str("Resources: " + str(self.resources))
+        return hand + "\n" + city + "\n" + workers + "\n" + season + "\n" + points + "\n" + resources
 
     # Function to add cards to the player's hand or city
     def cards_add(self, listofcards, handorcity):
-        self.handorcity.extend(listofcards)
-        return self.handorcity
+        target = self.hand if handorcity == 'hand' else self.city
+        target.extend(listofcards)
+        return target
     
     # Function to remove cards from the player's hand or city
     def cards_remove(self, listofcards, handorcity):
+        target = self.hand if handorcity == 'hand' else self.city
         for card in listofcards:
-            self.handorcity.remove(card)
-        return self.handorcity
+            target.remove(card)
+        return target
     
     # Function to count the number of cards in hand or city
     def cards_count(self, handorcity):
-        return len(self.handorcity)
+        target = self.hand if handorcity == 'hand' else self.city        
+        return len(target)
 
     # Function to advance to the next season
     def season_advance(self):
