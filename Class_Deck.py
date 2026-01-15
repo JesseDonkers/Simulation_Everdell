@@ -21,7 +21,7 @@ class Deck:
             discardpile.clearDiscardPile() # The discard pile is cleared
 
         cards = []
-        for i in range(nrCards):
+        for _ in range(nrCards):
             card = self.deck[0] # Obtain first card
             self.deck.popleft() # Delete first card from the deck
             cards.append(card)

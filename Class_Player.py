@@ -16,6 +16,14 @@ class Player:
         resources = str("Resources: " + str(self.resources))
         return hand + "\n" + city + "\n" + workers + "\n" + season + "\n" + points + "\n" + resources
 
+    # Function to check the open spaces in hand or city
+    def cards_check_open_spaces(self, handorcity):
+        target = self.hand if handorcity == 'hand' else self.city
+        if handorcity == 'hand':
+            return 8 - len(target) # Max hand size is 8
+        else:
+            return 15 - len(target) # Max city size is 15
+
     # Function to add cards to the player's hand or city
     def cards_add(self, listofcards, handorcity):
         target = self.hand if handorcity == 'hand' else self.city

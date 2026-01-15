@@ -16,7 +16,7 @@ class DiscardPile:
     # Function to obtain one ore more cards that were placed most recently
     def draw_cards(self, nrCards):
         cards = []
-        for i in range(nrCards):
+        for _ in range(nrCards):
             card = self.discardpile[-1]
             self.discardpile.pop()
             cards.append(card)

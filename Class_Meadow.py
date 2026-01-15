@@ -7,7 +7,7 @@ class Meadow:
 
     # Function to add cards to the meadow
     def add_to_meadow(self, nrCards, deck):
-        for i in range(nrCards):
+        for _ in range(nrCards):
             self.meadow.append(deck.drawCard())
         return self.meadow
 

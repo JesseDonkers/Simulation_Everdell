@@ -20,6 +20,3 @@ class Construction(Card):
         super().__init__()
         self.relatedcritter = ""
         self.relatedoccupied = False
-        self.open = False
-        self.workers = 0
-        self.maxworkers = 0
