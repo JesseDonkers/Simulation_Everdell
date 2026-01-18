@@ -20,9 +20,9 @@ class Deck:
             self.deck.extend(discardpile) # and added to the deck
             discardpile.clearDiscardPile() # The discard pile is cleared
 
-        cards = []
+        listofcards = []
         for _ in range(nrCards):
             card = self.deck[0] # Obtain first card
             self.deck.popleft() # Delete first card from the deck
-            cards.append(card)
-        return cards
+            listofcards.append(card)
+        return listofcards

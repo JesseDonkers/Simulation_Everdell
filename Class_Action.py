@@ -1,4 +1,12 @@
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from Class_Player import Player
+    from Class_Deck import Deck
+    from Class_DiscardPile import DiscardPile
+    from Class_Meadow import Meadow
+    from Class_Location import Location
 
 
 # ============================================
@@ -15,9 +23,10 @@ class Action(ABC):
         self.execute_action(player, game_state)
     
     @abstractmethod
-    def execute_action(self, player, game_state=None):
+    def execute_action(self, player: 'Player', game_state=None):
         """
-        Subclasses override this method. Player is automatically extracted from game_state.
+        Subclasses override this method.
+        Player is automatically extracted from game_state.
         """
         pass
 
@@ -31,7 +40,7 @@ class action_gain_resource(Action):
         self.resource_type = resource_type  # 'twig', 'resin', 'pebble', 'berry'
         self.amount = amount
     
-    def execute_action(self, player, game_state=None):
+    def execute_action(self, player: 'Player', game_state=None):
         player.resources[self.resource_type] += self.amount
 
 
@@ -40,7 +49,7 @@ class action_spend_resource(Action):
         self.resource_type = resource_type
         self.amount = amount
     
-    def execute_action(self, player, game_state=None):
+    def execute_action(self, player: 'Player', game_state=None):
         player.resources[self.resource_type] = max(0, player.resources[self.resource_type] - self.amount)
 
 
@@ -48,9 +57,9 @@ class action_draw_cards_from_deck(Action):
     def __init__(self, nrCards):
         self.nrCards = nrCards
     
-    def execute_action(self, player, game_state=None):
-        deck = game_state['deck']
-        discardpile = game_state['discardpile']
+    def execute_action(self, player: 'Player', game_state=None):
+        deck: 'Deck' = game_state['deck']
+        discardpile: 'DiscardPile' = game_state['discardpile']
         for _ in range(self.nrCards):
             listofcards = deck.draw_cards(self.nrCards, discardpile)
             player.cards_add(listofcards, 'hand')
