@@ -8,6 +8,11 @@ class Deck:
     def __str__(self):
         return str(self.deck)
     
+    # Function to add cards to the deck
+    def add_to_deck(self, listofcards):
+        self.deck.extend(listofcards)
+        return self.deck
+
     # Deck can be shuffled at the start of a game
     def shuffle_deck(self):
         random.shuffle(self.deck)

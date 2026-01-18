@@ -1,44 +1,55 @@
-from Class_Deck import *
-from Class_DiscardPile import *
-from Class_Meadow import *
-from Class_Player import *
-from Class_Card import *
-from Class_Location import *
-from Class_Action import *
+from Class_Deck import Deck
+from Class_DiscardPile import DiscardPile
+from Class_Meadow import Meadow
+from Class_Player import Player
+from Game_locations import locations
+from Game_cards import cards
+
+# ============================================
+# VARIABLES
+# ============================================
+
+nrPlayers = 2  # Number of players in the game (2-4)
 
 
-# Initialize game state
+# ============================================
+# SET UP GAME
+# ============================================
+
+deck = Deck()
+deck.add_to_deck(cards)
+deck.shuffle_deck()
+
+discardpile = DiscardPile()
+meadow = Meadow()
+meadow.add_to_meadow(8, deck, discardpile)
+
+players = []
+for _ in range(nrPlayers):
+    player = Player()
+    # Players draw cards
+    # Players take workers
+    players.append(player)
+
+
+"""
+To do:
+ - Shuffle special events
+ - Draw 4 special events
+ - Shuffle forest cards
+ - Place 3 or 4 forecst cards depending on number of players
+"""
+
+
 game_state = {
-    'deck': [],               # List of cards to draw from
-    'discardpile': [],        # Cards that have been discarded
-    'meadow': [],             # The 8 available cards in the meadow
-    'locations': [],          # All available locations
-    'players': [],            # All players in the game
-    'current_player': None,   # Whose turn it is
+    'deck': deck,                 # List of cards to draw from
+    'discardpile': discardpile,          # Cards that have been discarded
+    'meadow': meadow,               # The 8 available cards in the meadow
+    'locations': locations,     # All locations
+    'players': players,              # All players in the game
+    'current_player': None,     # Tracker for whose turn it is
 }
 
-
-"""
-Start game
-"""
-# Initialze cards
-
-# Initialize deck
-# Shuffle deck
-
-# Initialize discard pile
-
-# Initialize meadow
-# Place cards in meadow
-
-# Initialize players
-# Players draw cards
-# Players take workers
-
-# Shuffle special events
-# Draw 4 special events
-# Shuffle forest cards
-# Place 3 or 4 forecst cards depending on number of players
 
 """
 End game

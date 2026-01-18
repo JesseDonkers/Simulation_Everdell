@@ -1,4 +1,3 @@
-from numpy import random
 from collections import deque
 
 class DiscardPile:
