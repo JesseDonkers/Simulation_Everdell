@@ -35,6 +35,16 @@ class Action(ABC):
 # SIMPLE ACTIONS
 # ============================================
 
+
+class action_gain_points(Action):
+    def __init__(self, category, points):
+        self.category = category  # e.g., 'cards', 'tokens', 'resources'
+        self.points = points
+    
+    def execute_action(self, player: 'Player', game_state=None):
+        player.points[self.category] += self.points
+
+
 class action_gain_resource(Action):
     def __init__(self, resource_type, amount):
         self.resource_type = resource_type  # 'twig', 'resin', 'pebble', 'berry'
@@ -63,6 +73,19 @@ class action_draw_cards_from_deck(Action):
         for _ in range(self.nrCards):
             listofcards = deck.draw_cards(self.nrCards, discardpile)
             player.cards_add(listofcards, 'hand')
+
+
+# ============================================
+# COMPOSITE ACTIONS
+# ============================================
+
+class CompositeAction(Action):
+    def __init__(self, listofactions):
+        self.actions = listofactions
+    
+    def execute_action(self, player: 'Player', game_state=None):
+        for action in self.actions:
+            action.execute_action(player, game_state)
             
 
 
@@ -108,20 +131,6 @@ class action_draw_cards_from_deck(Action):
 #         if self.location.actions:
 #             for action in self.location.actions:
 #                 action.execute(player, game_state)
-
-
-# # ============================================
-# # COMPOSITE ACTIONS
-# # ============================================
-
-# class CompositeAction(Action):
-#     """Combine multiple actions to execute in sequence."""
-#     def __init__(self, *actions):
-#         self.actions = actions
-    
-#     def execute(self, player, game_state=None):
-#         for action in self.actions:
-#             action.execute(player, game_state)
 
 
 # # ============================================

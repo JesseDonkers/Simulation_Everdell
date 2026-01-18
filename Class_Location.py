@@ -1,20 +1,9 @@
 class Location:
-    """
-    Basic location
-    Forest location (add constraint for number of workers per player = max 1)
-    Basic event
-    Special event
-    Haven
-    Journey
-    Destination card
-    """
-    def __init__(self):
-        self.exclusive = False
-        self.occupied = False
-        self.open = False # Attribute for destination cards
+    def __init__(self, open, maxworkers, action):
+        self.open = open # Attribute for destination cards
+        self.maxworkers = maxworkers
+        self.action = action
         self.workers = {}  # Tracking workers per player: {player: count}
-        self.maxworkers = 0
-        self.actions = [] # List of actions available at this location
     
     # Function to check open spaces for workers
     def check_open_spaces(self):

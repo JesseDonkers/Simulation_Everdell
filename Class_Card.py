@@ -6,7 +6,7 @@ class Card:
         self.unique = False
         self.cardsindeck = 0
         self.points = 0
-        self.actions = []  # List of actions associated with the card
+        self.action = None
         
     def __str__(self):
         return str(self.name)
