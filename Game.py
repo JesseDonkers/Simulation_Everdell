@@ -1,8 +1,22 @@
-from Class_Card import Card
-from Class_Deck import Deck
-from Class_DiscardPile import DiscardPile
-from Class_Meadow import Meadow
-from Class_Player import Player
+from Class_Deck import *
+from Class_DiscardPile import *
+from Class_Meadow import *
+from Class_Player import *
+from Class_Card import *
+from Class_Location import *
+from Class_Action import *
+
+
+# Initialize game state
+game_state = {
+    'deck': [],               # List of cards to draw from
+    'discardpile': [],        # Cards that have been discarded
+    'meadow': [],             # The 8 available cards in the meadow
+    'locations': [],          # All available locations
+    'players': [],            # All players in the game
+    'current_player': None,   # Whose turn it is
+}
+
 
 """
 Start game
