@@ -6,10 +6,10 @@ from Game_locations import locations
 from Game_cards import cards
 
 # ============================================
-# VARIABLES
+# VARIABLES & PARAMETERS
 # ============================================
 
-nrPlayers = 2  # Number of players in the game (2-4)
+nrPlayers = 4  # Number of players in the game (2-4)
 
 
 # ============================================
@@ -24,12 +24,14 @@ discardpile = DiscardPile()
 meadow = Meadow()
 meadow.add_to_meadow(8, deck, discardpile)
 
-players = []
-for _ in range(nrPlayers):
-    player = Player()
-    # Players draw cards
-    # Players take workers
-    players.append(player)
+players = [Player() for _ in range(nrPlayers)]
+
+card_counter = 5
+for p in players:
+    drawn_cards = deck.draw_cards(card_counter, discardpile)
+    p.cards_add(drawn_cards, 'hand')
+    card_counter += 1 # Each successive player draws one more card
+    p.workers_add(2) # Each player starts with 2 workers
 
 
 """
@@ -43,17 +45,18 @@ To do:
 
 game_state = {
     'deck': deck,                 # List of cards to draw from
-    'discardpile': discardpile,          # Cards that have been discarded
-    'meadow': meadow,               # The 8 available cards in the meadow
-    'locations': locations,     # All locations
-    'players': players,              # All players in the game
-    'current_player': None,     # Tracker for whose turn it is
+    'discardpile': discardpile,   # Cards that have been discarded
+    'meadow': meadow,             # The 8 available cards in the meadow
+    'locations': locations,       # All locations
+    'players': players,           # All players in the game
+    'current_player': None,       # Tracker for whose turn it is
 }
 
 
-"""
-End game
-"""
+# ============================================
+# END GAME
+# ============================================
+
 # No more possible actions or every player has passed
 # Winner is the one with the most points, when tie, most resources
 

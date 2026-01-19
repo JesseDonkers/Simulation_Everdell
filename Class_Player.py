@@ -6,15 +6,18 @@ class Player:
         self.season = 'winter' # A player starts in winter
         self.points = dict(cards=0, tokens=0, prosperity=0, journey=0, events=0) # Initiate the points
         self.resources = dict(twig=0, resin=0, pebble=0, berry=0) # Initiate the resources
+        self.finished = False # Track if the player has finished their game
 
     def __str__(self):
-        hand = str("Hand: " + str(self.hand))
-        city = str("City: " + str(self.city))
-        workers = str("Workers: " + str(self.workers))
-        season = str("Season: " + str(self.season))
-        points = str("Points: " + str(self.points))
-        resources = str("Resources: " + str(self.resources))
-        return hand + "\n" + city + "\n" + workers + "\n" + season + "\n" + points + "\n" + resources
+        h = str("Hand: " + str(self.hand))
+        c = str("City: " + str(self.city))
+        w = str("Workers: " + str(self.workers))
+        s = str("Season: " + str(self.season))
+        p = str("Points: " + str(self.points))
+        r = str("Resources: " + str(self.resources))
+        f = str("Finished: " + str(self.finished))
+
+        return h + "\n" + c + "\n" + w + "\n" + s + "\n" + p + "\n" + r + "\n" + f
 
     # Function to check the open spaces in hand or city
     def cards_check_open_spaces(self, handorcity):
