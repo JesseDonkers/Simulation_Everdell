@@ -19,13 +19,11 @@ nrPlayers = 4  # Number of players in the game (2-4)
 deck = Deck()
 deck.add_to_deck(cards)
 deck.shuffle_deck()
-
 discardpile = DiscardPile()
 meadow = Meadow()
 meadow.add_to_meadow(8, deck, discardpile)
 
 players = [Player() for _ in range(nrPlayers)]
-
 card_counter = 5
 for p in players:
     drawn_cards = deck.draw_cards(card_counter, discardpile)
