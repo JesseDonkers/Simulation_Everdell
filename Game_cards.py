@@ -27,5 +27,5 @@ boerderij.unique = False
 boerderij.points = 1
 boerderij.relatedcritter = ["Man", "Vrouw"]
 boerderij.action = action_gain_resource('berry', 1)
-cards.extend([boerderij] * 8)
+cards.extend([boerderij] * 99)
 

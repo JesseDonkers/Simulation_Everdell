@@ -4,12 +4,13 @@ from Class_Meadow import Meadow
 from Class_Player import Player
 from Game_locations import locations
 from Game_cards import cards
+from Functions_game import *
 
 # ============================================
 # VARIABLES & PARAMETERS
 # ============================================
 
-nrPlayers = 4  # Number of players in the game (2-4)
+nrPlayers = 2  # Number of players in the game (2-4)
 
 
 # ============================================
@@ -31,7 +32,6 @@ for p in players:
     card_counter += 1 # Each successive player draws one more card
     p.workers_add(2) # Each player starts with 2 workers
 
-
 """
 To do:
  - Shuffle special events
@@ -42,12 +42,12 @@ To do:
 
 
 game_state = {
-    'deck': deck,                 # List of cards to draw from
-    'discardpile': discardpile,   # Cards that have been discarded
-    'meadow': meadow,             # The 8 available cards in the meadow
-    'locations': locations,       # All locations
-    'players': players,           # All players in the game
-    'current_player': None,       # Tracker for whose turn it is
+    'deck': deck,                       # List of cards to draw from
+    'discardpile': discardpile,         # Cards that have been discarded
+    'meadow': meadow,                   # The 8 available cards in the meadow
+    'locations': locations,             # All locations
+    'players': players,                 # All players in the game
+    'current_player': players[0],       # Tracker for whose turn it is
 }
 
 

@@ -6,7 +6,6 @@ if TYPE_CHECKING:
     from Class_Deck import Deck
     from Class_DiscardPile import DiscardPile
     from Class_Meadow import Meadow
-    from Class_Location import Location
 
 
 # ============================================
@@ -73,6 +72,13 @@ class action_draw_cards_from_deck(Action):
         for _ in range(self.nrCards):
             listofcards = deck.draw_cards(self.nrCards, discardpile)
             player.cards_add(listofcards, 'hand')
+
+class action_add_destination_card(Action):
+    def __init__(self):
+        return self
+    
+    def execute_action(self, player: 'Player', game_state=None):
+        return self
 
 
 # ============================================
