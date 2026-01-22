@@ -65,6 +65,8 @@ class action_spend_resource(Action):
 class action_draw_cards_from_deck(Action):
     def __init__(self, nrCards):
         self.nrCards = nrCards
+
+        # To do: add check the number of open spaces in player's hand
     
     def execute_action(self, player: 'Player', game_state=None):
         deck: 'Deck' = game_state['deck']
@@ -73,12 +75,24 @@ class action_draw_cards_from_deck(Action):
             listofcards = deck.draw_cards(self.nrCards, discardpile)
             player.cards_add(listofcards, 'hand')
 
+
+# To do: finish the function below
 class action_add_destination_card(Action):
     def __init__(self):
         return self
     
     def execute_action(self, player: 'Player', game_state=None):
         return self
+
+# To do: finish the function below
+class action_remove_card_from_city(Action):
+    def __init__(self):
+        return self
+    
+    def execute_action(self, player: 'Player', game_state=None):
+        # To add: if card.color = red, also remove from locations
+        return self
+    
 
 
 # ============================================
@@ -96,10 +110,10 @@ class CompositeAction(Action):
 
 
 ############################################################################################
-# Hierboven gebleven
+# Hieronder inspiratie
 #############################################################################################
 
-# class PlayCardAction(Action):
+# class action_play_free_card(Action):
 #     """Play a card for free (skip cost check)."""
 #     def __init__(self, card):
 #         self.card = card
@@ -110,33 +124,9 @@ class CompositeAction(Action):
 #             player.city.append(self.card)
 
 
-# class GainPointTokenAction(Action):
-#     """Gain point tokens."""
-#     def __init__(self, count):
-#         self.count = count
-    
-#     def execute(self, player, game_state=None):
-#         player.points['tokens'] = player.points.get('tokens', 0) + self.count
+# class action_replace_worker(Action):
 
 
-# class AddWorkerAction(Action):
-#     """Add a worker back to player's pool."""
-#     def __init__(self, count):
-#         self.count = count
-    
-#     def execute(self, player, game_state=None):
-#         player.workers += self.count
-
-
-# class ActivateLocationAction(Action):
-#     """Activate another location's actions."""
-#     def __init__(self, location):
-#         self.location = location
-    
-#     def execute(self, player, game_state=None):
-#         if self.location.actions:
-#             for action in self.location.actions:
-#                 action.execute(player, game_state)
 
 
 # # ============================================

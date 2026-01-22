@@ -14,18 +14,19 @@ cards = []
 # CRITTERS
 # ============================================
 
+historicus = Critter("Historicus","Blue", dict(twig=0, resin=0, pebble=0, berry=2), 
+                     3, True, 1, action_draw_cards_from_deck(1), "Klokkentoren")
+
+cards.extend([historicus] * 99) # To do: should be historicus.cardsindeck
+
 
 # ============================================
 # CONSTRUCTIONS
 # ============================================
 
-boerderij = Construction()
-boerderij.name = "Boerderij"
-boerderij.color = "green"
-boerderij.requirements = dict(twig=2, resin=1, pebble=0, berry=0)
-boerderij.unique = False
-boerderij.points = 1
-boerderij.relatedcritter = ["Man", "Vrouw"]
-boerderij.action = action_gain_resource('berry', 1)
-cards.extend([boerderij] * 99)
+boerderij = Construction(
+    "Boerderij", "green", dict(twig=2, resin=1, pebble=0, berry=0),
+    8, False, 1, action_gain_resource('berry', 1), ["Man", "Vrouw"])
+
+cards.extend([boerderij] * 99) # To do: 99 should be boerderij.cardsindeck
 

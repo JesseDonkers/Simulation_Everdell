@@ -5,6 +5,7 @@ from Class_Player import Player
 from Game_locations import locations
 from Game_cards import cards
 from Functions_game import *
+from Functions_statistics import *
 
 # ============================================
 # VARIABLES & PARAMETERS
