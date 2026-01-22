@@ -76,7 +76,9 @@ The three main actions are
 # ============================================
 
 # When playing a card, the following things should be checked
-    # Are there any blue cards in the city that are executed? (Historicus)
+    # Are there any blue cards in the city that are executed?
+        # Historicus, after playing critter or construction
+        # Winkelier, after playing critter
 
 
 # ============================================

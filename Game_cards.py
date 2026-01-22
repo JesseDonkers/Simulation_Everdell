@@ -16,8 +16,14 @@ cards = []
 
 historicus = Critter("Historicus","Blue", dict(twig=0, resin=0, pebble=0, berry=2), 
                      3, True, 1, action_draw_cards_from_deck(1), "Klokkentoren")
+winkelier = Critter("Winkelier", "Blue", dict(twig=0, resin=0, pebble=0, berry=2),
+                    3, True, 1, action_gain_resource('berry', 1), "Winkel")
+# To do: Rechter
 
-cards.extend([historicus] * 99) # To do: should be historicus.cardsindeck
+
+
+cards.extend([historicus] * 30) # To do: should be xx.cardsindeck
+cards.extend([winkelier] * 30) # To do: should be xx.cardsindeck
 
 
 # ============================================
@@ -28,5 +34,5 @@ boerderij = Construction(
     "Boerderij", "green", dict(twig=2, resin=1, pebble=0, berry=0),
     8, False, 1, action_gain_resource('berry', 1), ["Man", "Vrouw"])
 
-cards.extend([boerderij] * 99) # To do: 99 should be boerderij.cardsindeck
+cards.extend([boerderij] * 30) # To do: should be xx.cardsindeck
 
