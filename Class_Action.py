@@ -53,6 +53,32 @@ class action_gain_resource(Action):
         player.resources[self.resource_type] += self.amount
 
 
+class action_gain_resource_per_other_card(Action):
+    def __init__(self, cardname, resource_type, amount):
+        self.cardname = cardname
+        self.resource_type = resource_type  # 'twig', 'resin', 'pebble', 'berry'
+        self.amount = amount
+    
+    def execute_action(self, player: 'Player', game_state=None):
+        for c in player.hand:
+            if c.name == self.cardname:
+                player.resources[self.resource_type] += self.amount            
+
+
+class action_gain_resource_if_other_card(Action):
+    def __init__(self, cardname, resource_type, amount):
+        self.cardname = cardname
+        self.resource_type = resource_type  # 'twig', 'resin', 'pebble', 'berry'
+        self.amount = amount
+    
+    def execute_action(self, player: 'Player', game_state=None):
+        cardnames = []
+        for card in player.hand:
+            cardnames.append(card.name)
+        if self.cardname in cardnames:
+            player.resources[self.resource_type] += self.amount 
+
+
 class action_spend_resource(Action):
     def __init__(self, resource_type, amount):
         self.resource_type = resource_type
