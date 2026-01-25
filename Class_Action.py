@@ -18,11 +18,11 @@ class Action(ABC):
         Template method: Gets the current player from game_state, 
         then calls execute_action for subclasses to implement.
         """
-        player = game_state['current_player']
+        player = game_state["current_player"]
         self.execute_action(player, game_state)
     
     @abstractmethod
-    def execute_action(self, player: 'Player', game_state=None):
+    def execute_action(self, player: "Player", game_state=None):
         """
         Subclasses override this method.
         Player is automatically extracted from game_state.
@@ -37,29 +37,29 @@ class Action(ABC):
 
 class action_gain_points(Action):
     def __init__(self, category, points):
-        self.category = category  # e.g., 'cards', 'tokens', 'resources'
+        self.category = category  # e.g., "cards", "tokens", "resources"
         self.points = points
     
-    def execute_action(self, player: 'Player', game_state=None):
+    def execute_action(self, player: "Player", game_state=None):
         player.points[self.category] += self.points
 
 
 class action_gain_resource(Action):
     def __init__(self, resource_type, amount):
-        self.resource_type = resource_type  # 'twig', 'resin', 'pebble', 'berry'
+        self.resource_type = resource_type  # "twig", "resin", "pebble", "berry"
         self.amount = amount
     
-    def execute_action(self, player: 'Player', game_state=None):
+    def execute_action(self, player: "Player", game_state=None):
         player.resources[self.resource_type] += self.amount
 
 
 class action_gain_resource_per_other_card(Action):
     def __init__(self, cardname, resource_type, amount):
         self.cardname = cardname
-        self.resource_type = resource_type  # 'twig', 'resin', 'pebble', 'berry'
+        self.resource_type = resource_type  # "twig", "resin", "pebble", "berry"
         self.amount = amount
     
-    def execute_action(self, player: 'Player', game_state=None):
+    def execute_action(self, player: "Player", game_state=None):
         for c in player.hand:
             if c.name == self.cardname:
                 player.resources[self.resource_type] += self.amount            
@@ -68,56 +68,63 @@ class action_gain_resource_per_other_card(Action):
 class action_gain_resource_if_other_card(Action):
     def __init__(self, cardname, resource_type, amount):
         self.cardname = cardname
-        self.resource_type = resource_type  # 'twig', 'resin', 'pebble', 'berry'
+        self.resource_type = resource_type  # "twig", "resin", "pebble", "berry"
         self.amount = amount
     
-    def execute_action(self, player: 'Player', game_state=None):
-        cardnames = []
-        for card in player.hand:
-            cardnames.append(card.name)
-        if self.cardname in cardnames:
-            player.resources[self.resource_type] += self.amount 
+    def execute_action(self, player: "Player", game_state=None):
+        if any(card.name == self.cardname for card in player.hand):
+            player.resources[self.resource_type] += self.amount
 
 
-class action_spend_resource(Action):
-    def __init__(self, resource_type, amount):
-        self.resource_type = resource_type
-        self.amount = amount
+class action_gain_resource_by_choice(Action):
+    def __init__(self, resources):
+        self.resources = resources  # dictionary for resources: "twig", "resin", "pebble", "berry"
     
-    def execute_action(self, player: 'Player', game_state=None):
-        player.resources[self.resource_type] = max(0, player.resources[self.resource_type] - self.amount)
+    def execute_action(self, player: "Player", game_state=None):
+
+        
+        player.resources[self.resource_type] += self.amount
+
+
+# class action_spend_resource(Action):
+#     def __init__(self, resource_type, amount):
+#         self.resource_type = resource_type
+#         self.amount = amount
+    
+#     def execute_action(self, player: "Player", game_state=None):
+#         player.resources[self.resource_type] = max(0, player.resources[self.resource_type] - self.amount)
 
 
 class action_draw_cards_from_deck(Action):
     def __init__(self, nrCards):
         self.nrCards = nrCards
 
-        # To do: add check the number of open spaces in player's hand
+        # To do: add check the number of open spaces in player"s hand
     
-    def execute_action(self, player: 'Player', game_state=None):
-        deck: 'Deck' = game_state['deck']
-        discardpile: 'DiscardPile' = game_state['discardpile']
+    def execute_action(self, player: "Player", game_state=None):
+        deck: "Deck" = game_state["deck"]
+        discardpile: "DiscardPile" = game_state["discardpile"]
         for _ in range(self.nrCards):
             listofcards = deck.draw_cards(self.nrCards, discardpile)
-            player.cards_add(listofcards, 'hand')
+            player.cards_add(listofcards, "hand")
 
 
-# To do: finish the function below
-class action_add_destination_card(Action):
-    def __init__(self):
-        return self
+# # To do: finish the function below
+# class action_add_destination_card(Action):
+#     def __init__(self):
+#         return self
     
-    def execute_action(self, player: 'Player', game_state=None):
-        return self
+#     def execute_action(self, player: "Player", game_state=None):
+#         return self
 
-# To do: finish the function below
-class action_remove_card_from_city(Action):
-    def __init__(self):
-        return self
+# # To do: finish the function below
+# class action_remove_card_from_city(Action):
+#     def __init__(self):
+#         return self
     
-    def execute_action(self, player: 'Player', game_state=None):
-        # To add: if card.color = red, also remove from locations
-        return self
+#     def execute_action(self, player: "Player", game_state=None):
+#         # To add: if card.color = red, also remove from locations
+#         return self
     
 
 
@@ -129,142 +136,7 @@ class CompositeAction(Action):
     def __init__(self, listofactions):
         self.actions = listofactions
     
-    def execute_action(self, player: 'Player', game_state=None):
+    def execute_action(self, player: "Player", game_state=None):
         for action in self.actions:
             action.execute_action(player, game_state)
             
-
-
-############################################################################################
-# Hieronder inspiratie
-#############################################################################################
-
-# class action_play_free_card(Action):
-#     """Play a card for free (skip cost check)."""
-#     def __init__(self, card):
-#         self.card = card
-    
-#     def execute(self, player, game_state=None):
-#         if self.card in player.hand:
-#             player.hand.remove(self.card)
-#             player.city.append(self.card)
-
-
-# class action_replace_worker(Action):
-
-
-
-
-# # ============================================
-# # CONDITIONAL ACTIONS
-# # ============================================
-
-# class ConditionalAction(Action):
-#     """Execute an action only if a condition is met."""
-#     def __init__(self, condition_func, action):
-#         """
-#         :param condition_func: Function that takes (player, game_state) and returns True/False
-#         :param action: Action to execute if condition is True
-#         """
-#         self.condition_func = condition_func
-#         self.action = action
-    
-#     def execute(self, player, game_state=None):
-#         if self.condition_func(player, game_state):
-#             self.action.execute(player, game_state)
-
-
-# class ConditionalMultiAction(Action):
-#     """Execute different actions based on conditions."""
-#     def __init__(self):
-#         self.conditions = []  # List of (condition_func, action) tuples
-    
-#     def add_condition(self, condition_func, action):
-#         """Add a condition and its associated action."""
-#         self.conditions.append((condition_func, action))
-    
-#     def execute(self, player, game_state=None):
-#         for condition_func, action in self.conditions:
-#             if condition_func(player, game_state):
-#                 action.execute(player, game_state)
-#                 return  # Execute first matching condition only
-
-
-# # ============================================
-# # COUNTING-BASED ACTIONS
-# # ============================================
-
-# class GainResourcePerCountAction(Action):
-#     """Gain resources based on count of cards/items."""
-#     def __init__(self, resource_type, count_func):
-#         """
-#         :param resource_type: Resource to gain
-#         :param count_func: Function that takes (player, game_state) and returns count
-#         """
-#         self.resource_type = resource_type
-#         self.count_func = count_func
-    
-#     def execute(self, player, game_state=None):
-#         count = self.count_func(player, game_state)
-#         player.resources[self.resource_type] += count
-
-
-# class CountCardsAction(Action):
-#     """Count cards matching a condition and add as points/resources."""
-#     def __init__(self, resource_type, filter_func, amount_per_card=1):
-#         """
-#         :param resource_type: What to gain ('points', 'twig', etc.)
-#         :param filter_func: Function to filter cards (e.g., lambda card: card.color == 'green')
-#         :param amount_per_card: Amount to gain per matching card
-#         """
-#         self.resource_type = resource_type
-#         self.filter_func = filter_func
-#         self.amount_per_card = amount_per_card
-    
-#     def execute(self, player, game_state=None):
-#         count = sum(1 for card in player.city if self.filter_func(card))
-#         if self.resource_type == 'points':
-#             player.points['cards'] = player.points.get('cards', 0) + (count * self.amount_per_card)
-#         else:
-#             player.resources[self.resource_type] += (count * self.amount_per_card)
-
-
-# # ============================================
-# # CUSTOM ACTIONS
-# # ============================================
-
-# class CustomAction(Action):
-#     """Execute a custom function as an action."""
-#     def __init__(self, func):
-#         """
-#         :param func: Function that takes (player, game_state) and performs the action
-#         """
-#         self.func = func
-    
-#     def execute(self, player, game_state=None):
-#         self.func(player, game_state)
-
-
-# # ============================================
-# # HELPER FUNCTIONS FOR COMMON CONDITIONS
-# # ============================================
-
-# def has_card_with_property(property_name, property_value):
-#     """Return a condition function that checks if player has a card with a property."""
-#     def condition(player, game_state=None):
-#         return any(getattr(card, property_name, None) == property_value for card in player.city)
-#     return condition
-
-
-# def has_resource_count(resource_type, min_count):
-#     """Return a condition function that checks if player has minimum resources."""
-#     def condition(player, game_state=None):
-#         return player.resources.get(resource_type, 0) >= min_count
-#     return condition
-
-
-# def count_cards_with_property(property_name, property_value):
-#     """Return a counting function that counts cards with a property."""
-#     def count_func(player, game_state=None):
-#         return sum(1 for card in player.city if getattr(card, property_name, None) == property_value)
-#     return count_func

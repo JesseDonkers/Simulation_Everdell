@@ -1,5 +1,6 @@
 class Player:
     def __init__(self):
+        self.strategy = None
         self.hand = [] # Initiate a hand without cards
         self.city = [] # Initiate an empty city without cards
         self.workers = 0 # Initiate the number of workers to zero
@@ -9,15 +10,16 @@ class Player:
         self.finished = False # Track if the player has finished their game
 
     def __str__(self):
-        h = str("Hand: " + str(self.hand))
+        a = str("Strategy: " + str(self.strategy))
+        b = str("Hand: " + str(self.hand))
         c = str("City: " + str(self.city))
-        w = str("Workers: " + str(self.workers))
-        s = str("Season: " + str(self.season))
-        p = str("Points: " + str(self.points))
-        r = str("Resources: " + str(self.resources))
-        f = str("Finished: " + str(self.finished))
+        d = str("Workers: " + str(self.workers))
+        e = str("Season: " + str(self.season))
+        f = str("Points: " + str(self.points))
+        g = str("Resources: " + str(self.resources))
+        h = str("Finished: " + str(self.finished))
 
-        return h + "\n" + c + "\n" + w + "\n" + s + "\n" + p + "\n" + r + "\n" + f
+        return a + "\n" + b + "\n" + c + "\n" + d + "\n" + e + "\n" + f + "\n" + g + "\n" + h
 
     # Function to add cards to the player's hand or city
     def cards_add(self, listofcards, handorcity):

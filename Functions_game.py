@@ -79,6 +79,12 @@ The three main actions are
     # Are there any blue cards in the city that are executed?
         # Historicus, after playing critter or construction
         # Winkelier, after playing critter
+        # Gerechtsgebouw, after playing construction
+
+    # Are there any blue cards in the city that are used?
+        # Rechter, when playing another critter or construction
+        # Herbergier, when playing another critter
+        # Kerker, when playing another critter or construction
 
 
 # ============================================
