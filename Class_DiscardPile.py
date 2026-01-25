@@ -1,5 +1,6 @@
 from collections import deque
 
+
 class DiscardPile:
     def __init__(self):
         self.cards = deque([])

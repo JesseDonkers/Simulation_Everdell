@@ -31,6 +31,7 @@ meadow.add_to_meadow(8, deck, discardpile)
 players = [Player() for _ in range(nrPlayers)]
 card_counter = 5
 for p in players:
+    p.index = players.index(p)
     drawn_cards = deck.draw_cards(card_counter, discardpile)
     p.cards_add(drawn_cards, "hand")
     card_counter += 1 # Each successive player draws one more card

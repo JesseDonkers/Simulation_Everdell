@@ -1,6 +1,7 @@
 from numpy import random
 from collections import deque
 
+
 class Deck:
     def __init__(self):
         self.cards = deque([])

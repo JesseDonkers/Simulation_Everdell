@@ -21,17 +21,14 @@ def get_random_resource():
 # ============================================
 
 class Strategy:
-    def __init__(self, own_player_index, other_player_index, otherplayer, resourcesequence):
-        self.own_player_index = own_player_index
-        self.other_player_index = other_player_index
+    def __init__(self, otherplayer, resourcesequence):
         self.otherplayer = otherplayer
         self.resourcesequence = resourcesequence
     
     def __str__(self):
-        a = str("Own player index: " + str(self.own_player_index))
-        b = str("Other player index: " + str(self.other_player_index))
-        c = str("Resource sequence: " + str(self.resourcesequence))
-        return a + "\n" + b + "\n" + c
+        a = str("Other player index: " + str(self.otherplayer.index))
+        b = str("Resource sequence: " + str(self.resourcesequence))
+        return a + "\n" + b
 
 
 # ============================================
@@ -40,11 +37,6 @@ class Strategy:
 
 class Strategy_random(Strategy):
     def __init__(self, player, game_state):
-        other_player = get_random_other_player(player, game_state)
-        own_player_index = game_state["players"].index(player)
-        other_player_index = game_state["players"].index(other_player)
-        super().__init__(own_player_index,
-                        other_player_index,
-                        other_player, 
+        super().__init__(get_random_other_player(player, game_state), 
                         get_random_resource())
 

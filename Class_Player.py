@@ -1,5 +1,6 @@
 class Player:
     def __init__(self):
+        self.index = 0
         self.strategy = None
         self.hand = [] # Initiate a hand without cards
         self.city = [] # Initiate an empty city without cards
@@ -10,16 +11,17 @@ class Player:
         self.finished = False # Track if the player has finished their game
 
     def __str__(self):
-        a = str("Strategy: " + str(self.strategy))
-        b = str("Hand: " + str(self.hand))
-        c = str("City: " + str(self.city))
-        d = str("Workers: " + str(self.workers))
-        e = str("Season: " + str(self.season))
-        f = str("Points: " + str(self.points))
-        g = str("Resources: " + str(self.resources))
-        h = str("Finished: " + str(self.finished))
+        a = str("Index: " + str(self.index))
+        b = str("Strategy: " + str(self.strategy))
+        c = str("Hand: " + str(self.hand))
+        d = str("City: " + str(self.city))
+        e = str("Workers: " + str(self.workers))
+        f = str("Season: " + str(self.season))
+        g = str("Points: " + str(self.points))
+        h = str("Resources: " + str(self.resources))
+        i = str("Finished: " + str(self.finished))
 
-        return a + "\n" + b + "\n" + c + "\n" + d + "\n" + e + "\n" + f + "\n" + g + "\n" + h
+        return a + "\n" + b + "\n" + c + "\n" + d + "\n" + e + "\n" + f + "\n" + g + "\n" + h + "\n" + i
 
     # Function to add cards to the player's hand or city
     def cards_add(self, listofcards, handorcity):
