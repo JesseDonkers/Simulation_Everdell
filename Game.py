@@ -37,13 +37,12 @@ for p in players:
     card_counter += 1 # Each successive player draws one more card
     p.workers_add(2) # Each player starts with 2 workers
 
-"""
-To do:
- - Shuffle special events
- - Draw 4 special events
- - Shuffle forest cards
- - Place 3 or 4 forecst cards depending on number of players
-"""
+
+# To do:
+#  - Shuffle special events
+#  - Draw 4 special events
+#  - Shuffle forest cards
+#  - Place 3 or 4 forecst cards depending on number of players
 
 
 game_state = {
@@ -63,6 +62,10 @@ if len(strategy_per_player) != len(players):
 for p in range(len(players)):
     players[p].strategy = strategy_per_player[p](players[p], game_state)
 
+
+# ============================================
+# EXECUTING GAME
+# ============================================
 
 
 

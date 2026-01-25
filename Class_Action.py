@@ -81,9 +81,11 @@ class action_gain_resource_by_choice(Action):
         self.resources = resources  # dictionary for resources: "twig", "resin", "pebble", "berry"
     
     def execute_action(self, player: "Player", game_state=None):
-
-        
-        player.resources[self.resource_type] += self.amount
+        favored_resources = player.strategy.resourcesequence
+        for r in favored_resources:
+            if self.resources.get(r) != 0:
+                player.resources[r] += self.resources.get(r)
+                break
 
 
 # class action_spend_resource(Action):
