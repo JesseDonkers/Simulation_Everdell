@@ -100,15 +100,14 @@ class action_gain_resource_by_choice(Action):
 class action_draw_cards_from_deck(Action):
     def __init__(self, nrCards):
         self.nrCards = nrCards
-
-        # To do: add check the number of open spaces in player"s hand
     
     def execute_action(self, player: "Player", game_state=None):
         deck: "Deck" = game_state["deck"]
         discardpile: "DiscardPile" = game_state["discardpile"]
-        for _ in range(self.nrCards):
-            listofcards = deck.draw_cards(self.nrCards, discardpile)
-            player.cards_add(listofcards, "hand")
+        spaces_hand = player.cards_get_open_spaces("hand")
+        nr_draw = min(self.nrCards, spaces_hand)
+        listofcards = deck.draw_cards(nr_draw, discardpile)
+        player.cards_add(listofcards, "hand")
 
 
 # # To do: finish the function below

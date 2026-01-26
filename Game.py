@@ -40,9 +40,9 @@ for p in players:
 
 # To do:
 #  - Shuffle special events
-#  - Draw 4 special events
+#  - Draw 4 special events (add to locations)
 #  - Shuffle forest cards
-#  - Place 3 or 4 forecst cards depending on number of players
+#  - Place 3 or 4 forecst cards depending on number of players (add to locations)
 
 
 game_state = {

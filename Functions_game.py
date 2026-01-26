@@ -52,17 +52,12 @@ def get_possible_locations(game_state):
 
 
 # ============================================
-# Get possible actions
-# ============================================
-
-# ============================================
-# Choose action
+# Get possible moves
 # ============================================
 
 
 """
-A player can perform three main actions, these actions should be modeled
-The three main actions are
+A player can make three main moves. These moves are:
 """
 
 # ============================================
@@ -88,7 +83,7 @@ The three main actions are
 
 
 # ============================================
-# Prepare for season
+# Advance season
 # ============================================
 
 
