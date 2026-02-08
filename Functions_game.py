@@ -7,12 +7,13 @@ if TYPE_CHECKING:
     from Class_Meadow import Meadow
     from Class_Card import Card
     from Class_Location import Location
+    from Class_Strategy import Strategy
 
 
 # Function to retrieve all possible cards a player can play from hand and meadow
 def get_possible_cards(game_state):
-    player = game_state['current_player']
-    meadow = game_state['meadow']
+    player = game_state["current_player"]
+    meadow = game_state["meadow"]
     possible_cards = []
     for card in player.hand:
         for r in card.requirements:
@@ -30,15 +31,15 @@ def get_possible_cards(game_state):
 
 
 # Get possible locations to place worker
-def get_possible_locations(game_state):
-    locations = game_state['locations']
-    location: 'Location'
+def get_possible_locations(game_state):    
+    locations = game_state["locations"]
+    location: "Location"
     possible_locations = []
     
     for location in locations:
         # Basic locations
-        if location.type == 'basic':
-            if location.check_open_spaces() > 0:
+        if location.type == "basic":
+            if location.get_open_spaces() > 0:
                 possible_locations.append(location)
 
 
@@ -55,19 +56,28 @@ def get_possible_locations(game_state):
 # Get possible moves
 # ============================================
 
+    # No only check possible locations, but also can I place a worker? / available workers
+
 
 """
 A player can make three main moves. These moves are:
 """
 
 # ============================================
-# Place worker (choose location)
+# Place worker
 # ============================================
 
+def place_worker(game_state):
+    player: "Player" = game_state["current_player"]
+    preferred_location = player.decide(game_state, "location", get_possible_locations(game_state))
+    preferred_location.add_worker(player)
+    player.workers_remove(1)
+    return
+
 
 
 # ============================================
-# Play card (choose card)
+# Play card
 # ============================================
 
 # When playing a card, the following things should be checked
@@ -92,7 +102,3 @@ A player can make three main moves. These moves are:
     # Execute actions from cards
     # Execute actions from season (spring: add 1 worker + execute green, summer: add 1 worker + draw 2 cards from meadow, autumn: add 2 workers + execture green)
     # Bring back workers
-
-# But for these actions the following functions are required
-    # A function should be created to check which actions are possible
-    # A function should be created to choose which action to execute

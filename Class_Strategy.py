@@ -2,40 +2,17 @@ import random
 
 
 # ============================================
-# FUNCTIONS
+# BASE STRATEGY CLASS
 # ============================================
 
-def get_random_other_player(player, game_state):
-    players = game_state["players"]
-    other_players = [p for p in players if p != player]
-    return random.choice(other_players)
+class Strategy():
+    def decide(self, game_state, decision_kind, options):
+        handler_name = f"choose_{decision_kind}"
+        handler = getattr(self, handler_name, None)
 
-def get_random_resources():
-    resources = ["twig", "resin", "pebble", "berry"]
-    random.shuffle(resources)
-    return resources
-
-def get_random_moves():
-    moves = ["Play card", "Place worker", "Advance season"]
-    random.shuffle(moves)
-    return moves
-
-
-# ============================================
-# GENERAL CLASS
-# ============================================
-
-class Strategy:
-    def __init__(self, otherplayer, resourcesequence, movesequence):
-        self.otherplayer = otherplayer
-        self.resourcesequence = resourcesequence
-        self.movesequence = movesequence
-    
-    def __str__(self):
-        a = str("Other player index: " + str(self.otherplayer.index))
-        b = str("Resource sequence: " + str(self.resourcesequence))
-        c = str("Move sequence: " + str(self.movesequence))
-        return a + "\n" + b + "\n" + c
+        if handler is None:
+            raise ValueError(f"Unknown decision type: {decision_kind}")
+        return handler(game_state, options)
 
 
 # ============================================
@@ -43,8 +20,22 @@ class Strategy:
 # ============================================
 
 class Strategy_random(Strategy):
-    def __init__(self, player, game_state):
-        super().__init__(get_random_other_player(player, game_state), 
-                        get_random_resources(),
-                        get_random_moves())
+    def choose_move(self, game_state, possible_moves):
+        return random.choice(possible_moves)
 
+    def choose_card(self, game_state, possible_cards):
+        return random.choice(possible_cards)
+
+    def choose_location(self, game_state, possible_locations):
+        return random.choice(possible_locations)
+
+    def choose_other_player(self, game_state, _):
+        player = game_state["current_player"]
+        players = game_state["players"]
+        other_players = [p for p in players if p != player]
+        return random.choice(other_players)
+    
+    def choose_resource(self, game_state, _):
+        resources = ["twig", "resin", "pebble", "berry"]
+        return random.choice(resources)
+    

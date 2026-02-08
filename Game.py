@@ -60,7 +60,7 @@ if len(strategy_per_player) != len(players):
     raise ValueError(f"Number of strategies ({len(strategy_per_player)}) "
                     f"does not match number of players ({len(players)})")
 for p in range(len(players)):
-    players[p].strategy = strategy_per_player[p](players[p], game_state)
+    players[p].strategy = strategy_per_player[p]()
 
 
 # ============================================

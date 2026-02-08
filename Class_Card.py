@@ -26,7 +26,7 @@ class Construction(Card):
         self.relatedoccupied = False
 
 
-init_cards = []
+cards_unique = []
 
 # ============================================
 # CRITTERS
@@ -45,9 +45,9 @@ kikkerkapitein = Critter("Kikkerkapitein", "green",
 
 
 
-init_cards.extend([historicus] * 30) # To do: should be xx.cardsindeck
-init_cards.extend([winkelier] * 30) # To do: should be xx.cardsindeck
-init_cards.extend([kikkerkapitein] * 30) # To do: should be xx.cardsindeck
+cards_unique.append(historicus)
+cards_unique.append(winkelier)
+cards_unique.append(kikkerkapitein)
 
 
 # ============================================
@@ -69,12 +69,13 @@ harsraffinaderij = Construction("Harsraffinaderij", "green", dict(twig=0, resin=
 kermis = Construction("Kermis", "green", dict(twig=1, resin=2, pebble=1, berry=0),
                         3, False, 3, action_draw_cards_from_deck(2), ["Dwaas"])
 
-init_cards.extend([boerderij] * 30) # To do: should be xx.cardsindeck
-init_cards.extend([takkenboot] * 30) # To do: should be xx.cardsindeck
-init_cards.extend([winkel] * 30) # To do: should be xx.cardsindeck
-init_cards.extend([mijn] * 30) # To do: should be xx.cardsindeck
-init_cards.extend([harsraffinaderij] * 30) # To do: should be xx.cardsindeck
-init_cards.extend([kermis] * 30) # To do: should be xx.cardsindeck
+cards_unique.append(boerderij)
+cards_unique.append(takkenboot)
+cards_unique.append(winkel)
+cards_unique.append(mijn)
+cards_unique.append(harsraffinaderij)
+cards_unique.append(kermis)
+
 
 # ============================================
 # BLUE CONSTRUCTIONS
@@ -85,5 +86,13 @@ gerechtsgebouw = Construction("Gerechtsgebouw", "blue",
                             action_gain_resource_by_choice(dict(twig=1, resin=1, pebble=1, berry=0)),
                             ["Rechter"])
 
-init_cards.extend([gerechtsgebouw] * 30)
+cards_unique.append(gerechtsgebouw)
 
+
+# ============================================
+# INITIATE CARDS WITH THE RIGHT QUANTITY
+# ============================================
+
+init_cards = []
+for c in cards_unique:
+    init_cards.extend([c] * c.cardsindeck)

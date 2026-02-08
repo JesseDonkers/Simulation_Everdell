@@ -81,6 +81,10 @@ class Player:
         self.points[category] -= points
         return self.points
 
-    # Caluclate the total points of the player
+    # Calculate the total points of the player
     def points_total(self):
         return sum(self.points.values())
+
+    # Function to make a decision based on the strategy and game state
+    def decide(self, game_state, decision_kind, options):
+        return self.strategy.decide(game_state, decision_kind, options)
