@@ -1,3 +1,4 @@
+from Class_Action import *
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -15,18 +16,21 @@ def get_possible_cards(game_state):
     player = game_state["current_player"]
     meadow = game_state["meadow"]
     possible_cards = []
+    
     for card in player.hand:
         for r in card.requirements:
             if player.resources.get(r) < card.requirements.get(r):
                 break
         else:
             possible_cards.append(card)
+    
     for card in meadow.cards:
         for r in card.requirements:
             if player.resources.get(r) < card.requirements.get(r):
                 break
         else:
             possible_cards.append(card)
+   
     return possible_cards            
 
 
@@ -52,21 +56,21 @@ def get_possible_locations(game_state):
     return possible_locations
 
 
-# ============================================
-# Get possible moves
-# ============================================
+# Function to obtain a list of the possible moves a player can make
+def get_possible_moves(game_state):
+    possible_moves = []
+    possible_cards = get_possible_cards(game_state)
+    possible_locations = get_possible_locations(game_state)
+    if len(possible_cards) > 0:
+        possible_moves.append("play_card")
+    if len(possible_locations) > 0 and game_state["current_player"].workers > 0:
+        possible_moves.append("place_worker")
+    if game_state["current_player"].season != "autumn" and game_state["current_player"].workers == 0:
+        possible_moves.append("advance_season")
+    return possible_moves
 
-    # No only check possible locations, but also can I place a worker? / available workers
 
-
-"""
-A player can make three main moves. These moves are:
-"""
-
-# ============================================
-# Place worker
-# ============================================
-
+# One of the three moves a player can make is placing a worker
 def place_worker(game_state):
     player: "Player" = game_state["current_player"]
     preferred_location = player.decide(game_state, "location", get_possible_locations(game_state))
@@ -74,6 +78,39 @@ def place_worker(game_state):
     player.workers_remove(1)
     return
 
+
+# The second move a player can make is advancing to the next season
+def advance_season(game_state):
+    player: "Player" = game_state["current_player"]
+    seasons = ["winter", "spring", "summer", "autumn"]
+    current_season = player.season
+    current_index = seasons.index(player.season)
+
+    if current_season == "winter":
+        player.workers_add(1)
+        card: "Card"
+        for card in player.city:
+            if card.color == "green":
+                card.action.execute(game_state)    
+    
+    elif current_season == "spring":
+        player.workers_add(1)
+        action_draw_cards_from_meadow(2).execute(game_state)
+    
+    elif current_season == "summer":
+        player.workers_add(2)
+        for card in player.city:
+            if card.color == "green":
+                card.action.execute(game_state)
+
+    location: "Location"
+    for location in game_state["locations"]:
+        if location.get_player_workers(player) > 0:
+            location.remove_worker(player)
+            player.workers_add(1)
+    
+    player.season = seasons[(current_index + 1)]
+    return
 
 
 # ============================================
@@ -92,13 +129,5 @@ def place_worker(game_state):
         # Kerker, when playing another critter or construction
 
 
-# ============================================
-# Advance season
-# ============================================
 
 
-    # Check the current season
-    # Check the number of workers on hand
-    # Execute actions from cards
-    # Execute actions from season (spring: add 1 worker + execute green, summer: add 1 worker + draw 2 cards from meadow, autumn: add 2 workers + execture green)
-    # Bring back workers
