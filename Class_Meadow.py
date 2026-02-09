@@ -15,5 +15,5 @@ class Meadow:
     def draw_cards(self, listofcards, deck, discardpile):
         for card in listofcards:
             self.cards.remove(card)
-        deck.draw_cards(len(listofcards), discardpile) # Replenish the meadow from the deck
+        self.add_to_meadow(len(listofcards), deck, discardpile) # Replenish the meadow from the deck
         return listofcards

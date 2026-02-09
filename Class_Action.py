@@ -110,6 +110,25 @@ class action_draw_cards_from_deck(Action):
         player.cards_add(listofcards, "hand")
 
 
+class action_draw_cards_from_meadow(Action):
+    def __init__(self, nrCards):
+        self.nrCards = nrCards
+    
+    def execute_action(self, player: "Player", game_state=None):
+        meadow: "Meadow" = game_state["meadow"]
+        deck = game_state["deck"]
+        discardpile = game_state["discardpile"]
+        spaces_hand = player.cards_get_open_spaces("hand")
+        listofcards = []
+
+        for _ in range(min(self.nrCards, spaces_hand)):
+            card = player.decide(game_state, "card", meadow.cards)
+            listofcards.append(card)
+
+        meadow.draw_cards(listofcards, deck, discardpile)
+        player.cards_add(listofcards, "hand")
+
+
 # # To do: finish the function below
 # class action_add_destination_card(Action):
 #     def __init__(self):

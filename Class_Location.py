@@ -40,22 +40,22 @@ init_locations = []
 # ============================================
 # BASIC
 # ============================================
-twigs = Location("Basic 1", "basic", False, 1, [action_gain_resource('twig', 3)])
-resins = Location("Basic 2", "basic", False, 1, [action_gain_resource('resin', 2)])
-pebble = Location("Basic 3", "basic", False, 1, [action_gain_resource('pebble', 1)])
-berry = Location("Basic 4", "basic", False, 99, [action_gain_resource('berry', 1)])
+twigs = Location("Basic 1", "basic", False, 1, [action_gain_resource("twig", 3)])
+resins = Location("Basic 2", "basic", False, 1, [action_gain_resource("resin", 2)])
+pebble = Location("Basic 3", "basic", False, 1, [action_gain_resource("pebble", 1)])
+berry = Location("Basic 4", "basic", False, 99, [action_gain_resource("berry", 1)])
 
 twigsandpoint = Location("Basic 5", "basic", False, 99, CompositeAction(
-                                            [action_gain_resource('twig', 2), 
-                                            action_gain_points('tokens', 1)]))
+                                            [action_gain_resource("twig", 2), 
+                                            action_gain_points("tokens", 1)]))
 resinsandpoint = Location("Basic 6", "basic", False, 99, CompositeAction(
-                                            [action_gain_resource('resin', 1), 
-                                            action_gain_points('tokens', 1)]))
+                                            [action_gain_resource("resin", 1), 
+                                            action_gain_points("tokens", 1)]))
 cardsandpoint = Location("Basic 7", "basic", False, 99, CompositeAction(
-                                            [action_gain_points('tokens', 1),
+                                            [action_gain_points("tokens", 1),
                                             action_draw_cards_from_deck(2)]))
 berryandcard = Location("Basic 8", "basic", False, 1, CompositeAction(
-                                            [action_gain_resource('berry', 1),
+                                            [action_gain_resource("berry", 1),
                                             action_draw_cards_from_deck(1)]))
 
 init_locations.extend([twigs, resins, pebble, berry])

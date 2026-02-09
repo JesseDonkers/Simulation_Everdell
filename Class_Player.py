@@ -44,13 +44,6 @@ class Player:
         else:
             return 15 - len(target) # Max city size is 15
 
-    # Function to advance to the next season
-    def season_advance(self):
-        seasons = ["winter", "spring", "summer", "autumn"]
-        current_index = seasons.index(self.season)
-        self.season = seasons[(current_index + 1)]
-        return self.season
-
     # Function to add workers
     def workers_add(self, amount):
         self.workers += amount
