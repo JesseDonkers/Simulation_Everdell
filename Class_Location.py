@@ -40,10 +40,10 @@ init_locations = []
 # ============================================
 # BASIC
 # ============================================
-twigs = Location("Basic 1", "basic", False, 1, [action_gain_resource("twig", 3)])
-resins = Location("Basic 2", "basic", False, 1, [action_gain_resource("resin", 2)])
-pebble = Location("Basic 3", "basic", False, 1, [action_gain_resource("pebble", 1)])
-berry = Location("Basic 4", "basic", False, 99, [action_gain_resource("berry", 1)])
+twigs = Location("Basic 1", "basic", False, 1, action_gain_resource("twig", 3))
+resins = Location("Basic 2", "basic", False, 1, action_gain_resource("resin", 2))
+pebble = Location("Basic 3", "basic", False, 1, action_gain_resource("pebble", 1))
+berry = Location("Basic 4", "basic", False, 99, action_gain_resource("berry", 1))
 
 twigsandpoint = Location("Basic 5", "basic", False, 99, CompositeAction(
                                             [action_gain_resource("twig", 2), 

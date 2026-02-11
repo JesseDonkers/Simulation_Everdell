@@ -3,15 +3,15 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from Class_Player import Player
-    from Class_Deck import Deck
-    from Class_DiscardPile import DiscardPile
     from Class_Meadow import Meadow
     from Class_Card import Card
     from Class_Location import Location
-    from Class_Strategy import Strategy
 
 
-# Function to retrieve all possible cards a player can play from hand and meadow
+# ============================================
+# GET POSSIBILITIES (cards to play, locations to place worker, moves to make)
+# ============================================
+
 def get_possible_cards(game_state):
     player = game_state["current_player"]
     meadow = game_state["meadow"]
@@ -34,7 +34,6 @@ def get_possible_cards(game_state):
     return possible_cards            
 
 
-# Get possible locations to place worker
 def get_possible_locations(game_state):    
     locations = game_state["locations"]
     location: "Location"
@@ -56,7 +55,6 @@ def get_possible_locations(game_state):
     return possible_locations
 
 
-# Function to obtain a list of the possible moves a player can make
 def get_possible_moves(game_state):
     possible_moves = []
     possible_cards = get_possible_cards(game_state)
@@ -70,16 +68,25 @@ def get_possible_moves(game_state):
     return possible_moves
 
 
-# One of the three moves a player can make is placing a worker
+# ============================================
+# THREE MAIN MOVES (place worker, advance season, play card)
+# ============================================
+
 def place_worker(game_state):
     player: "Player" = game_state["current_player"]
-    preferred_location = player.decide(game_state, "location", get_possible_locations(game_state))
-    preferred_location.add_worker(player)
-    player.workers_remove(1)
+    preferred_location: "Location"
+    possible_locations = get_possible_locations(game_state)
+
+    if len(possible_locations) == 0:
+        raise ValueError("No possible locations to place worker")
+    else:
+        preferred_location = player.decide(game_state, "location", possible_locations)
+        preferred_location.add_worker(player)
+        player.workers_remove(1)
+        preferred_location.action.execute(game_state)
     return
 
 
-# The second move a player can make is advancing to the next season
 def advance_season(game_state):
     player: "Player" = game_state["current_player"]
     seasons = ["winter", "spring", "summer", "autumn"]
@@ -113,21 +120,41 @@ def advance_season(game_state):
     return
 
 
-# ============================================
-# Play card
-# ============================================
+def play_card(game_state):
+    player: "Player" = game_state["current_player"]
+    meadow: "Meadow" = game_state["meadow"]
+    possible_cards = get_possible_cards(game_state)
+    
+    if len(possible_cards) == 0:
+        raise ValueError("No possible cards to play")
+    
+    else:
+        preferred_card = player.decide(game_state, "card", possible_cards)
+        if preferred_card in player.hand:
+            player.cards_remove([preferred_card], "hand")
+        else:
+            meadow.draw_cards([preferred_card], game_state["deck"], game_state["discardpile"])
+        
+        card_costs = preferred_card.requirements
+        for resource, amount in card_costs.items():
+            player.resources_remove(resource, amount)
+        
+        player.cards_add([preferred_card], "city")
+        preferred_card.action.execute(game_state)
 
-# When playing a card, the following things should be checked
-    # Are there any blue cards in the city that are executed?
-        # Historicus, after playing critter or construction
-        # Winkelier, after playing critter
-        # Gerechtsgebouw, after playing construction
+    # To do:
+    # What if a card is in a player's hand and in the meadow?
 
-    # Are there any blue cards in the city that are used?
-        # Rechter, when playing another critter or construction
-        # Herbergier, when playing another critter
-        # Kerker, when playing another critter or construction
+    # To do:
+    # When playing a card, the following things should be checked
+        # Are there any blue cards in the city that are executed?
+            # Historicus, after playing critter or construction
+            # Winkelier, after playing critter
+            # Gerechtsgebouw, after playing construction
 
+        # Are there any blue cards in the city that are used?
+            # Rechter, when playing another critter or construction
+            # Herbergier, when playing another critter
+            # Kerker, when playing another critter or construction
 
-
-
+    return

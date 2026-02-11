@@ -8,71 +8,81 @@ from Class_Strategy import *
 from Functions_game import *
 from Functions_statistics import *
 
+import copy
+
 
 # ============================================
 # VARIABLES & PARAMETERS
 # ============================================
 
+nr_simulation_runs = 1
 nrPlayers = 2 # Number of players in the game (2-4)
 strategy_per_player = [Strategy_random, Strategy_random]
 
 
 # ============================================
-# SET UP GAME
+# INITIATE SIMULATION RUNS AND RESULTS
 # ============================================
 
-deck = Deck()
-deck.add_to_deck(init_cards)
-deck.shuffle_deck()
-discardpile = DiscardPile()
-meadow = Meadow()
-meadow.add_to_meadow(8, deck, discardpile)
-
-players = [Player() for _ in range(nrPlayers)]
-card_counter = 5
-for p in players:
-    p.index = players.index(p)
-    drawn_cards = deck.draw_cards(card_counter, discardpile)
-    p.cards_add(drawn_cards, "hand")
-    card_counter += 1 # Each successive player draws one more card
-    p.workers_add(2) # Each player starts with 2 workers
+for _ in range(nr_simulation_runs):
 
 
-# To do:
-#  - Shuffle special events
-#  - Draw 4 special events (add to locations)
-#  - Shuffle forest cards
-#  - Place 3 or 4 forecst cards depending on number of players (add to locations)
+    # ============================================
+    # SET UP GAME
+    # ============================================
+
+    cards = copy.deepcopy(init_cards)
+    deck = Deck()
+    deck.add_to_deck(cards)
+    deck.shuffle_deck()
+    discardpile = DiscardPile()
+    meadow = Meadow()
+    meadow.add_to_meadow(8, deck, discardpile)
+
+    players = [Player() for _ in range(nrPlayers)]
+    card_counter = 5
+    for p in players:
+        p.index = players.index(p)
+        drawn_cards = deck.draw_cards(card_counter, discardpile)
+        p.cards_add(drawn_cards, "hand")
+        card_counter += 1 # Each successive player draws one more card
+        p.workers_add(2) # Each player starts with 2 workers
 
 
-game_state = {
-    "deck": deck,                       # List of cards to draw from
-    "discardpile": discardpile,         # Cards that have been discarded
-    "meadow": meadow,                   # The 8 available cards in the meadow
-    "locations": init_locations,        # All locations
-    "players": players,                 # All players in the game
-    "current_player": players[0],       # Tracker for whose turn it is
-}
+    # To do:
+    #  - Shuffle special events
+    #  - Draw 4 special events (add to locations)
+    #  - Shuffle forest cards
+    #  - Place 3 or 4 forecst cards depending on number of players (add to locations)
 
 
-# Each player is provided with a strategy.
-if len(strategy_per_player) != len(players):
-    raise ValueError(f"Number of strategies ({len(strategy_per_player)}) "
-                    f"does not match number of players ({len(players)})")
-for p in range(len(players)):
-    players[p].strategy = strategy_per_player[p]()
+    game_state = {
+        "deck": deck,                               # List of cards to draw from
+        "discardpile": discardpile,                 # Cards that have been discarded
+        "meadow": meadow,                           # The 8 available cards in the meadow
+        "locations": copy.deepcopy(init_locations), # All locations (fresh copy per run)
+        "players": players,                         # All players in the game
+        "current_player": players[0],               # Tracker for whose turn it is
+    }
 
 
-# ============================================
-# EXECUTING GAME
-# ============================================
+    # Each player is provided with a strategy.
+    if len(strategy_per_player) != len(players):
+        raise ValueError(f"Number of strategies ({len(strategy_per_player)}) "
+                        f"does not match number of players ({len(players)})")
+    for p in range(len(players)):
+        players[p].strategy = strategy_per_player[p]()
+
+
+    # ============================================
+    # EXECUTING GAME
+    # ============================================
 
 
 
-# ============================================
-# END GAME
-# ============================================
+    # ============================================
+    # END GAME
+    # ============================================
 
-# No more possible actions or every player has passed
-# Winner is the one with the most points, when tie, most resources
-
+    # No more possible actions or every player has passed
+    # Winner is the one with the most points, when tie, most resources
