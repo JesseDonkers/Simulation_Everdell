@@ -41,8 +41,8 @@ class Strategy_random(Strategy):
     
     def choose_nr_resources_to_give_away(self, game_state, options):
         player = game_state["current_player"]
-        resource_type = options[0]
-        max_nr_resources = options[1]
+        max_nr_resources = options[0]
+        resource_type = options[1]
         available_resources = player.resources.get(resource_type)
         return random.randint(0, min(max_nr_resources, available_resources))
     

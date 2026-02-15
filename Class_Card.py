@@ -57,6 +57,7 @@ monnik = Critter("Monnik", "green", dict(twig=0, resin=0, pebble=0, berry=1), 2,
 cards_unique.append(historicus)
 cards_unique.append(winkelier)
 cards_unique.append(kikkerkapitein)
+cards_unique.append(monnik)
 
 
 # ============================================
