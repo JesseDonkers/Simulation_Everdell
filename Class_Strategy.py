@@ -39,3 +39,16 @@ class Strategy_random(Strategy):
         resources = ["twig", "resin", "pebble", "berry"]
         return random.choice(resources)
     
+    def choose_nr_resources_to_give_away(self, game_state, options):
+        player = game_state["current_player"]
+        resource_type = options[0]
+        max_nr_resources = options[1]
+        available_resources = player.resources.get(resource_type)
+        return random.randint(0, min(max_nr_resources, available_resources))
+    
+    def choose_player_to_receive_resources(self, game_state, _):
+        player = game_state["current_player"]
+        players = game_state["players"]
+        other_players = [p for p in players if p != player and p.finished == False]
+        return random.choice(other_players)
+    

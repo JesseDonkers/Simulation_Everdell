@@ -76,16 +76,33 @@ class action_gain_resource_if_other_card(Action):
             player.resources[self.resource_type] += self.amount
 
 
-class action_gain_resource_by_choice(Action):
-    def __init__(self, resources):
-        self.resources = resources  # dictionary for resources: "twig", "resin", "pebble", "berry"
+class action_gain_resources_by_choice(Action):
+    def __init__(self, resources, nr_resources):
+        self.resources = resources
+        self.nr_resources = nr_resources
     
     def execute_action(self, player: "Player", game_state=None):
-        favored_resources = player.strategy.resourcesequence
-        for r in favored_resources:
-            if self.resources.get(r) != 0:
-                player.resources[r] += self.resources.get(r)
-                break
+        for _ in range(self.nr_resources):
+            preferred_resource = player.decide(game_state, "resource", self.resources)
+            player.resources_add(preferred_resource, 1)
+
+
+class action_give_away_resources_gain_points(Action):
+    def __init__(self, max_nr_resources, resource_type, points_per_resource):
+        self.max_nr_resources = max_nr_resources
+        self.resource_type = resource_type  # "twig", "resin", "pebble", "berry"
+        self.points_per_resource = points_per_resource
+    
+    def execute_action(self, player: "Player", game_state=None):        
+        options = [self.max_nr_resources, self.resource_type]
+        nr_give_away = player.decide(game_state, "nr_resources_to_give_away", options)
+        other_player: "Player"
+        other_player = player.decide(game_state, "player_to_receive_resources", None)
+
+        for _ in range(nr_give_away):
+            player.resources_remove(self.resource_type, 1)
+            player.points["tokens"] += self.points_per_resource
+            other_player.resources_add(self.resource_type, 1)
 
 
 # class action_spend_resource(Action):
@@ -143,7 +160,7 @@ class action_draw_cards_from_meadow(Action):
 #         return self
     
 #     def execute_action(self, player: "Player", game_state=None):
-#         # To add: if card.color = red, also remove from locations
+#         # To do: if card.color = red, also remove from locations
 #         return self
     
 

@@ -29,20 +29,29 @@ class Construction(Card):
 cards_unique = []
 
 # ============================================
-# CRITTERS
+# BLUE CRITTERS
 # ============================================
 
 historicus = Critter("Historicus","blue", dict(twig=0, resin=0, pebble=0, berry=2), 
                         3, True, 1, action_draw_cards_from_deck(1), "Klokkentoren")
 winkelier = Critter("Winkelier", "blue", dict(twig=0, resin=0, pebble=0, berry=2),
                         3, True, 1, action_gain_resource("berry", 1), "Winkel")
+
+
+# ============================================
+# GREEN CRITTERS
+# ============================================
+
 # To do: Rechter
 
 kikkerkapitein = Critter("Kikkerkapitein", "green", 
                          dict(twig=0, resin=0, pebble=0, berry=2), 3, False, 1, 
                          action_gain_resource_per_other_card("Boerderij", "twig", 2), 
                          "Takkenboot")
-
+monnik = Critter("Monnik", "green", dict(twig=0, resin=0, pebble=0, berry=1), 2,
+                        True, 0, CompositeAction(
+                        [action_give_away_resources_gain_points(2, "berry", 2)]), ["Klooster"])
+# To do: Monniks opens the second location on the Klooster
 
 
 cards_unique.append(historicus)
@@ -83,7 +92,7 @@ cards_unique.append(kermis)
 
 gerechtsgebouw = Construction("Gerechtsgebouw", "blue", 
                             dict(twig=1, resin=1, pebble=2, berry=0), 2, True, 2, 
-                            action_gain_resource_by_choice(dict(twig=1, resin=1, pebble=1, berry=0)),
+                            action_gain_resources_by_choice(["twig", "resin", "pebble"], 1),
                             ["Rechter"])
 
 cards_unique.append(gerechtsgebouw)
