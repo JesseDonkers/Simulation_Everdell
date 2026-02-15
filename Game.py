@@ -53,16 +53,16 @@ for _ in range(nr_simulation_runs):
     #  - Shuffle special events
     #  - Draw 4 special events (add to locations)
     #  - Shuffle forest cards
-    #  - Place 3 or 4 forecst cards depending on number of players (add to locations)
+    #  - Place 3 or 4 forecst cards depending on nr players (add to locations)
 
 
     game_state = {
-        "deck": deck,                               # List of cards to draw from
-        "discardpile": discardpile,                 # Cards that have been discarded
-        "meadow": meadow,                           # The 8 available cards in the meadow
-        "locations": copy.deepcopy(init_locations), # All locations (fresh copy per run)
-        "players": players,                         # All players in the game
-        "current_player": players[0],               # Tracker for whose turn it is
+        "deck": deck,
+        "discardpile": discardpile,
+        "meadow": meadow,
+        "locations": copy.deepcopy(init_locations),
+        "players": players,
+        "current_player": players[0],
     }
 
 

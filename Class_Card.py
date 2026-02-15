@@ -2,10 +2,11 @@ from Class_Action import *
 
 
 class Card:
-    def __init__(self, name, color, requirements, cardsindeck, unique, points, action):
+    def __init__(self, name, color, requirements, 
+                 cardsindeck, unique,points, action):
         self.name = name
         self.color = color
-        self.requirements = requirements # Resources: dict(twig=0, resin=0, pebble=0, berry=0)
+        self.requirements = requirements # Resources as dict
         self.cardsindeck = cardsindeck
         self.unique = unique
         self.points = points
@@ -15,27 +16,22 @@ class Card:
         return str(self.name)
 
 class Critter(Card):
-    def __init__(self, name, color, requirements, cardsindeck, unique, points, action, relatedconstruction):
-        super().__init__(name, color, requirements, cardsindeck, unique, points, action)
+    def __init__(self, name, color, requirements, 
+                 cardsindeck, unique, points, action, relatedconstruction):
+        super().__init__(name, color, requirements, 
+                         cardsindeck, unique, points, action)
         self.relatedconstruction = relatedconstruction
 
 class Construction(Card):
-    def __init__(self, name, color, requirements, cardsindeck, unique, points, action, relatedcritters):
-        super().__init__(name, color, requirements, cardsindeck, unique, points, action)
+    def __init__(self, name, color, requirements, 
+                 cardsindeck, unique, points, action, relatedcritters):
+        super().__init__(name, color, requirements, 
+                         cardsindeck, unique, points, action)
         self.relatedcritters = relatedcritters
         self.relatedoccupied = False
 
 
 cards_unique = []
-
-# ============================================
-# BLUE CRITTERS
-# ============================================
-
-historicus = Critter("Historicus","blue", dict(twig=0, resin=0, pebble=0, berry=2), 
-                        3, True, 1, action_draw_cards_from_deck(1), "Klokkentoren")
-winkelier = Critter("Winkelier", "blue", dict(twig=0, resin=0, pebble=0, berry=2),
-                        3, True, 1, action_gain_resource("berry", 1), "Winkel")
 
 
 # ============================================
@@ -44,40 +40,86 @@ winkelier = Critter("Winkelier", "blue", dict(twig=0, resin=0, pebble=0, berry=2
 
 # To do: Rechter
 
-kikkerkapitein = Critter("Kikkerkapitein", "green", 
-                         dict(twig=0, resin=0, pebble=0, berry=2), 3, False, 1, 
-                         action_gain_resource_per_other_card("Boerderij", "twig", 2), 
-                         "Takkenboot")
-monnik = Critter("Monnik", "green", dict(twig=0, resin=0, pebble=0, berry=1), 2,
-                        True, 0, CompositeAction(
-                        [action_give_away_resources_gain_points(2, "berry", 2)]), ["Klooster"])
-# To do: Monniks opens the second location on the Klooster
+kikkerkapitein = Critter(
+    "Kikkerkapitein", "green", dict(twig=0, resin=0, pebble=0, berry=2),
+    3, False, 1, 
+    action_gain_resource_per_other_card("Boerderij", "twig", 2), 
+    "Takkenboot")
 
+monnik = Critter(
+    "Monnik", "green", dict(twig=0, resin=0, pebble=0, berry=1),
+    2, True, 0,
+    CompositeAction(
+    [action_give_away_resources_gain_points(2, "berry", 2)]),
+    "Klooster")
+
+# To do: Monnik opens the second location on the Klooster
+
+
+cards_unique.append(kikkerkapitein)
+cards_unique.append(monnik)
+
+
+# ============================================
+# BLUE CRITTERS
+# ============================================
+
+historicus = Critter(
+    "Historicus","blue", dict(twig=0, resin=0, pebble=0, berry=2), 
+    3, True, 1, 
+    action_draw_cards_from_deck(1), 
+    "Klokkentoren")
+
+winkelier = Critter(
+    "Winkelier", "blue", dict(twig=0, resin=0, pebble=0, berry=2),
+    3, True, 1, 
+    action_gain_resource("berry", 1),
+    "Winkel")
 
 cards_unique.append(historicus)
 cards_unique.append(winkelier)
-cards_unique.append(kikkerkapitein)
-cards_unique.append(monnik)
 
 
 # ============================================
 # GREEN CONSTRUCTIONS
 # ============================================
 
-boerderij = Construction("Boerderij", "green", dict(twig=2, resin=1, pebble=0, berry=0), 
-                        8, False, 1, action_gain_resource("berry", 1), ["Man", "Vrouw"])
-takkenboot = Construction("Takkenboot", "green", dict(twig=1, resin=0, pebble=1, berry=0),
-                        3, False, 1, action_gain_resource("twig", 2), ["Kikkerkapitein"])
-winkel = Construction("Winkel", "green", dict(twig=0, resin=1, pebble=1, berry=0),
-                        3, False, 1, CompositeAction([action_gain_resource("berry", 1), 
-                        action_gain_resource_if_other_card("Boerderij", "berry", 1)]), 
-                        ["Winkelier"])
-mijn = Construction("Mijn", "green", dict(twig=1, resin=1, pebble=1, berry=0),
-                        3, False, 2, action_gain_resource("pebble", 1), ["Mijnwerker mol"])
-harsraffinaderij = Construction("Harsraffinaderij", "green", dict(twig=0, resin=1, pebble=1, berry=0),
-                        3, False, 1, action_gain_resource("resin", 1), ["Schoonmaker"])
-kermis = Construction("Kermis", "green", dict(twig=1, resin=2, pebble=1, berry=0),
-                        3, False, 3, action_draw_cards_from_deck(2), ["Dwaas"])
+boerderij = Construction(
+    "Boerderij", "green", dict(twig=2, resin=1, pebble=0, berry=0), 
+    8, False, 1, 
+    action_gain_resource("berry", 1),
+    ["Man", "Vrouw"])
+
+takkenboot = Construction(
+    "Takkenboot", "green", dict(twig=1, resin=0, pebble=1, berry=0),
+    3, False, 1, 
+    action_gain_resource("twig", 2),
+    ["Kikkerkapitein"])
+
+winkel = Construction(
+    "Winkel", "green", dict(twig=0, resin=1, pebble=1, berry=0),
+    3, False, 1,
+    CompositeAction([action_gain_resource("berry", 1), 
+    action_gain_resource_if_other_card("Boerderij", "berry", 1)]), 
+    ["Winkelier"])
+
+mijn = Construction(
+    "Mijn", "green", dict(twig=1, resin=1, pebble=1, berry=0),
+    3, False, 2,
+    action_gain_resource("pebble", 1),
+    ["Mijnwerker mol"])
+
+harsraffinaderij = Construction(
+    "Harsraffinaderij", "green", dict(twig=0, resin=1, pebble=1, berry=0),
+    3, False, 1, 
+    action_gain_resource("resin", 1),
+    ["Schoonmaker"])
+
+kermis = Construction(
+    "Kermis", "green", dict(twig=1, resin=2, pebble=1, berry=0),
+    3, False, 3, 
+    action_draw_cards_from_deck(2), 
+    ["Dwaas"])
 
 cards_unique.append(boerderij)
 cards_unique.append(takkenboot)
@@ -91,10 +133,11 @@ cards_unique.append(kermis)
 # BLUE CONSTRUCTIONS
 # ============================================
 
-gerechtsgebouw = Construction("Gerechtsgebouw", "blue", 
-                            dict(twig=1, resin=1, pebble=2, berry=0), 2, True, 2, 
-                            action_gain_resources_by_choice(["twig", "resin", "pebble"], 1),
-                            ["Rechter"])
+gerechtsgebouw = Construction(
+    "Gerechtsgebouw", "blue", dict(twig=1, resin=1, pebble=2, berry=0),
+    2, True, 2, 
+    action_gain_resources_by_choice(["twig", "resin", "pebble"], 1),
+    ["Rechter"])
 
 cards_unique.append(gerechtsgebouw)
 

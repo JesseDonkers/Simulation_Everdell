@@ -55,11 +55,13 @@ def get_possible_moves(game_state):
     possible_moves = []
     possible_cards = get_possible_cards(game_state)
     possible_locations = get_possible_locations(game_state)
+    workers = game_state["current_player"].workers
+
     if len(possible_cards) > 0:
         possible_moves.append("play_card")
-    if len(possible_locations) > 0 and game_state["current_player"].workers > 0:
+    if len(possible_locations) > 0 and workers > 0:
         possible_moves.append("place_worker")
-    if game_state["current_player"].season != "autumn" and game_state["current_player"].workers == 0:
+    if game_state["current_player"].season != "autumn" and workers == 0:
         possible_moves.append("advance_season")
     return possible_moves
 
@@ -71,12 +73,12 @@ def get_possible_moves(game_state):
 def place_worker(game_state):
     player: "Player" = game_state["current_player"]
     preferred_location: "Location"
-    possible_locations = get_possible_locations(game_state)
+    possib_loc = get_possible_locations(game_state)
 
-    if len(possible_locations) == 0:
+    if len(possib_loc) == 0:
         raise ValueError("No possible locations to place worker")
     else:
-        preferred_location = player.decide(game_state, "location", possible_locations)
+        preferred_location = player.decide(game_state, "location", possib_loc)
         preferred_location.add_worker(player)
         player.workers_remove(1)
         preferred_location.action.execute(game_state)
@@ -136,8 +138,10 @@ def play_card(game_state):
         else:
             meadow.draw_cards([preferred_card], deck, discardpile)
                 
-        # To do: card can be played if a related card is played, no costs have to be paid
-        # To do: card can be played by discarding a card in the city, no or less costs have to paid
+        # To do: card can be played if a related card is played,
+        #           no costs have to be paid
+        # To do: card can be played by discarding a card in the city,
+        #              no or less costs have to paid
 
         # The player pays for the costs of the card
         card_costs = preferred_card.requirements

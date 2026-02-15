@@ -49,6 +49,6 @@ class Strategy_random(Strategy):
     def choose_player_to_receive_resources(self, game_state, _):
         player = game_state["current_player"]
         players = game_state["players"]
-        other_players = [p for p in players if p != player and p.finished == False]
-        return random.choice(other_players)
+        other_pls = [p for p in players if p != player and p.finished == False]
+        return random.choice(other_pls)
     

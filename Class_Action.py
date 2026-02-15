@@ -37,7 +37,7 @@ class Action(ABC):
 
 class action_gain_points(Action):
     def __init__(self, category, points):
-        self.category = category  # e.g., "cards", "tokens", "resources"
+        self.category = category  # e.g., "cards", "token", "resources"
         self.points = points
     
     def execute_action(self, player: "Player", game_state=None):
@@ -46,7 +46,7 @@ class action_gain_points(Action):
 
 class action_gain_resource(Action):
     def __init__(self, resource_type, amount):
-        self.resource_type = resource_type  # "twig", "resin", "pebble", "berry"
+        self.resource_type = resource_type
         self.amount = amount
     
     def execute_action(self, player: "Player", game_state=None):
@@ -56,7 +56,7 @@ class action_gain_resource(Action):
 class action_gain_resource_per_other_card(Action):
     def __init__(self, cardname, resource_type, amount):
         self.cardname = cardname
-        self.resource_type = resource_type  # "twig", "resin", "pebble", "berry"
+        self.resource_type = resource_type
         self.amount = amount
     
     def execute_action(self, player: "Player", game_state=None):
@@ -68,7 +68,7 @@ class action_gain_resource_per_other_card(Action):
 class action_gain_resource_if_other_card(Action):
     def __init__(self, cardname, resource_type, amount):
         self.cardname = cardname
-        self.resource_type = resource_type  # "twig", "resin", "pebble", "berry"
+        self.resource_type = resource_type
         self.amount = amount
     
     def execute_action(self, player: "Player", game_state=None):
@@ -83,25 +83,27 @@ class action_gain_resources_by_choice(Action):
     
     def execute_action(self, player: "Player", game_state=None):
         for _ in range(self.nr_resources):
-            preferred_resource = player.decide(game_state, "resource", self.resources)
-            player.resources_add(preferred_resource, 1)
+            choice_r = player.decide(game_state, "resource", self.resources)
+            player.resources_add(choice_r, 1)
 
 
 class action_give_away_resources_gain_points(Action):
     def __init__(self, max_nr_resources, resource_type, points_per_resource):
         self.max_nr_resources = max_nr_resources
-        self.resource_type = resource_type  # "twig", "resin", "pebble", "berry"
+        self.resource_type = resource_type
         self.points_per_resource = points_per_resource
     
     def execute_action(self, player: "Player", game_state=None):        
         options = [self.max_nr_resources, self.resource_type]
-        nr_give_away = player.decide(game_state, "nr_resources_to_give_away", options)
         other_player: "Player"
-        other_player = player.decide(game_state, "player_to_receive_resources", None)
+        nr_give_away = player.decide(
+                        game_state, "nr_resources_to_give_away", options)
+        other_player = player.decide(
+                        game_state, "player_to_receive_resources", None)
 
         for _ in range(nr_give_away):
             player.resources_remove(self.resource_type, 1)
-            player.points["tokens"] += self.points_per_resource
+            player.points["token"] += self.points_per_resource
             other_player.resources_add(self.resource_type, 1)
 
 
@@ -111,7 +113,8 @@ class action_give_away_resources_gain_points(Action):
 #         self.amount = amount
     
 #     def execute_action(self, player: "Player", game_state=None):
-#         player.resources[self.resource_type] = max(0, player.resources[self.resource_type] - self.amount)
+#         player.resources[self.resource_type] = 
+#               max(0, player.resources[self.resource_type] - self.amount)
 
 
 class action_draw_cards_from_deck(Action):
