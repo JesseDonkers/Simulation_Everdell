@@ -35,14 +35,27 @@ class Strategy_random(Strategy):
         other_players = [p for p in players if p != player]
         return random.choice(other_players)
     
-    def choose_resource(self, game_state, _):
+    def choose_resource_new(self, game_state, _):
         resources = ["twig", "resin", "pebble", "berry"]
         return random.choice(resources)
     
-    def choose_nr_resources_to_give_away(self, game_state, options):
+    def choose_resource_give_away(self, game_state, quantity):
         player = game_state["current_player"]
-        max_nr_resources = options[0]
-        resource_type = options[1]
+        available = {r: player.resources.get(r, 0) for r in 
+                     ("twig", "resin", "pebble", "berry")}
+        picks = []
+
+        for _ in range(quantity):
+            options = [r for r, cnt in available.items() if cnt > 0]
+            choice = random.choice(options)
+            picks.append(choice)
+            available[choice] -= 1
+        return picks
+
+    def choose_nr_resources_to_give_away(self, game_state, nr_and_type):
+        player = game_state["current_player"]
+        max_nr_resources = nr_and_type[0]
+        resource_type = nr_and_type[1]
         available_resources = player.resources.get(resource_type)
         return random.randint(0, min(max_nr_resources, available_resources))
     

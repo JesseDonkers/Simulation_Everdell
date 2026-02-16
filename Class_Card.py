@@ -50,10 +50,12 @@ monnik = Critter(
     "Monnik", "green", dict(twig=0, resin=0, pebble=0, berry=1),
     2, True, 0,
     CompositeAction(
-    [action_give_away_resources_gain_points(2, "berry", 2)]),
+    [action_points_per_given_resources(2, "berry", 2)]),
     "Klooster")
 
-# To do: Monnik opens the second location on the Klooster
+    # To do: Monnik opens the second location on the Klooster
+    # To do: if discarded, the second location on the Klooster is closed,
+    # but what if there is already a worker on that location?
 
 
 cards_unique.append(kikkerkapitein)
@@ -140,6 +142,24 @@ gerechtsgebouw = Construction(
     ["Rechter"])
 
 cards_unique.append(gerechtsgebouw)
+
+
+# ============================================
+# RED CONSTRUCTIONS
+# ============================================
+
+klooster = Construction(
+    "Klooster", "red", dict(twig=1, resin=1, pebble=1, berry=0),
+    2, True, 1,
+    action_add_destination_card_as_location(
+                        "Klooster", "destination_card", False, 1, 
+                        action_points_for_given_resources(2, 4)),
+    ["Monnik"])
+
+    # To do: if Monnik is in the city, the second location is opened
+    # To do: workers stay here forever (what if card is descarded from city?)
+
+cards_unique.append(klooster)
 
 
 # ============================================

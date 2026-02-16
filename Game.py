@@ -15,7 +15,7 @@ import copy
 # VARIABLES & PARAMETERS
 # ============================================
 
-nr_simulation_runs = 1
+nr_simulation_runs = 100
 nrPlayers = 2 # Number of players in the game (2-4)
 strategy_per_player = [Strategy_random, Strategy_random]
 
@@ -68,7 +68,7 @@ for _ in range(nr_simulation_runs):
 
     # Each player is provided with a strategy.
     if len(strategy_per_player) != len(players):
-        raise ValueError(f"Number of strategies ({len(strategy_per_player)}) "
+        raise ValueError(f"Number of strategies ({len(strategy_per_player)})"
                         f"does not match number of players ({len(players)})")
     for p in range(len(players)):
         players[p].strategy = strategy_per_player[p]()
@@ -78,7 +78,34 @@ for _ in range(nr_simulation_runs):
     # EXECUTING GAME
     # ============================================
 
+    player = game_state["current_player"]
+    player.resources_add("twig", 2)
+    player.resources_add("resin", 1)
+    player.resources_add("pebble", 2)
 
+    print("\n")
+
+    play_card(game_state)
+    place_worker(game_state)
+
+    if game_state["locations"][-1].name == "Klooster" and game_state["locations"][-1].get_player_workers(player) > 0:
+
+        for c in player.city:
+            print(c)
+
+        print("\n")
+
+        for l in game_state["locations"]:
+            print(l, l.workers)
+
+
+        print("\n")
+
+        for p in players:
+            print(p)
+            print("\n")
+    
+    
 
     # ============================================
     # END GAME

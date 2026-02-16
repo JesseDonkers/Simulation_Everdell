@@ -83,21 +83,40 @@ class action_gain_resources_by_choice(Action):
     
     def execute_action(self, player: "Player", game_state=None):
         for _ in range(self.nr_resources):
-            choice_r = player.decide(game_state, "resource", self.resources)
-            player.resources_add(choice_r, 1)
+            choice = player.decide(game_state, "resource_new", self.resources)
+            player.resources_add(choice, 1)
 
 
-class action_give_away_resources_gain_points(Action):
+class action_points_for_given_resources(Action):
+    def __init__(self, nr_resources, points):
+        self.nr_resources = nr_resources
+        self.points = points
+    
+    def execute_action(self, player: "Player", game_state=None):        
+        other_player: "Player"
+        other_player = player.decide(
+                        game_state, "player_to_receive_resources", None)
+        resources = player.decide(
+                        game_state, "resource_give_away", self.nr_resources)
+
+        for resource_type in resources:
+            player.resources_remove(resource_type, 1)
+            other_player.resources_add(resource_type, 1)
+        player.points["token"] += self.points
+
+# To do: perhaps combine the function above and below?
+
+class action_points_per_given_resources(Action):
     def __init__(self, max_nr_resources, resource_type, points_per_resource):
         self.max_nr_resources = max_nr_resources
         self.resource_type = resource_type
         self.points_per_resource = points_per_resource
     
     def execute_action(self, player: "Player", game_state=None):        
-        options = [self.max_nr_resources, self.resource_type]
+        nr_and_type = [self.max_nr_resources, self.resource_type]
         other_player: "Player"
         nr_give_away = player.decide(
-                        game_state, "nr_resources_to_give_away", options)
+                        game_state, "nr_resources_to_give_away", nr_and_type)
         other_player = player.decide(
                         game_state, "player_to_receive_resources", None)
 
@@ -105,16 +124,6 @@ class action_give_away_resources_gain_points(Action):
             player.resources_remove(self.resource_type, 1)
             player.points["token"] += self.points_per_resource
             other_player.resources_add(self.resource_type, 1)
-
-
-# class action_spend_resource(Action):
-#     def __init__(self, resource_type, amount):
-#         self.resource_type = resource_type
-#         self.amount = amount
-    
-#     def execute_action(self, player: "Player", game_state=None):
-#         player.resources[self.resource_type] = 
-#               max(0, player.resources[self.resource_type] - self.amount)
 
 
 class action_draw_cards_from_deck(Action):
@@ -149,13 +158,21 @@ class action_draw_cards_from_meadow(Action):
         player.cards_add(listofcards, "hand")
 
 
-# # To do: finish the function below
-# class action_add_destination_card(Action):
-#     def __init__(self):
-#         return self
+class action_add_destination_card_as_location(Action):
+    def __init__(self, name, type, open, maxworkers, action):
+        self.name = name
+        self.type = type
+        self.open = open
+        self.maxworkers = maxworkers
+        self.action = action
     
-#     def execute_action(self, player: "Player", game_state=None):
-#         return self
+    def execute_action(self, player: "Player", game_state=None):
+        from Class_Location import Location
+        locations = game_state["locations"]
+        dest_card = Location(
+            self.name, self.type, self.open, self.maxworkers, self.action)
+        locations.append(dest_card)
+
 
 # # To do: finish the function below
 # class action_remove_card_from_city(Action):

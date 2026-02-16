@@ -40,6 +40,15 @@ def get_possible_locations(game_state):
         if location.type == "basic":
             if location.get_open_spaces() > 0:
                 possible_locations.append(location)
+        
+        # Destination cards
+        if location.type == "destination_card":
+
+            # To do: check if card is in player's city
+            # or if the card is open if in another player's city
+
+            if location.get_open_spaces() > 0:
+                possible_locations.append(location)            
 
 
     # To do: forest locations
