@@ -37,6 +37,17 @@ class Location:
 
 init_locations = []
 
+
+# ============================================
+# TEMPORARY
+# ============================================
+
+# A temporary location is added which can be used when a location is removed
+# and an already placed worker needs to be stored somewhere temporarily.
+temp = Location("Temp", "temp", False, 0, None)
+init_locations.append(temp)
+
+
 # ============================================
 # BASIC
 # ============================================
@@ -49,7 +60,6 @@ pebble = Location("Basic 3", "basic", False, 1,
                   Class_Action.action_gain_resource("pebble", 1))
 berry = Location("Basic 4", "basic", False, 99, 
                  Class_Action.action_gain_resource("berry", 1))
-
 
 twigs_point = Location("Basic 5", "basic", False, 99, 
                         Class_Action.CompositeAction(

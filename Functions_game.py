@@ -30,7 +30,13 @@ def get_possible_cards(game_state):
     return possible_cards            
 
 
-def get_possible_locations(game_state):    
+def get_possible_locations(game_state):
+
+    # To do: for a destination card, it should be checked if the action
+    # can be executed. For example, for the klooster, the player should have
+    # enough resources to execute the action, otherwise it should not be a
+    # possible location to place a worker.
+
     locations = game_state["locations"]
     location: "Location"
     possible_locations = []
@@ -105,7 +111,7 @@ def advance_season(game_state):
         card: "Card"
         for card in player.city:
             if card.color == "green":
-                card.action.execute(game_state)    
+                card.action_on_reactivate.execute(game_state)    
     
     elif current_season == "spring":
         player.workers_add(1)
@@ -115,7 +121,9 @@ def advance_season(game_state):
         player.workers_add(2)
         for card in player.city:
             if card.color == "green":
-                card.action.execute(game_state)
+                # On season change, execute action_on_reactivate (not action_on_play)
+                if card.action_on_reactivate:
+                    card.action_on_reactivate.execute(game_state)
 
     location: "Location"
     for location in game_state["locations"]:
@@ -157,9 +165,10 @@ def play_card(game_state):
         for resource, amount in card_costs.items():
             player.resources_remove(resource, amount)
         
-        # The card is added to the player's city and its action is executed
+        # The card is added to the player's city and action_on_play is executed
         player.cards_add([preferred_card], "city")
-        preferred_card.action.execute(game_state)
+        if preferred_card.action_on_play:
+            preferred_card.action_on_play.execute(game_state)
 
 
 

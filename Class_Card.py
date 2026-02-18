@@ -2,31 +2,48 @@ from Class_Action import *
 
 
 class Card:
-    def __init__(self, name, color, requirements, 
-                 cardsindeck, unique,points, action):
+    def __init__(self, name, color, requirements,
+                 cardsindeck, unique, points,
+                 action_on_play=None,
+                 action_on_reactivate=None,
+                 action_on_discard=None):
         self.name = name
         self.color = color
-        self.requirements = requirements # Resources as dict
+        self.requirements = requirements
         self.cardsindeck = cardsindeck
         self.unique = unique
         self.points = points
-        self.action = action
+        self.action_on_play = action_on_play
+        self.action_on_reactivate = action_on_reactivate
+        self.action_on_discard = action_on_discard
         
     def __str__(self):
         return str(self.name)
 
 class Critter(Card):
     def __init__(self, name, color, requirements, 
-                 cardsindeck, unique, points, action, relatedconstruction):
+                 cardsindeck, unique, points, relatedconstruction,
+                 action_on_play=None,
+                 action_on_reactivate=None,
+                 action_on_discard=None):
         super().__init__(name, color, requirements, 
-                         cardsindeck, unique, points, action)
+                         cardsindeck, unique, points,
+                         action_on_play=action_on_play,
+                         action_on_reactivate=action_on_reactivate,
+                         action_on_discard=action_on_discard)
         self.relatedconstruction = relatedconstruction
 
 class Construction(Card):
     def __init__(self, name, color, requirements, 
-                 cardsindeck, unique, points, action, relatedcritters):
+                 cardsindeck, unique, points, relatedcritters,
+                 action_on_play=None,
+                 action_on_reactivate=None,
+                 action_on_discard=None):
         super().__init__(name, color, requirements, 
-                         cardsindeck, unique, points, action)
+                         cardsindeck, unique, points,
+                         action_on_play=action_on_play,
+                         action_on_reactivate=action_on_reactivate,
+                         action_on_discard=action_on_discard)
         self.relatedcritters = relatedcritters
         self.relatedoccupied = False
 
@@ -38,24 +55,37 @@ cards_unique = []
 # GREEN CRITTERS
 # ============================================
 
-# To do: Rechter
-
 kikkerkapitein = Critter(
-    "Kikkerkapitein", "green", dict(twig=0, resin=0, pebble=0, berry=2),
-    3, False, 1, 
-    action_gain_resource_per_other_card("Boerderij", "twig", 2), 
-    "Takkenboot")
+    name="Kikkerkapitein",
+    color="green",
+    requirements=dict(twig=0, resin=0, pebble=0, berry=2),
+    cardsindeck=3,
+    unique=False,
+    points=1,
+    relatedconstruction="Takkenboot",
+    action_on_play=action_gain_resource_per_other_card("Boerderij", "twig", 2))
 
 monnik = Critter(
-    "Monnik", "green", dict(twig=0, resin=0, pebble=0, berry=1),
-    2, True, 0,
-    CompositeAction(
-    [action_points_per_given_resources(2, "berry", 2)]),
-    "Klooster")
+    name="Monnik",
+    color="green",
+    requirements=dict(twig=0, resin=0, pebble=0, berry=1),
+    cardsindeck=2,
+    unique=True,
+    points=0,
+    relatedconstruction="Klooster",
 
-    # To do: Monnik opens the second location on the Klooster
-    # To do: if discarded, the second location on the Klooster is closed,
-    # but what if there is already a worker on that location?
+    action_on_play=CompositeAction([
+        action_points_for_given_resources(
+            max_nr_resources=2, resource_type="berry", points_per_resource=2),
+        action_add_destination_if_card_present(
+            "Klooster 2", "destination_card", False, 1,
+            action_points_for_given_resources(nr_resources=2, points=4),
+            check_card_name="Klooster")]),
+
+    action_on_reactivate=action_points_for_given_resources(
+        max_nr_resources=2, resource_type="berry", points_per_resource=2),
+
+    action_on_discard=action_remove_destination("Klooster 2"))
 
 
 cards_unique.append(kikkerkapitein)
@@ -66,17 +96,29 @@ cards_unique.append(monnik)
 # BLUE CRITTERS
 # ============================================
 
+# To do: Rechter
+# To do: For blue critters action on play is not really relevant, how to model?
+
 historicus = Critter(
-    "Historicus","blue", dict(twig=0, resin=0, pebble=0, berry=2), 
-    3, True, 1, 
-    action_draw_cards_from_deck(1), 
-    "Klokkentoren")
+    name="Historicus",
+    color="blue",
+    requirements=dict(twig=0, resin=0, pebble=0, berry=2),
+    cardsindeck=3,
+    unique=True,
+    points=1,
+    relatedconstruction="Klokkentoren",
+    action_on_play=action_draw_cards_from_deck(1))
 
 winkelier = Critter(
-    "Winkelier", "blue", dict(twig=0, resin=0, pebble=0, berry=2),
-    3, True, 1, 
-    action_gain_resource("berry", 1),
-    "Winkel")
+    name="Winkelier",
+    color="blue",
+    requirements=dict(twig=0, resin=0, pebble=0, berry=2),
+    cardsindeck=3,
+    unique=True,
+    points=1,
+    relatedconstruction="Winkel",
+    action_on_play=action_gain_resource("berry", 1))
+
 
 cards_unique.append(historicus)
 cards_unique.append(winkelier)
@@ -87,41 +129,73 @@ cards_unique.append(winkelier)
 # ============================================
 
 boerderij = Construction(
-    "Boerderij", "green", dict(twig=2, resin=1, pebble=0, berry=0), 
-    8, False, 1, 
-    action_gain_resource("berry", 1),
-    ["Man", "Vrouw"])
+    name="Boerderij",
+    color="green",
+    requirements=dict(twig=2, resin=1, pebble=0, berry=0),
+    cardsindeck=8,
+    unique=False,
+    points=1,
+    relatedcritters=["Man", "Vrouw"],
+    action_on_play=action_gain_resource("berry", 1),
+    action_on_reactivate=action_gain_resource("berry", 1))
 
 takkenboot = Construction(
-    "Takkenboot", "green", dict(twig=1, resin=0, pebble=1, berry=0),
-    3, False, 1, 
-    action_gain_resource("twig", 2),
-    ["Kikkerkapitein"])
+    name="Takkenboot",
+    color="green",
+    requirements=dict(twig=1, resin=0, pebble=1, berry=0),
+    cardsindeck=3,
+    unique=False,
+    points=1,
+    relatedcritters=["Kikkerkapitein"],
+    action_on_play=action_gain_resource("twig", 2),
+    action_on_reactivate=action_gain_resource("twig", 2))
 
 winkel = Construction(
-    "Winkel", "green", dict(twig=0, resin=1, pebble=1, berry=0),
-    3, False, 1,
-    CompositeAction([action_gain_resource("berry", 1), 
-    action_gain_resource_if_other_card("Boerderij", "berry", 1)]), 
-    ["Winkelier"])
+    name="Winkel",
+    color="green",
+    requirements=dict(twig=0, resin=1, pebble=1, berry=0),
+    cardsindeck=3,
+    unique=False,
+    points=1,
+    relatedcritters=["Winkelier"],
+    action_on_play=CompositeAction([action_gain_resource("berry", 1), 
+    action_gain_resource_if_other_card("Boerderij", "berry", 1)]),
+    action_on_reactivate=CompositeAction([action_gain_resource("berry", 1), 
+    action_gain_resource_if_other_card("Boerderij", "berry", 1)]))
 
 mijn = Construction(
-    "Mijn", "green", dict(twig=1, resin=1, pebble=1, berry=0),
-    3, False, 2,
-    action_gain_resource("pebble", 1),
-    ["Mijnwerker mol"])
+    name="Mijn",
+    color="green",
+    requirements=dict(twig=1, resin=1, pebble=1, berry=0),
+    cardsindeck=3,
+    unique=False,
+    points=2,
+    relatedcritters=["Mijnwerker mol"],
+    action_on_play=action_gain_resource("pebble", 1),
+    action_on_reactivate=action_gain_resource("pebble", 1))
 
 harsraffinaderij = Construction(
-    "Harsraffinaderij", "green", dict(twig=0, resin=1, pebble=1, berry=0),
-    3, False, 1, 
-    action_gain_resource("resin", 1),
-    ["Schoonmaker"])
+    name="Harsraffinaderij",
+    color="green",
+    requirements=dict(twig=0, resin=1, pebble=1, berry=0),
+    cardsindeck=3,
+    unique=False,
+    points=1,
+    relatedcritters=["Schoonmaker"],
+    action_on_play=action_gain_resource("resin", 1),
+    action_on_reactivate=action_gain_resource("resin", 1))
 
 kermis = Construction(
-    "Kermis", "green", dict(twig=1, resin=2, pebble=1, berry=0),
-    3, False, 3, 
-    action_draw_cards_from_deck(2), 
-    ["Dwaas"])
+    name="Kermis",
+    color="green",
+    requirements=dict(twig=1, resin=2, pebble=1, berry=0),
+    cardsindeck=3,
+    unique=False,
+    points=3,
+    relatedcritters=["Dwaas"],
+    action_on_play=action_draw_cards_from_deck(2),
+    action_on_reactivate=action_draw_cards_from_deck(2))
+
 
 cards_unique.append(boerderij)
 cards_unique.append(takkenboot)
@@ -135,11 +209,20 @@ cards_unique.append(kermis)
 # BLUE CONSTRUCTIONS
 # ============================================
 
+# To do: For blue constructions, action on play is not really relevant
+# how to model?
+
 gerechtsgebouw = Construction(
-    "Gerechtsgebouw", "blue", dict(twig=1, resin=1, pebble=2, berry=0),
-    2, True, 2, 
-    action_gain_resources_by_choice(["twig", "resin", "pebble"], 1),
-    ["Rechter"])
+    name="Gerechtsgebouw",
+    color="blue",
+    requirements=dict(twig=1, resin=1, pebble=2, berry=0),
+    cardsindeck=2,
+    unique=True,
+    points=2,
+    relatedcritters=["Rechter"],
+    action_on_play=action_gain_resources_by_choice(
+        ["twig", "resin", "pebble"], 1))
+
 
 cards_unique.append(gerechtsgebouw)
 
@@ -149,15 +232,25 @@ cards_unique.append(gerechtsgebouw)
 # ============================================
 
 klooster = Construction(
-    "Klooster", "red", dict(twig=1, resin=1, pebble=1, berry=0),
-    2, True, 1,
-    action_add_destination_card_as_location(
-                        "Klooster", "destination_card", False, 1, 
-                        action_points_for_given_resources(2, 4)),
-    ["Monnik"])
+    name="Klooster",
+    color="red",
+    requirements=dict(twig=1, resin=1, pebble=1, berry=0),
+    cardsindeck=2,
+    unique=True,
+    points=1,
+    relatedcritters=["Monnik"],
+    action_on_play=CompositeAction([
+        action_add_destination_card_as_location(
+            "Klooster 1", "destination_card", False, 1, 
+            action_points_for_given_resources(nr_resources=2, points=4)),
+        action_add_destination_if_card_present(
+            "Klooster 2", "destination_card", False, 1,
+            action_points_for_given_resources(nr_resources=2, points=4),
+            check_card_name="Monnik")
+    ]))
 
-    # To do: if Monnik is in the city, the second location is opened
     # To do: workers stay here forever (what if card is descarded from city?)
+
 
 cards_unique.append(klooster)
 

@@ -6,13 +6,13 @@ import random
 # ============================================
 
 class Strategy():
-    def decide(self, game_state, decision_kind, options):
+    def decide(self, game_state, decision_kind, parameters):
         handler_name = f"choose_{decision_kind}"
         handler = getattr(self, handler_name, None)
 
         if handler is None:
             raise ValueError(f"Unknown decision type: {decision_kind}")
-        return handler(game_state, options)
+        return handler(game_state, parameters)
 
 
 # ============================================

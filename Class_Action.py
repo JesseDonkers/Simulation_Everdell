@@ -37,7 +37,7 @@ class Action(ABC):
 
 class action_gain_points(Action):
     def __init__(self, category, points):
-        self.category = category  # e.g., "cards", "token", "resources"
+        self.category = category
         self.points = points
     
     def execute_action(self, player: "Player", game_state=None):
@@ -88,42 +88,55 @@ class action_gain_resources_by_choice(Action):
 
 
 class action_points_for_given_resources(Action):
-    def __init__(self, nr_resources, points):
-        self.nr_resources = nr_resources
-        self.points = points
-    
-    def execute_action(self, player: "Player", game_state=None):        
-        other_player: "Player"
+    """
+    Action that handles two patterns:
+
+    - Fixed choose type
+        player chooses which resources to give, fixed points
+        (nr_resources=2, points=4)
+
+    - Max fixed type
+        Player chooses how many to give (up to max), resource type fixed, and
+        points per resource
+        (max_nr_resources=2, resource_type='berry', points_per_resource=2)
+    """
+    def __init__(self, nr_resources=None, points=None, max_nr_resources=None, 
+                 resource_type=None, points_per_resource=None):
+        if nr_resources is not None and points is not None:
+            self.mode = "fixed_choose_types"
+            self.nr_resources = nr_resources
+            self.points = points
+        elif (max_nr_resources is not None and resource_type is not None and
+              points_per_resource is not None):
+            self.mode = "max_fixed_type"
+            self.max_nr_resources = max_nr_resources
+            self.resource_type = resource_type
+            self.points_per_resource = points_per_resource
+        else:
+            raise ValueError(
+                "Invalid arguments for action_points_for_given_resources")
+
+    def execute_action(self, player: "Player", game_state=None):
         other_player = player.decide(
                         game_state, "player_to_receive_resources", None)
-        resources = player.decide(
+
+        if self.mode == "fixed_choose_types":
+            resources = player.decide(
                         game_state, "resource_give_away", self.nr_resources)
+            for resource_type in resources:
+                player.resources_remove(resource_type, 1)
+                other_player.resources_add(resource_type, 1)
+            player.points["token"] += self.points
 
-        for resource_type in resources:
-            player.resources_remove(resource_type, 1)
-            other_player.resources_add(resource_type, 1)
-        player.points["token"] += self.points
-
-# To do: perhaps combine the function above and below?
-
-class action_points_per_given_resources(Action):
-    def __init__(self, max_nr_resources, resource_type, points_per_resource):
-        self.max_nr_resources = max_nr_resources
-        self.resource_type = resource_type
-        self.points_per_resource = points_per_resource
-    
-    def execute_action(self, player: "Player", game_state=None):        
-        nr_and_type = [self.max_nr_resources, self.resource_type]
-        other_player: "Player"
-        nr_give_away = player.decide(
+        else:  # max_fixed_type
+            nr_and_type = [self.max_nr_resources, self.resource_type]
+            nr_give_away = player.decide(
                         game_state, "nr_resources_to_give_away", nr_and_type)
-        other_player = player.decide(
-                        game_state, "player_to_receive_resources", None)
 
-        for _ in range(nr_give_away):
-            player.resources_remove(self.resource_type, 1)
-            player.points["token"] += self.points_per_resource
-            other_player.resources_add(self.resource_type, 1)
+            for _ in range(nr_give_away):
+                player.resources_remove(self.resource_type, 1)
+                player.points["token"] += self.points_per_resource
+                other_player.resources_add(self.resource_type, 1)
 
 
 class action_draw_cards_from_deck(Action):
@@ -174,16 +187,68 @@ class action_add_destination_card_as_location(Action):
         locations.append(dest_card)
 
 
-# # To do: finish the function below
-# class action_remove_card_from_city(Action):
-#     def __init__(self):
-#         return self
-    
-#     def execute_action(self, player: "Player", game_state=None):
-#         # To do: if card.color = red, also remove from locations
-#         return self
-    
+class action_add_destination_if_card_present(Action):
+    """
+    Add a destination_card location only if a specified card is present in the
+    current player's city.
+    """
+    def __init__(self, name, type, open, maxworkers, action, check_card_name):
+        self.name = name
+        self.type = type
+        self.open = open
+        self.maxworkers = maxworkers
+        self.action = action
+        self.check_card_name = check_card_name
 
+    def execute_action(self, player: "Player", game_state=None):
+        from Class_Location import Location
+        locations = game_state["locations"]
+
+        # Check if the specified card is in the player's city
+        card_in_city = any(
+                    card.name == self.check_card_name for card in player.city)
+
+        if card_in_city:
+            dest_card = Location(
+                self.name, self.type, self.open, self.maxworkers, self.action)
+            locations.append(dest_card)
+
+
+class action_remove_destination(Action):
+    """
+    Remove a destination location by name.
+    Typically used when a card that created the location is discarded.
+    """
+    def __init__(self, location_name):
+        self.location_name = location_name
+
+    def execute_action(self, player: "Player", game_state=None):
+        locations = game_state["locations"]
+
+        # If a card is discarded, but there is already a worker on that 
+        # location, then the workers are placed into the temp location
+        for loc in locations:
+            if loc.name == self.location_name:
+                nr_workers = loc.get_player_workers(player)
+                for _ in range(nr_workers):
+                    loc.remove_worker(player)
+                    locations[0].add_worker(player)  # temp loc is at index 0
+
+        locations[:] = [l for l in locations if l.name != self.location_name]
+
+
+class action_remove_card_from_city(Action):
+    def __init__(self):
+        return self
+    
+    def execute_action(self, player: "Player", game_state=None):
+
+        # To do: execute action_on_discard from a card
+        # To do: if card.color = red, also call "action_remove_destination"
+        # To do: remove the card from the city and add it to the discard pile
+
+        return self
+    
 
 # ============================================
 # COMPOSITE ACTIONS

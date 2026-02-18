@@ -79,33 +79,49 @@ for _ in range(nr_simulation_runs):
     # ============================================
 
     player = game_state["current_player"]
-    player.resources_add("twig", 2)
+    player.resources_add("twig", 1)
     player.resources_add("resin", 1)
-    player.resources_add("pebble", 2)
+    player.resources_add("pebble", 1)
+    player.resources_add("berry", 7)
 
-    print("\n")
+    if len(get_possible_cards(game_state)) > 0:
+        play_card(game_state)
+    
+    if len(get_possible_cards(game_state)) > 0:    
+        play_card(game_state)
 
-    play_card(game_state)
-    place_worker(game_state)
+    if any(n.name == "Klooster 2" for n in game_state["locations"]):
 
-    if game_state["locations"][-1].name == "Klooster" and game_state["locations"][-1].get_player_workers(player) > 0:
-
+        print("\n")
+        print("Before")
         for c in player.city:
             print(c)
+        print("\n")
 
+        place_worker(game_state)
+        place_worker(game_state)
+
+        for l in game_state["locations"]:
+            print(l.name)
+            print(l.workers)
+        
+        
+        for c in player.city:
+            if c.name == "Monnik":
+                c.action_on_discard.execute(game_state)
+        
+        print("\n")
+        print("After")
+        for c in player.city:
+            print(c)
         print("\n")
 
         for l in game_state["locations"]:
-            print(l, l.workers)
+            print(l.name)
+            print(l.workers)
+            
+        print("\n")        
 
-
-        print("\n")
-
-        for p in players:
-            print(p)
-            print("\n")
-    
-    
 
     # ============================================
     # END GAME
