@@ -172,18 +172,21 @@ class action_draw_cards_from_meadow(Action):
 
 
 class action_add_destination_card_as_location(Action):
-    def __init__(self, name, type, open, maxworkers, action):
+    def __init__(self, name, type, open, 
+                 maxworkers, action, permanent_workers=False):
         self.name = name
         self.type = type
         self.open = open
         self.maxworkers = maxworkers
         self.action = action
+        self.permanent_workers = permanent_workers
     
     def execute_action(self, player: "Player", game_state=None):
         from Class_Location import Location
         locations = game_state["locations"]
         dest_card = Location(
-            self.name, self.type, self.open, self.maxworkers, self.action)
+            self.name, self.type, self.open, self.maxworkers,
+            self.action, permanent_workers=self.permanent_workers)
         locations.append(dest_card)
 
 
@@ -192,13 +195,15 @@ class action_add_destination_if_card_present(Action):
     Add a destination_card location only if a specified card is present in the
     current player's city.
     """
-    def __init__(self, name, type, open, maxworkers, action, check_card_name):
+    def __init__(self, name, type, open, maxworkers, action, 
+                 check_card_name, permanent_workers=False):
         self.name = name
         self.type = type
         self.open = open
         self.maxworkers = maxworkers
         self.action = action
         self.check_card_name = check_card_name
+        self.permanent_workers = permanent_workers
 
     def execute_action(self, player: "Player", game_state=None):
         from Class_Location import Location
@@ -210,7 +215,8 @@ class action_add_destination_if_card_present(Action):
 
         if card_in_city:
             dest_card = Location(
-                self.name, self.type, self.open, self.maxworkers, self.action)
+                self.name, self.type, self.open, self.maxworkers,
+                self.action, permanent_workers=self.permanent_workers)
             locations.append(dest_card)
 
 
@@ -224,28 +230,51 @@ class action_remove_destination(Action):
 
     def execute_action(self, player: "Player", game_state=None):
         locations = game_state["locations"]
+        # Find matching locations
+        targets = [loc for loc in locations if loc.name == self.location_name]
 
-        # If a card is discarded, but there is already a worker on that 
-        # location, then the workers are placed into the temp location
-        for loc in locations:
-            if loc.name == self.location_name:
-                nr_workers = loc.get_player_workers(player)
-                for _ in range(nr_workers):
-                    loc.remove_worker(player)
-                    locations[0].add_worker(player)  # temp loc is at index 0
+        # Move all workers from targets to a temporary or permanent location
+        temp_loc = next(l for l in locations if l.type == "temporary")
+        perm_loc = next(l for l in locations if l.type == "permanent")
 
+        for loc in targets:
+            # Choose where to move workers depending on the source location
+            if getattr(loc, "permanent_workers", False):
+                safe_loc = perm_loc
+            else:
+                safe_loc = temp_loc
+
+            # Copy items to avoid mutation during iteration
+            for p, count in list(loc.workers.items()):
+                for _ in range(count):
+                    loc.remove_worker(p)
+                    safe_loc.add_worker(p)
+
+        # Remove the specified location(s)
         locations[:] = [l for l in locations if l.name != self.location_name]
 
 
 class action_remove_card_from_city(Action):
+    def __init__(self, card_name):
+        self.card_name = card_name
+    
+    def execute_action(self, player: "Player", game_state=None):
+        card = next(c for c in player.city if c.name == self.card_name)
+        player.cards_remove([card], "city")
+        discard_pile: "DiscardPile" = game_state["discardpile"]
+        discard_pile.add_to_discardpile([card])
+    
+
+class action_discard_other_card(Action):
     def __init__(self):
+
+        # To do: remove 1 card and use decide function for which card to remove
+
         return self
     
     def execute_action(self, player: "Player", game_state=None):
 
-        # To do: execute action_on_discard from a card
-        # To do: if card.color = red, also call "action_remove_destination"
-        # To do: remove the card from the city and add it to the discard pile
+        # To do: execute action_on_discard of discarded card
 
         return self
     

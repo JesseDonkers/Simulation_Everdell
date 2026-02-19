@@ -63,7 +63,8 @@ kikkerkapitein = Critter(
     unique=False,
     points=1,
     relatedconstruction="Takkenboot",
-    action_on_play=action_gain_resource_per_other_card("Boerderij", "twig", 2))
+    action_on_play=action_gain_resource_per_other_card("Boerderij", "twig", 2),
+    action_on_discard=action_remove_card_from_city("Kikkerkapitein"))
 
 monnik = Critter(
     name="Monnik",
@@ -80,12 +81,14 @@ monnik = Critter(
         action_add_destination_if_card_present(
             "Klooster 2", "destination_card", False, 1,
             action_points_for_given_resources(nr_resources=2, points=4),
-            check_card_name="Klooster")]),
+            check_card_name="Klooster", permanent_workers=True)]),
 
     action_on_reactivate=action_points_for_given_resources(
         max_nr_resources=2, resource_type="berry", points_per_resource=2),
 
-    action_on_discard=action_remove_destination("Klooster 2"))
+    action_on_discard=CompositeAction([
+        action_remove_destination("Klooster 2"),
+        action_remove_card_from_city("Monnik")]))
 
 
 cards_unique.append(kikkerkapitein)
@@ -107,7 +110,8 @@ historicus = Critter(
     unique=True,
     points=1,
     relatedconstruction="Klokkentoren",
-    action_on_play=action_draw_cards_from_deck(1))
+    action_on_play=action_draw_cards_from_deck(1),
+    action_on_discard=action_remove_card_from_city("Historicus"))
 
 winkelier = Critter(
     name="Winkelier",
@@ -117,7 +121,8 @@ winkelier = Critter(
     unique=True,
     points=1,
     relatedconstruction="Winkel",
-    action_on_play=action_gain_resource("berry", 1))
+    action_on_play=action_gain_resource("berry", 1),
+    action_on_discard=action_remove_card_from_city("Winkelier"))
 
 
 cards_unique.append(historicus)
@@ -137,7 +142,8 @@ boerderij = Construction(
     points=1,
     relatedcritters=["Man", "Vrouw"],
     action_on_play=action_gain_resource("berry", 1),
-    action_on_reactivate=action_gain_resource("berry", 1))
+    action_on_reactivate=action_gain_resource("berry", 1),
+    action_on_discard=action_remove_card_from_city("Boerderij"))
 
 takkenboot = Construction(
     name="Takkenboot",
@@ -148,7 +154,8 @@ takkenboot = Construction(
     points=1,
     relatedcritters=["Kikkerkapitein"],
     action_on_play=action_gain_resource("twig", 2),
-    action_on_reactivate=action_gain_resource("twig", 2))
+    action_on_reactivate=action_gain_resource("twig", 2),
+    action_on_discard=action_remove_card_from_city("Takkenboot"))
 
 winkel = Construction(
     name="Winkel",
@@ -161,7 +168,8 @@ winkel = Construction(
     action_on_play=CompositeAction([action_gain_resource("berry", 1), 
     action_gain_resource_if_other_card("Boerderij", "berry", 1)]),
     action_on_reactivate=CompositeAction([action_gain_resource("berry", 1), 
-    action_gain_resource_if_other_card("Boerderij", "berry", 1)]))
+    action_gain_resource_if_other_card("Boerderij", "berry", 1)]),
+    action_on_discard=action_remove_card_from_city("Winkel"))
 
 mijn = Construction(
     name="Mijn",
@@ -172,7 +180,8 @@ mijn = Construction(
     points=2,
     relatedcritters=["Mijnwerker mol"],
     action_on_play=action_gain_resource("pebble", 1),
-    action_on_reactivate=action_gain_resource("pebble", 1))
+    action_on_reactivate=action_gain_resource("pebble", 1),
+    action_on_discard=action_remove_card_from_city("Mijn"))
 
 harsraffinaderij = Construction(
     name="Harsraffinaderij",
@@ -183,7 +192,8 @@ harsraffinaderij = Construction(
     points=1,
     relatedcritters=["Schoonmaker"],
     action_on_play=action_gain_resource("resin", 1),
-    action_on_reactivate=action_gain_resource("resin", 1))
+    action_on_reactivate=action_gain_resource("resin", 1),
+    action_on_discard=action_remove_card_from_city("Harsraffinaderij"))
 
 kermis = Construction(
     name="Kermis",
@@ -194,7 +204,8 @@ kermis = Construction(
     points=3,
     relatedcritters=["Dwaas"],
     action_on_play=action_draw_cards_from_deck(2),
-    action_on_reactivate=action_draw_cards_from_deck(2))
+    action_on_reactivate=action_draw_cards_from_deck(2),
+    action_on_discard=action_remove_card_from_city("Kermis"))
 
 
 cards_unique.append(boerderij)
@@ -221,7 +232,8 @@ gerechtsgebouw = Construction(
     points=2,
     relatedcritters=["Rechter"],
     action_on_play=action_gain_resources_by_choice(
-        ["twig", "resin", "pebble"], 1))
+        ["twig", "resin", "pebble"], 1),
+    action_on_discard=action_remove_card_from_city("Gerechtsgebouw"))
 
 
 cards_unique.append(gerechtsgebouw)
@@ -242,14 +254,17 @@ klooster = Construction(
     action_on_play=CompositeAction([
         action_add_destination_card_as_location(
             "Klooster 1", "destination_card", False, 1, 
-            action_points_for_given_resources(nr_resources=2, points=4)),
+            action_points_for_given_resources(nr_resources=2, points=4),
+            permanent_workers=True),
         action_add_destination_if_card_present(
             "Klooster 2", "destination_card", False, 1,
             action_points_for_given_resources(nr_resources=2, points=4),
-            check_card_name="Monnik")
-    ]))
-
-    # To do: workers stay here forever (what if card is descarded from city?)
+            check_card_name="Monnik", permanent_workers=True)]),
+    
+    action_on_discard=CompositeAction([
+            action_remove_destination("Klooster 1"),
+            action_remove_destination("Klooster 2"),
+            action_remove_card_from_city("Klooster")]))
 
 
 cards_unique.append(klooster)

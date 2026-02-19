@@ -2,13 +2,14 @@ import Class_Action
 
 
 class Location:
-    def __init__(self, name, type, open, maxworkers, action):
+    def __init__(self, name, type, open, maxworkers, action, permanent_workers=False):
         self.name = name
         self.type = type # Basic, forest, event, haven, journey, destination
         self.open = open # Attribute for destination cards
         self.maxworkers = maxworkers
         self.action = action
         self.workers = {}  # Tracking workers per player: {player: count}
+        self.permanent_workers = permanent_workers
         
     def __str__(self):
         return str(self.name)
@@ -39,13 +40,19 @@ init_locations = []
 
 
 # ============================================
-# TEMPORARY
+# TEMPORARY AND PERMANENT
 # ============================================
 
 # A temporary location is added which can be used when a location is removed
-# and an already placed worker needs to be stored somewhere temporarily.
-temp = Location("Temp", "temp", False, 0, None)
+# and already placed workers need to be stored somewhere temporarily.
+temp = Location("Temporary", "temporary", False, 0, None)
+
+# A permanent location is added which can be used when a permanent location 
+# is removed and already placed workers need to be stored somewhere.
+permanent = Location("Permanent", "permanent", False, 0, None, True)
+
 init_locations.append(temp)
+init_locations.append(permanent)
 
 
 # ============================================

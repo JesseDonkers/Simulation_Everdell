@@ -121,13 +121,15 @@ def advance_season(game_state):
         player.workers_add(2)
         for card in player.city:
             if card.color == "green":
-                # On season change, execute action_on_reactivate (not action_on_play)
+                # On season change, execute action_on_reactivate
                 if card.action_on_reactivate:
                     card.action_on_reactivate.execute(game_state)
 
     location: "Location"
     for location in game_state["locations"]:
-        if location.get_player_workers(player) > 0:
+        # Do not return workers placed on permanent locations (e.g., klooster)
+        if (location.get_player_workers(player) > 0 and not 
+                                getattr(location, "permanent_workers", False)):
             location.remove_worker(player)
             player.workers_add(1)
     
