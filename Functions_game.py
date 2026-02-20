@@ -9,6 +9,25 @@ if TYPE_CHECKING:
 
 
 # ============================================
+# ADVANCE CURRENT PLAYER
+# ============================================
+
+def advance_current_player(game_state):
+    players = game_state["players"]
+    current_player = game_state["current_player"]
+    current_player_index = players.index(current_player)
+
+    nr_not_finished = len([p for p in players if p.finished == False])
+    if nr_not_finished != 1:
+        # Find the next player that has not finished
+        new_player_index = (current_player_index + 1) % len(players)
+        while players[new_player_index].finished:
+            new_player_index = (new_player_index + 1) % len(players)
+        
+        game_state["current_player"] = players[new_player_index]
+
+
+# ============================================
 # GET POSSIBILITIES (cards to play, locations to place worker, moves to make)
 # ============================================
 

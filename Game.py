@@ -15,7 +15,7 @@ import copy
 # VARIABLES & PARAMETERS
 # ============================================
 
-nr_simulation_runs = 100
+nr_simulation_runs = 1
 nrPlayers = 2 # Number of players in the game (2-4)
 strategy_per_player = [Strategy_random, Strategy_random]
 
@@ -78,49 +78,14 @@ for _ in range(nr_simulation_runs):
     # EXECUTING GAME
     # ============================================
 
-    player = game_state["current_player"]
-    player.resources_add("twig", 1)
-    player.resources_add("resin", 1)
-    player.resources_add("pebble", 1)
-    player.resources_add("berry", 7)
+  
 
-    if len(get_possible_cards(game_state)) > 0:
-        play_card(game_state)
-    
-    if len(get_possible_cards(game_state)) > 0:    
-        play_card(game_state)
 
-    if any(n.name == "Klooster 2" for n in game_state["locations"]):
-
-        print("\n")
-        print("Before")
-        for c in player.city:
-            print(c)
-        print("\n")
-
-        place_worker(game_state)
-        place_worker(game_state)
-
-        for l in game_state["locations"]:
-            print(l.name)
-            print(l.workers)
-        
-        
-        for c in player.city:
-            if c.name == "Monnik":
-                c.action_on_discard.execute(game_state)
-        
-        print("\n")
-        print("After")
-        for c in player.city:
-            print(c)
-        print("\n")
-
-        for l in game_state["locations"]:
-            print(l.name)
-            print(l.workers)
-            
-        print("\n")        
+        # To do: Case studies
+            # 
+            # check if behavior works with meadow and
+            # player's hand, city, and resources;
+            # are actions correctly executed at the right time? 
 
 
     # ============================================
