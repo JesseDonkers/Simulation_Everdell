@@ -16,6 +16,28 @@ class Strategy():
 
 
 # ============================================
+# HELPER FUNCTIONS
+# ============================================
+
+def critters_constructions_city(game_state, critter_and_construction):
+        from Class_Card import Critter, Construction
+        player = game_state["current_player"]        
+        critter = critter_and_construction[0]
+        construction = critter_and_construction[1]
+        
+        options = []
+        if critter and not construction:
+            options = [c for c in player.city if isinstance(c, Critter)]
+        elif construction and not critter:
+            options = [c for c in player.city if isinstance(c, Construction)]
+        else:
+            # If neither flag is set or both are set, allow any card in city
+            options = list(player.city)
+        
+        return options
+
+
+# ============================================
 # CLASS PER STRATEGY
 # ============================================
 
@@ -23,8 +45,12 @@ class Strategy_random(Strategy):
     def choose_move(self, game_state, possible_moves):
         return random.choice(possible_moves)
 
-    def choose_card(self, game_state, possible_cards):
+    def choose_card_new(self, game_state, possible_cards):
         return random.choice(possible_cards)
+    
+    def choose_card_discard(self, game_state, critter_and_construction):
+        opt = critters_constructions_city(game_state, critter_and_construction)
+        return random.choice(opt)
 
     def choose_location(self, game_state, possible_locations):
         return random.choice(possible_locations)

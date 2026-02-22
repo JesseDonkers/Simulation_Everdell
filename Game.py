@@ -7,6 +7,7 @@ from Class_Location import init_locations
 from Class_Strategy import *
 from Functions_game import *
 from Functions_statistics import *
+from Functions_testing import *
 
 import copy
 
@@ -15,7 +16,7 @@ import copy
 # VARIABLES & PARAMETERS
 # ============================================
 
-nr_simulation_runs = 1
+nr_simulation_runs = 10
 nrPlayers = 2 # Number of players in the game (2-4)
 strategy_per_player = [Strategy_random, Strategy_random]
 
@@ -23,6 +24,8 @@ strategy_per_player = [Strategy_random, Strategy_random]
 # ============================================
 # INITIATE SIMULATION RUNS AND RESULTS
 # ============================================
+
+clear_test_results()
 
 for _ in range(nr_simulation_runs):
 
@@ -78,14 +81,36 @@ for _ in range(nr_simulation_runs):
     # EXECUTING GAME
     # ============================================
 
-  
+    player = game_state["current_player"]
+    player.resources_add("twig", 100)
+    player.resources_add("resin", 100)
+    player.resources_add("pebble", 100)
+    player.resources_add("berry", 100)
+
+    play_card(game_state)
+    play_card(game_state)
+    play_card(game_state)
+    play_card(game_state)
+
+    if any(c.name == "Universiteit" for c in player.city):
+        
+        game_state_as_df_to_text(game_state, output_file="game_state.txt")  
+
+        place_worker(game_state)
+        place_worker(game_state)
+
+        game_state_as_df_to_text(game_state, output_file="game_state.txt")
+
+        print("Finished with Universiteit in city")
 
 
-        # To do: Case studies
-            # 
-            # check if behavior works with meadow and
-            # player's hand, city, and resources;
-            # are actions correctly executed at the right time? 
+    # To do: Case studies
+    #
+    # Check if a player every plays from the meadow
+    #
+    # Check if behavior works with meadow and
+    # player's hand, city, and resources;
+    # are actions correctly executed at the right time?
 
 
     # ============================================

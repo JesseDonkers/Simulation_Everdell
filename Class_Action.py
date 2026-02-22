@@ -87,6 +87,21 @@ class action_gain_resources_by_choice(Action):
             player.resources_add(choice, 1)
 
 
+class action_gain_resources_building_costs_discard(Action):
+    def __init__(self, critter=False, construction=False):
+        self.critter = critter
+        self.construction = construction
+    
+    def execute_action(self, player: "Player", game_state=None):
+        critter_construction = [self.critter, self.construction]
+        card = player.decide(game_state, "card_discard", critter_construction)
+        resources = card.requirements
+        for resource, amount in resources.items():
+            player.resources_add(resource, amount)
+
+        card.action_on_discard.execute(game_state)
+
+
 class action_points_for_given_resources(Action):
     """
     Action that handles two patterns:
@@ -164,7 +179,7 @@ class action_draw_cards_from_meadow(Action):
         listofcards = []
 
         for _ in range(min(self.nrCards, spaces_hand)):
-            card = player.decide(game_state, "card", meadow.cards)
+            card = player.decide(game_state, "card_new", meadow.cards)
             listofcards.append(card)
 
         meadow.draw_cards(listofcards, deck, discardpile)
@@ -230,10 +245,8 @@ class action_remove_destination(Action):
 
     def execute_action(self, player: "Player", game_state=None):
         locations = game_state["locations"]
-        # Find matching locations
         targets = [loc for loc in locations if loc.name == self.location_name]
 
-        # Move all workers from targets to a temporary or permanent location
         temp_loc = next(l for l in locations if l.type == "temporary")
         perm_loc = next(l for l in locations if l.type == "permanent")
 
@@ -263,21 +276,7 @@ class action_remove_card_from_city(Action):
         player.cards_remove([card], "city")
         discard_pile: "DiscardPile" = game_state["discardpile"]
         discard_pile.add_to_discardpile([card])
-    
 
-class action_discard_other_card(Action):
-    def __init__(self):
-
-        # To do: remove 1 card and use decide function for which card to remove
-
-        return self
-    
-    def execute_action(self, player: "Player", game_state=None):
-
-        # To do: execute action_on_discard of discarded card
-
-        return self
-    
 
 # ============================================
 # COMPOSITE ACTIONS

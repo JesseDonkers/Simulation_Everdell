@@ -52,8 +52,22 @@ cards_unique = []
 
 
 # ============================================
-# GREEN CRITTERS
+# CRITTERS (sorted alphabetically)
 # ============================================
+
+# To do: Rechter
+# To do: For blue critters action on play is not really relevant, how to model?
+
+historicus = Critter(
+    name="Historicus",
+    color="blue",
+    requirements=dict(twig=0, resin=0, pebble=0, berry=2),
+    cardsindeck=3,
+    unique=True,
+    points=1,
+    relatedconstruction="Klokkentoren",
+    action_on_play=action_draw_cards_from_deck(1),
+    action_on_discard=action_remove_card_from_city("Historicus"))
 
 kikkerkapitein = Critter(
     name="Kikkerkapitein",
@@ -90,29 +104,6 @@ monnik = Critter(
         action_remove_destination("Klooster 2"),
         action_remove_card_from_city("Monnik")]))
 
-
-cards_unique.append(kikkerkapitein)
-cards_unique.append(monnik)
-
-
-# ============================================
-# BLUE CRITTERS
-# ============================================
-
-# To do: Rechter
-# To do: For blue critters action on play is not really relevant, how to model?
-
-historicus = Critter(
-    name="Historicus",
-    color="blue",
-    requirements=dict(twig=0, resin=0, pebble=0, berry=2),
-    cardsindeck=3,
-    unique=True,
-    points=1,
-    relatedconstruction="Klokkentoren",
-    action_on_play=action_draw_cards_from_deck(1),
-    action_on_discard=action_remove_card_from_city("Historicus"))
-
 winkelier = Critter(
     name="Winkelier",
     color="blue",
@@ -126,12 +117,17 @@ winkelier = Critter(
 
 
 cards_unique.append(historicus)
+cards_unique.append(kikkerkapitein)
+cards_unique.append(monnik)
 cards_unique.append(winkelier)
 
 
 # ============================================
-# GREEN CONSTRUCTIONS
+# CONSTRUCTIONS (sorted alphabetically)
 # ============================================
+
+# To do: For blue constructions, action on play is not really relevant
+# how to model?
 
 boerderij = Construction(
     name="Boerderij",
@@ -145,43 +141,17 @@ boerderij = Construction(
     action_on_reactivate=action_gain_resource("berry", 1),
     action_on_discard=action_remove_card_from_city("Boerderij"))
 
-takkenboot = Construction(
-    name="Takkenboot",
-    color="green",
-    requirements=dict(twig=1, resin=0, pebble=1, berry=0),
-    cardsindeck=3,
-    unique=False,
-    points=1,
-    relatedcritters=["Kikkerkapitein"],
-    action_on_play=action_gain_resource("twig", 2),
-    action_on_reactivate=action_gain_resource("twig", 2),
-    action_on_discard=action_remove_card_from_city("Takkenboot"))
-
-winkel = Construction(
-    name="Winkel",
-    color="green",
-    requirements=dict(twig=0, resin=1, pebble=1, berry=0),
-    cardsindeck=3,
-    unique=False,
-    points=1,
-    relatedcritters=["Winkelier"],
-    action_on_play=CompositeAction([action_gain_resource("berry", 1), 
-    action_gain_resource_if_other_card("Boerderij", "berry", 1)]),
-    action_on_reactivate=CompositeAction([action_gain_resource("berry", 1), 
-    action_gain_resource_if_other_card("Boerderij", "berry", 1)]),
-    action_on_discard=action_remove_card_from_city("Winkel"))
-
-mijn = Construction(
-    name="Mijn",
-    color="green",
-    requirements=dict(twig=1, resin=1, pebble=1, berry=0),
-    cardsindeck=3,
-    unique=False,
+gerechtsgebouw = Construction(
+    name="Gerechtsgebouw",
+    color="blue",
+    requirements=dict(twig=1, resin=1, pebble=2, berry=0),
+    cardsindeck=2,
+    unique=True,
     points=2,
-    relatedcritters=["Mijnwerker mol"],
-    action_on_play=action_gain_resource("pebble", 1),
-    action_on_reactivate=action_gain_resource("pebble", 1),
-    action_on_discard=action_remove_card_from_city("Mijn"))
+    relatedcritters=["Rechter"],
+    action_on_play=action_gain_resources_by_choice(
+        ["twig", "resin", "pebble"], 1),
+    action_on_discard=action_remove_card_from_city("Gerechtsgebouw"))
 
 harsraffinaderij = Construction(
     name="Harsraffinaderij",
@@ -207,42 +177,6 @@ kermis = Construction(
     action_on_reactivate=action_draw_cards_from_deck(2),
     action_on_discard=action_remove_card_from_city("Kermis"))
 
-
-cards_unique.append(boerderij)
-cards_unique.append(takkenboot)
-cards_unique.append(winkel)
-cards_unique.append(mijn)
-cards_unique.append(harsraffinaderij)
-cards_unique.append(kermis)
-
-
-# ============================================
-# BLUE CONSTRUCTIONS
-# ============================================
-
-# To do: For blue constructions, action on play is not really relevant
-# how to model?
-
-gerechtsgebouw = Construction(
-    name="Gerechtsgebouw",
-    color="blue",
-    requirements=dict(twig=1, resin=1, pebble=2, berry=0),
-    cardsindeck=2,
-    unique=True,
-    points=2,
-    relatedcritters=["Rechter"],
-    action_on_play=action_gain_resources_by_choice(
-        ["twig", "resin", "pebble"], 1),
-    action_on_discard=action_remove_card_from_city("Gerechtsgebouw"))
-
-
-cards_unique.append(gerechtsgebouw)
-
-
-# ============================================
-# RED CONSTRUCTIONS
-# ============================================
-
 klooster = Construction(
     name="Klooster",
     color="red",
@@ -266,8 +200,73 @@ klooster = Construction(
             action_remove_destination("Klooster 2"),
             action_remove_card_from_city("Klooster")]))
 
+mijn = Construction(
+    name="Mijn",
+    color="green",
+    requirements=dict(twig=1, resin=1, pebble=1, berry=0),
+    cardsindeck=3,
+    unique=False,
+    points=2,
+    relatedcritters=["Mijnwerker mol"],
+    action_on_play=action_gain_resource("pebble", 1),
+    action_on_reactivate=action_gain_resource("pebble", 1),
+    action_on_discard=action_remove_card_from_city("Mijn"))
 
+takkenboot = Construction(
+    name="Takkenboot",
+    color="green",
+    requirements=dict(twig=1, resin=0, pebble=1, berry=0),
+    cardsindeck=3,
+    unique=False,
+    points=1,
+    relatedcritters=["Kikkerkapitein"],
+    action_on_play=action_gain_resource("twig", 2),
+    action_on_reactivate=action_gain_resource("twig", 2),
+    action_on_discard=action_remove_card_from_city("Takkenboot"))
+
+universiteit = Construction(
+    name="Universiteit",
+    color="red",
+    requirements=dict(twig=0, resin=1, pebble=2, berry=0),
+    cardsindeck=2,
+    unique=True,
+    points=3,
+    relatedcritters=["Dokter"],
+    action_on_play=action_add_destination_card_as_location(
+        "Universiteit", "destination_card", False, 1, CompositeAction([
+            action_gain_resources_building_costs_discard(True, True),
+            action_gain_resources_by_choice(
+                ["twig", "resin", "pebble", "berry"], 1),
+            action_gain_points("token", 1)])),
+
+    action_on_discard=CompositeAction([
+        action_remove_destination("Universiteit"),
+        action_remove_card_from_city("Universiteit")]))
+
+winkel = Construction(
+    name="Winkel",
+    color="green",
+    requirements=dict(twig=0, resin=1, pebble=1, berry=0),
+    cardsindeck=3,
+    unique=False,
+    points=1,
+    relatedcritters=["Winkelier"],
+    action_on_play=CompositeAction([action_gain_resource("berry", 1), 
+    action_gain_resource_if_other_card("Boerderij", "berry", 1)]),
+    action_on_reactivate=CompositeAction([action_gain_resource("berry", 1), 
+    action_gain_resource_if_other_card("Boerderij", "berry", 1)]),
+    action_on_discard=action_remove_card_from_city("Winkel"))
+
+
+cards_unique.append(boerderij)
+cards_unique.append(gerechtsgebouw)
+cards_unique.append(harsraffinaderij)
+cards_unique.append(kermis)
 cards_unique.append(klooster)
+cards_unique.append(mijn)
+cards_unique.append(takkenboot)
+cards_unique.append(universiteit)
+cards_unique.append(winkel)
 
 
 # ============================================

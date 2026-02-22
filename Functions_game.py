@@ -167,7 +167,7 @@ def play_card(game_state):
         raise ValueError("No possible cards to play")
     
     else:
-        preferred_card = player.decide(game_state, "card", possible_cards)
+        preferred_card = player.decide(game_state, "card_new", possible_cards)
 
         # To do: what if a card is in a player's hand ánd in the meadow?
 
