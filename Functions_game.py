@@ -32,21 +32,48 @@ def advance_current_player(game_state):
 # ============================================
 
 def get_possible_cards(game_state):
-    player = game_state["current_player"]
+    player: "Player" = game_state["current_player"]
     meadow = game_state["meadow"]
     possible_cards = []
     all_cards = player.hand + meadow.cards
 
-    for card in all_cards:
-        for r in card.requirements:
-            if player.resources.get(r) < card.requirements.get(r):
-                break
-        else:
-            possible_cards.append(card)
+    # Maximum city size
+    if player.cards_get_open_spaces("city") == 0:
+        return []
+    
+    else:
+        for card in all_cards:
+            # Player may only have one specific copy of any unique card
+            if card.unique:
+                if any(c.name == card.name for c in player.city):
+                    continue
 
-        # To do: check for related critters / constructions
-   
-    return possible_cards            
+
+            # Check if player has sufficient resources for card requirements
+            reqs = card.requirements
+            has_resources = True
+            for r, amt in reqs.items():
+                if player.resources.get(r) < amt:
+                    has_resources = False
+                    break
+
+            if has_resources:
+                possible_cards.append(card)
+                continue
+
+            # Allow free play of critters when related to a played construction
+            from Class_Card import Critter
+
+            if isinstance(card, Critter):
+                for constr in player.city:
+                    if card.name in constr.relatedcritters:
+                        if not constr.relatedoccupied:
+                            possible_cards.append(card)
+                            break
+
+        # Remove duplicates
+        possible_cards = list(dict.fromkeys(possible_cards))
+        return possible_cards    
 
 
 def get_possible_locations(game_state):
@@ -177,9 +204,10 @@ def play_card(game_state):
             meadow.draw_cards([preferred_card], deck, discardpile)
                 
         # To do: card can be played if a related card is played,
-        #           no costs have to be paid
+        #           no costs have to be paid, bút 
+        #           the relatedoccupied should be set to True
         # To do: card can be played by discarding a card in the city,
-        #              no or less costs have to paid
+        #           no or less costs have to paid
 
         # The player pays for the costs of the card
         card_costs = preferred_card.requirements

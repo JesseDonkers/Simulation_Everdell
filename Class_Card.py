@@ -22,7 +22,7 @@ class Card:
 
 class Critter(Card):
     def __init__(self, name, color, requirements, 
-                 cardsindeck, unique, points, relatedconstruction,
+                 cardsindeck, unique, points,
                  action_on_play=None,
                  action_on_reactivate=None,
                  action_on_discard=None):
@@ -31,7 +31,6 @@ class Critter(Card):
                          action_on_play=action_on_play,
                          action_on_reactivate=action_on_reactivate,
                          action_on_discard=action_on_discard)
-        self.relatedconstruction = relatedconstruction
 
 class Construction(Card):
     def __init__(self, name, color, requirements, 
@@ -65,7 +64,6 @@ historicus = Critter(
     cardsindeck=3,
     unique=True,
     points=1,
-    relatedconstruction="Klokkentoren",
     action_on_play=action_draw_cards_from_deck(1),
     action_on_discard=action_remove_card_from_city("Historicus"))
 
@@ -76,7 +74,6 @@ kikkerkapitein = Critter(
     cardsindeck=3,
     unique=False,
     points=1,
-    relatedconstruction="Takkenboot",
     action_on_play=action_gain_resource_per_other_card("Boerderij", "twig", 2),
     action_on_discard=action_remove_card_from_city("Kikkerkapitein"))
 
@@ -87,7 +84,6 @@ monnik = Critter(
     cardsindeck=2,
     unique=True,
     points=0,
-    relatedconstruction="Klooster",
 
     action_on_play=CompositeAction([
         action_points_for_given_resources(
@@ -111,7 +107,6 @@ winkelier = Critter(
     cardsindeck=3,
     unique=True,
     points=1,
-    relatedconstruction="Winkel",
     action_on_play=action_gain_resource("berry", 1),
     action_on_discard=action_remove_card_from_city("Winkelier"))
 

@@ -1,4 +1,5 @@
 from collections import deque
+from numpy import random
 
 
 class DiscardPile:
@@ -10,6 +11,10 @@ class DiscardPile:
     
     def add_to_discardpile(self, listofcards):
         self.cards.extend(listofcards)
+        return self.cards
+    
+    def shuffle_discardpile(self):
+        random.shuffle(self.cards)
         return self.cards
     
     # Function to obtain one ore more cards that were placed most recently

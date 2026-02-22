@@ -16,7 +16,7 @@ import copy
 # VARIABLES & PARAMETERS
 # ============================================
 
-nr_simulation_runs = 10
+nr_simulation_runs = 1
 nrPlayers = 2 # Number of players in the game (2-4)
 strategy_per_player = [Strategy_random, Strategy_random]
 
@@ -71,7 +71,7 @@ for _ in range(nr_simulation_runs):
 
     # Each player is provided with a strategy.
     if len(strategy_per_player) != len(players):
-        raise ValueError(f"Number of strategies ({len(strategy_per_player)})"
+        raise ValueError(f"Number of strategies ({len(strategy_per_player)})"   
                         f"does not match number of players ({len(players)})")
     for p in range(len(players)):
         players[p].strategy = strategy_per_player[p]()
@@ -82,31 +82,22 @@ for _ in range(nr_simulation_runs):
     # ============================================
 
     player = game_state["current_player"]
-    player.resources_add("twig", 100)
-    player.resources_add("resin", 100)
-    player.resources_add("pebble", 100)
-    player.resources_add("berry", 100)
+    player.resources_add("twig", 1)
+    player.resources_add("resin", 1)
+    player.resources_add("pebble", 1)
+    player.resources_add("berry", 0)
+
+    game_state_as_df_to_text(game_state, output_file="game_state.txt")
 
     play_card(game_state)
-    play_card(game_state)
-    play_card(game_state)
-    play_card(game_state)
-
-    if any(c.name == "Universiteit" for c in player.city):
+    
+    for g in get_possible_cards(game_state):
+        print(g)
         
-        game_state_as_df_to_text(game_state, output_file="game_state.txt")  
-
-        place_worker(game_state)
-        place_worker(game_state)
-
-        game_state_as_df_to_text(game_state, output_file="game_state.txt")
-
-        print("Finished with Universiteit in city")
+    game_state_as_df_to_text(game_state, output_file="game_state.txt")
 
 
     # To do: Case studies
-    #
-    # Check if a player every plays from the meadow
     #
     # Check if behavior works with meadow and
     # player's hand, city, and resources;

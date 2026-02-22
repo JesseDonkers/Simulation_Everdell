@@ -20,9 +20,9 @@ class Deck:
     def draw_cards(self, nrCards, discardpile):
         # If a player wants to draw more cards than the pile size
         if nrCards > len(self.cards): 
-            random.shuffle(discardpile) # the discardpile is shuffled
-            self.cards.extend(discardpile) # and added to the deck
-            discardpile.clearDiscardPile() # The discard pile is cleared
+            discardpile.shuffle_discardpile() # the discardpile is shuffled
+            self.cards.extend(discardpile.cards) # and added to the deck
+            discardpile.clear_discardpile() # The discard pile is cleared
 
         listofcards = []
         for _ in range(nrCards):
