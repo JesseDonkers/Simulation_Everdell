@@ -219,6 +219,21 @@ takkenboot = Construction(
     action_on_reactivate=action_gain_resource("twig", 2),
     action_on_discard=action_remove_card_from_city("Takkenboot"))
 
+uitkijkpost = Construction(
+    name="Uitkijkpost",
+    color="red",
+    requirements=dict(twig=1, resin=1, pebble=1, berry=0),
+    cardsindeck=2,
+    unique=True,
+    points=2,
+    relatedcritters=["Zwerver"],
+    action_on_play=action_add_destination_card_as_location(
+        "Uitkijkpost", "destination_card", False, 1, 
+        action_location_copy_action(["basic", "forest"])),
+    action_on_discard=CompositeAction([
+        action_remove_destination("Uitkijkpost"),
+        action_remove_card_from_city("Uitkijkpost")]))
+
 universiteit = Construction(
     name="Universiteit",
     color="red",
@@ -261,6 +276,7 @@ cards_unique.append(klooster)
 cards_unique.append(mijn)
 cards_unique.append(takkenboot)
 cards_unique.append(universiteit)
+cards_unique.append(uitkijkpost)
 cards_unique.append(winkel)
 
 

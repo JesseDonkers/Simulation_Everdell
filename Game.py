@@ -16,7 +16,7 @@ import copy
 # VARIABLES & PARAMETERS
 # ============================================
 
-nr_simulation_runs = 1
+nr_simulation_runs = 100
 nrPlayers = 2 # Number of players in the game (2-4)
 strategy_per_player = [Strategy_random, Strategy_random]
 
@@ -85,23 +85,21 @@ for _ in range(nr_simulation_runs):
     player.resources_add("twig", 1)
     player.resources_add("resin", 1)
     player.resources_add("pebble", 1)
-    player.resources_add("berry", 0)
+    player.resources_add("berry", 10)
 
     game_state_as_df_to_text(game_state, output_file="game_state.txt")
 
     play_card(game_state)
-    
-    for g in get_possible_cards(game_state):
-        print(g)
+    place_worker(game_state)
+
+    if any(c.name == "Uitkijkpost" for c in player.city):
+        if game_state["locations"][-1].get_player_workers(player) > 0:
+            print("Placed on Uitkijkpost")
+            
+            game_state_as_df_to_text(game_state, output_file="game_state.txt")
+            
+            break
         
-    game_state_as_df_to_text(game_state, output_file="game_state.txt")
-
-
-    # To do: Case studies
-    #
-    # Check if behavior works with meadow and
-    # player's hand, city, and resources;
-    # are actions correctly executed at the right time?
 
 
     # ============================================

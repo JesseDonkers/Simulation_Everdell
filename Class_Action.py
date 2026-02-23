@@ -278,6 +278,18 @@ class action_remove_card_from_city(Action):
         discard_pile.add_to_discardpile([card])
 
 
+class action_location_copy_action(Action):
+    def __init__(self, possible_locations):
+        self.possible_locations = possible_locations
+    
+    def execute_action(self, player: "Player", game_state=None):
+        locations = game_state["locations"]
+        locations_of_type = [l for l in locations 
+                             if l.type in self.possible_locations]
+        loc = player.decide(game_state, "location", locations_of_type)
+        loc.action.execute(game_state)
+
+
 # ============================================
 # COMPOSITE ACTIONS
 # ============================================

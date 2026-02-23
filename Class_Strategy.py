@@ -47,6 +47,10 @@ class Strategy_random(Strategy):
 
     def choose_card_new(self, game_state, possible_cards):
         return random.choice(possible_cards)
+
+    def choose_card_hand_or_meadow(self, game_state, _):
+        opt = ["hand", "meadow"]
+        return random.choice(opt)
     
     def choose_card_discard(self, game_state, critter_and_construction):
         opt = critters_constructions_city(game_state, critter_and_construction)

@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 # ============================================
-# ADVANCE CURRENT PLAYER
+# ADVANCE CURRENT PLAYER AND FINISH CURRENT PLAYER
 # ============================================
 
 def advance_current_player(game_state):
@@ -25,6 +25,15 @@ def advance_current_player(game_state):
             new_player_index = (new_player_index + 1) % len(players)
         
         game_state["current_player"] = players[new_player_index]
+
+
+def finish_current_player(game_state):
+
+    # To do: set player.finished to True
+    # To do: count each point type
+    # To do: if it is the last player that finished, compare sum of points
+
+    return
 
 
 # ============================================
@@ -106,8 +115,7 @@ def get_possible_locations(game_state):
     # To do: forest locations
     # To do: event
     # To do: haven
-    # To do: journey 
-    # To do: destination cards
+    # To do: journey
 
     return possible_locations
 
@@ -194,14 +202,21 @@ def play_card(game_state):
         raise ValueError("No possible cards to play")
     
     else:
-        preferred_card = player.decide(game_state, "card_new", possible_cards)
+        card = player.decide(game_state, "card_new", possible_cards)
+        in_hand = card in player.hand
+        in_meadow = card in meadow.cards
 
-        # To do: what if a card is in a player's hand ánd in the meadow?
+        loc = (
+            player.decide(game_state, "card_hand_or_meadow", None)
+            if in_hand and in_meadow
+            else "hand" if in_hand
+            else "meadow"
+        )
 
-        if preferred_card in player.hand:
-            player.cards_remove([preferred_card], "hand")
+        if loc == "hand":
+            player.cards_remove([card], "hand")
         else:
-            meadow.draw_cards([preferred_card], deck, discardpile)
+            meadow.draw_cards([card], deck, discardpile)
                 
         # To do: card can be played if a related card is played,
         #           no costs have to be paid, bút 
@@ -210,16 +225,14 @@ def play_card(game_state):
         #           no or less costs have to paid
 
         # The player pays for the costs of the card
-        card_costs = preferred_card.requirements
+        card_costs = card.requirements
         for resource, amount in card_costs.items():
             player.resources_remove(resource, amount)
         
         # The card is added to the player's city and action_on_play is executed
-        player.cards_add([preferred_card], "city")
-        if preferred_card.action_on_play:
-            preferred_card.action_on_play.execute(game_state)
-
-
+        player.cards_add([card], "city")
+        if card.action_on_play:
+            card.action_on_play.execute(game_state)
 
 
     # To do:
