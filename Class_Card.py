@@ -6,7 +6,8 @@ class Card:
                  cardsindeck, unique, points,
                  action_on_play=None,
                  action_on_reactivate=None,
-                 action_on_discard=None):
+                 action_on_discard=None,
+                 action_on_finish=None):
         self.name = name
         self.color = color
         self.requirements = requirements
@@ -16,6 +17,7 @@ class Card:
         self.action_on_play = action_on_play
         self.action_on_reactivate = action_on_reactivate
         self.action_on_discard = action_on_discard
+        self.action_on_finish = action_on_finish
         
     def __str__(self):
         return str(self.name)
@@ -25,24 +27,28 @@ class Critter(Card):
                  cardsindeck, unique, points,
                  action_on_play=None,
                  action_on_reactivate=None,
-                 action_on_discard=None):
+                 action_on_discard=None,
+                 action_on_finish=None):
         super().__init__(name, color, requirements, 
                          cardsindeck, unique, points,
                          action_on_play=action_on_play,
                          action_on_reactivate=action_on_reactivate,
-                         action_on_discard=action_on_discard)
+                         action_on_discard=action_on_discard,
+                         action_on_finish=action_on_finish)
 
 class Construction(Card):
     def __init__(self, name, color, requirements, 
                  cardsindeck, unique, points, relatedcritters,
                  action_on_play=None,
                  action_on_reactivate=None,
-                 action_on_discard=None):
+                 action_on_discard=None,
+                 action_on_finish=None):
         super().__init__(name, color, requirements, 
                          cardsindeck, unique, points,
                          action_on_play=action_on_play,
                          action_on_reactivate=action_on_reactivate,
-                         action_on_discard=action_on_discard)
+                         action_on_discard=action_on_discard,
+                         action_on_finish=action_on_finish)
         self.relatedcritters = relatedcritters
         self.relatedoccupied = False
 
@@ -54,8 +60,16 @@ cards_unique = []
 # CRITTERS (sorted alphabetically)
 # ============================================
 
-# To do: Rechter
 # To do: For blue critters action on play is not really relevant, how to model?
+
+architect = Critter(
+    name="Architect",
+    color="purple",
+    requirements=dict(twig=0, resin=0, pebble=0, berry=4),
+    cardsindeck=2,
+    unique=True,
+    points=2,
+    action_on_finish=actions_points_for_resource_hand(["resin", "pebble"], 1))
 
 historicus = Critter(
     name="Historicus",
@@ -111,6 +125,7 @@ winkelier = Critter(
     action_on_discard=action_remove_card_from_city("Winkelier"))
 
 
+cards_unique.append(architect)
 cards_unique.append(historicus)
 cards_unique.append(kikkerkapitein)
 cards_unique.append(monnik)

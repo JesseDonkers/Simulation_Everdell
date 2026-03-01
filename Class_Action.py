@@ -154,6 +154,18 @@ class action_points_for_given_resources(Action):
                 other_player.resources_add(self.resource_type, 1)
 
 
+class actions_points_for_resource_hand(Action):
+    def __init__(self, resources, point_per_resource):
+        self.resources = resources
+        self.point_per_resource = point_per_resource
+
+    def execute_action(self, player: "Player", game_state=None):
+        for r in self.resources:
+            qty = player.resources.get(r, 0)
+            for _ in range(qty):
+                player.points_add("prosperity", self.point_per_resource)
+
+
 class action_draw_cards_from_deck(Action):
     def __init__(self, nrCards):
         self.nrCards = nrCards

@@ -28,12 +28,35 @@ def advance_current_player(game_state):
 
 
 def finish_current_player(game_state):
+    """
+    Sets player.finished to True and evaluates all points. \n
+    Returns list of points of all players if all players finished the game.
+    """
+    player: "Player" = game_state["current_player"]
+    players = game_state["players"]
+    player.finished = True
 
-    # To do: set player.finished to True
-    # To do: count each point type
-    # To do: if it is the last player that finished, compare sum of points
+    # Card points
+    for card in player.city:
+        player.points_add("card", card.points)
 
-    return
+        # Prosperity points
+        if card.color == "purple":
+            card.action_on_finish.execute(game_state)
+
+
+     
+    # Journey points
+    # To do
+
+    # Event points
+    # To do
+
+
+    # If all players have finished the game, compare sum of points
+    if all(p.finished for p in players):
+        points = [p.points_total() for p in players]
+        return points
 
 
 # ============================================
