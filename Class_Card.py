@@ -249,6 +249,17 @@ takkenboot = Construction(
     action_on_reactivate=action_gain_resource("twig", 2),
     action_on_discard=action_remove_card_from_city("Takkenboot"))
 
+theater = Construction(
+    name="Theater",
+    color="purple",
+    requirements=dict(twig=3, resin=1, pebble=1, berry=0),
+    cardsindeck=2,
+    unique=True,
+    points=3,
+    relatedcritters=["Zanger"],
+    action_on_finish=actions_points_for_cards("Critter", True, 1),
+    action_on_discard=action_remove_card_from_city("Theater"))
+
 uitkijkpost = Construction(
     name="Uitkijkpost",
     color="red",
@@ -305,6 +316,7 @@ cards_unique.append(kermis)
 cards_unique.append(klooster)
 cards_unique.append(mijn)
 cards_unique.append(takkenboot)
+cards_unique.append(theater)
 cards_unique.append(universiteit)
 cards_unique.append(uitkijkpost)
 cards_unique.append(winkel)

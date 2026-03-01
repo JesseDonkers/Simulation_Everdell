@@ -54,9 +54,13 @@ def get_possible_cards(game_state, max_points, pay):
                 # Free play of critters when related to a played construction
                 if max_points == 99:
                     from Class_Card import Critter
+                    from Class_Card import Construction
+                    
+                    constructions = [
+                        c for c in player.city if isinstance(c, Construction)]
 
                     if isinstance(card, Critter):
-                        for constr in player.city:
+                        for constr in constructions:
                             if card.name in constr.relatedcritters:
                                 if not constr.relatedoccupied:
                                     possible_cards.append(card)
@@ -382,8 +386,21 @@ class actions_points_for_resource_hand(Action):
         for r in self.resources:
             qty = player.resources.get(r, 0)
             for _ in range(qty):
-                player.points_add("purple", self.point_per_resource)
+                player.points_add("prosperity", self.point_per_resource)
     
+
+class actions_points_for_cards(Action):
+    def __init__(self, critter_or_construction, unique, points_per_card):
+        self.critter_or_construction = critter_or_construction
+        self.unique = unique
+        self.points_per_card = points_per_card
+
+    def execute_action(self, player: "Player", game_state=None):
+        for card in player.city:
+            if (card.unique is self.unique and 
+                type(card).__name__ == self.critter_or_construction):
+                    player.points_add("prosperity", self.points_per_card)
+
 
 class action_draw_cards_from_deck(Action):
     def __init__(self, nrCards):
@@ -552,7 +569,7 @@ class action_play_card(Action):
                 player.cards_remove([card], "hand")
             else:
                 meadow.draw_cards([card], deck, discardpile)
-                    
+
             # To do: card can be played if a related card is played,
             #           no costs have to be paid, bút 
             #           the relatedoccupied should be set to True
