@@ -2,10 +2,10 @@ from Class_Deck import Deck
 from Class_DiscardPile import DiscardPile
 from Class_Meadow import Meadow
 from Class_Player import Player
+from Class_Action import *
 from Class_Card import init_cards
 from Class_Location import init_locations
 from Class_Strategy import *
-from Functions_game import *
 from Functions_statistics import *
 from Functions_testing import *
 
@@ -81,25 +81,9 @@ for _ in range(nr_simulation_runs):
     # EXECUTING GAME
     # ============================================
 
-    player = game_state["current_player"]
-    player.resources_add("twig", 1)
-    player.resources_add("resin", 1)
-    player.resources_add("pebble", 1)
-    player.resources_add("berry", 10)
+    player: "Player" = game_state["current_player"]
 
-    game_state_as_df_to_text(game_state, output_file="game_state.txt")
-
-    play_card(game_state)
-    place_worker(game_state)
-
-    if any(c.name == "Uitkijkpost" for c in player.city):
-        if game_state["locations"][-1].get_player_workers(player) > 0:
-            print("Placed on Uitkijkpost")
-            
-            game_state_as_df_to_text(game_state, output_file="game_state.txt")
-            
-            break
-        
+    player.resources_add("berry", 5)
 
 
     # ============================================

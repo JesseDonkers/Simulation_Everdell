@@ -69,7 +69,8 @@ architect = Critter(
     cardsindeck=2,
     unique=True,
     points=2,
-    action_on_finish=actions_points_for_resource_hand(["resin", "pebble"], 1))
+    action_on_finish=actions_points_for_resource_hand(["resin", "pebble"], 1),
+    action_on_discard=action_remove_card_from_city("Architect"))
 
 historicus = Critter(
     name="Historicus",
@@ -90,6 +91,19 @@ kikkerkapitein = Critter(
     points=1,
     action_on_play=action_gain_resource_per_other_card("Boerderij", "twig", 2),
     action_on_discard=action_remove_card_from_city("Kikkerkapitein"))
+
+koningin = Critter(
+    name="Koningin",
+    color="red",
+    requirements=dict(twig=0, resin=0, pebble=0, berry=5),
+    cardsindeck=2,
+    unique=True,
+    points=4,
+    action_on_play=action_add_destination_card_as_location(
+        "Koningin", "destination_card", False, 1, action_play_card(3, False)),
+    action_on_discard=CompositeAction(
+        [action_remove_destination("Koningin"),
+         action_remove_card_from_city("Koningin")]))
 
 monnik = Critter(
     name="Monnik",
@@ -128,6 +142,7 @@ winkelier = Critter(
 cards_unique.append(architect)
 cards_unique.append(historicus)
 cards_unique.append(kikkerkapitein)
+cards_unique.append(koningin)
 cards_unique.append(monnik)
 cards_unique.append(winkelier)
 
