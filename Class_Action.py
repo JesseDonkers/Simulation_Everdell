@@ -11,7 +11,10 @@ if TYPE_CHECKING:
 
 
 # ============================================
-# GET POSSIBILITIES (cards to play, locations to place worker, moves to make)
+# HELPER FUNCTIONS: GET POSSIBILITIES
+#   - Cards to play
+#   - Locations to place worker
+#   - Moves to make)
 # ============================================
 
 def get_possible_cards(game_state, max_points, pay):
@@ -122,6 +125,7 @@ def get_possible_moves(game_state):
 
 
 # ============================================
+# HELPER FUNCTIONS
 # ADVANCE CURRENT PLAYER AND FINISH CURRENT PLAYER
 # ============================================
 
@@ -172,11 +176,8 @@ def finish_current_player(game_state):
         return points
 
 
-# To do: make the following into actions
+# To do: make the following 2 functions into actions
 
-# ============================================
-# THREE MAIN MOVES (place worker, advance season, play card)
-# ============================================
 
 def place_worker(game_state):
     player: "Player" = game_state["current_player"]
@@ -254,75 +255,29 @@ class Action(ABC):
 
 
 # ============================================
-# SIMPLE ACTIONS
+# COMPOSITE ACTIONS
 # ============================================
 
+class CompositeAction(Action):
+    def __init__(self, listofactions):
+        self.actions = listofactions
+    
+    def execute_action(self, player: "Player", game_state=None):
+        for action in self.actions:
+            action.execute_action(player, game_state)
 
-class action_gain_points(Action):
+
+# ============================================
+# ACTIONS REGARDING POINTS
+# ============================================
+
+class action_points_general(Action):
     def __init__(self, category, points):
         self.category = category
         self.points = points
     
     def execute_action(self, player: "Player", game_state=None):
         player.points[self.category] += self.points
-
-
-class action_gain_resource(Action):
-    def __init__(self, resource_type, amount):
-        self.resource_type = resource_type
-        self.amount = amount
-    
-    def execute_action(self, player: "Player", game_state=None):
-        player.resources[self.resource_type] += self.amount
-
-
-class action_gain_resource_per_other_card(Action):
-    def __init__(self, cardname, resource_type, amount):
-        self.cardname = cardname
-        self.resource_type = resource_type
-        self.amount = amount
-    
-    def execute_action(self, player: "Player", game_state=None):
-        for c in player.hand:
-            if c.name == self.cardname:
-                player.resources[self.resource_type] += self.amount            
-
-
-class action_gain_resource_if_other_card(Action):
-    def __init__(self, cardname, resource_type, amount):
-        self.cardname = cardname
-        self.resource_type = resource_type
-        self.amount = amount
-    
-    def execute_action(self, player: "Player", game_state=None):
-        if any(card.name == self.cardname for card in player.hand):
-            player.resources[self.resource_type] += self.amount
-
-
-class action_gain_resources_by_choice(Action):
-    def __init__(self, resources, nr_resources):
-        self.resources = resources
-        self.nr_resources = nr_resources
-    
-    def execute_action(self, player: "Player", game_state=None):
-        for _ in range(self.nr_resources):
-            choice = player.decide(game_state, "resource_new", self.resources)
-            player.resources_add(choice, 1)
-
-
-class action_gain_resources_building_costs_discard(Action):
-    def __init__(self, critter=False, construction=False):
-        self.critter = critter
-        self.construction = construction
-    
-    def execute_action(self, player: "Player", game_state=None):
-        critter_construction = [self.critter, self.construction]
-        card = player.decide(game_state, "card_discard", critter_construction)
-        resources = card.requirements
-        for resource, amount in resources.items():
-            player.resources_add(resource, amount)
-
-        card.action_on_discard.execute(game_state)
 
 
 class action_points_for_given_resources(Action):
@@ -377,7 +332,24 @@ class action_points_for_given_resources(Action):
                 other_player.resources_add(self.resource_type, 1)
 
 
-class actions_points_for_resource_hand(Action):
+class action_points_for_payed_resources(Action):
+    def __init__(self, max_nr_resources=None, resource_type=None, 
+                 points_per_resource=None):
+        self.max_nr_resources = max_nr_resources
+        self.resource_type = resource_type
+        self.points_per_resource = points_per_resource
+
+    def execute_action(self, player: "Player", game_state=None):
+        nr_and_type = [self.max_nr_resources, self.resource_type]
+        nr_give_away = player.decide(
+                    game_state, "nr_resources_to_pay", nr_and_type)
+
+        for _ in range(nr_give_away):
+            player.resources_remove(self.resource_type, 1)
+            player.points["token"] += self.points_per_resource
+
+
+class actions_points_for_resources_hand(Action):
     def __init__(self, resources, point_per_resource):
         self.resources = resources
         self.point_per_resource = point_per_resource
@@ -401,6 +373,72 @@ class actions_points_for_cards(Action):
                 type(card).__name__ == self.critter_or_construction):
                     player.points_add("prosperity", self.points_per_card)
 
+
+# ============================================
+# ACTIONS REGARDING REOURCES
+# ============================================
+
+class action_resource_general(Action):
+    def __init__(self, resource_type, amount):
+        self.resource_type = resource_type
+        self.amount = amount
+    
+    def execute_action(self, player: "Player", game_state=None):
+        player.resources[self.resource_type] += self.amount
+
+
+class action_resource_per_other_card(Action):
+    def __init__(self, cardname, resource_type, amount):
+        self.cardname = cardname
+        self.resource_type = resource_type
+        self.amount = amount
+    
+    def execute_action(self, player: "Player", game_state=None):
+        for c in player.hand:
+            if c.name == self.cardname:
+                player.resources[self.resource_type] += self.amount            
+
+
+class action_resource_if_other_card(Action):
+    def __init__(self, cardname, resource_type, amount):
+        self.cardname = cardname
+        self.resource_type = resource_type
+        self.amount = amount
+    
+    def execute_action(self, player: "Player", game_state=None):
+        if any(card.name == self.cardname for card in player.hand):
+            player.resources[self.resource_type] += self.amount
+
+
+class action_resources_by_choice(Action):
+    def __init__(self, resources, nr_resources):
+        self.resources = resources
+        self.nr_resources = nr_resources
+    
+    def execute_action(self, player: "Player", game_state=None):
+        for _ in range(self.nr_resources):
+            choice = player.decide(game_state, "resource_new", self.resources)
+            player.resources_add(choice, 1)
+
+
+class action_resources_building_costs_discard(Action):
+    def __init__(self, critter=False, construction=False):
+        self.critter = critter
+        self.construction = construction
+    
+    def execute_action(self, player: "Player", game_state=None):
+        critter_construction = [self.critter, self.construction]
+        card = player.decide(game_state, "card_discard", critter_construction)
+        resources = card.requirements
+        for resource, amount in resources.items():
+            player.resources_add(resource, amount)
+
+        card.action_on_discard.execute(game_state)
+
+
+# ============================================
+# ACTIONS REGARDING CARDS
+# ============================================
 
 class action_draw_cards_from_deck(Action):
     def __init__(self, nrCards):
@@ -433,6 +471,71 @@ class action_draw_cards_from_meadow(Action):
         meadow.draw_cards(listofcards, deck, discardpile)
         player.cards_add(listofcards, "hand")
 
+
+class action_remove_card_from_city(Action):
+    def __init__(self, card_name):
+        self.card_name = card_name
+    
+    def execute_action(self, player: "Player", game_state=None):
+        card = next(c for c in player.city if c.name == self.card_name)
+        player.cards_remove([card], "city")
+        discard_pile: "DiscardPile" = game_state["discardpile"]
+        discard_pile.add_to_discardpile([card])
+
+
+class action_play_card(Action):
+    def __init__(self, max_points=99, pay=True):
+        self.max_points = max_points
+        self.pay = pay
+    
+    def execute_action(self, player: "Player", game_state=None):
+        meadow: "Meadow" = game_state["meadow"]
+        deck = game_state["deck"]
+        discardpile = game_state["discardpile"]
+        possible_cards = get_possible_cards(
+                                        game_state, self.max_points, self.pay)
+        
+        if len(possible_cards) == 0:
+            raise ValueError("No possible cards to play")
+        
+        else:
+            card = player.decide(game_state, "card_new", possible_cards)
+            in_hand = card in player.hand
+            in_meadow = card in meadow.cards
+
+            loc = (
+                player.decide(game_state, "card_hand_or_meadow", None)
+                if in_hand and in_meadow
+                else "hand" if in_hand
+                else "meadow"
+            )
+
+            if loc == "hand":
+                player.cards_remove([card], "hand")
+            else:
+                meadow.draw_cards([card], deck, discardpile)
+
+            # To do: card can be played if a related card is played,
+            #           no costs have to be paid, bút 
+            #           the relatedoccupied should be set to True
+            # To do: card can be played by discarding a card in the city,
+            #           no or less costs have to paid
+
+            # The player pays for the costs of the card if self.pay == True
+            if self.pay:
+                card_costs = card.requirements
+                for resource, amount in card_costs.items():
+                    player.resources_remove(resource, amount)
+            
+            # Card is added to the player's city and action_on_play is executed
+            player.cards_add([card], "city")
+            if card.action_on_play:
+                card.action_on_play.execute(game_state)        
+
+
+# ============================================
+# ACTIONS REGARDING LOCATIONS
+# ============================================
 
 class action_add_destination_card_as_location(Action):
     def __init__(self, name, type, open, 
@@ -515,17 +618,6 @@ class action_remove_destination(Action):
         locations[:] = [l for l in locations if l.name != self.location_name]
 
 
-class action_remove_card_from_city(Action):
-    def __init__(self, card_name):
-        self.card_name = card_name
-    
-    def execute_action(self, player: "Player", game_state=None):
-        card = next(c for c in player.city if c.name == self.card_name)
-        player.cards_remove([card], "city")
-        discard_pile: "DiscardPile" = game_state["discardpile"]
-        discard_pile.add_to_discardpile([card])
-
-
 class action_location_copy_action(Action):
     def __init__(self, possible_locations):
         self.possible_locations = possible_locations
@@ -536,67 +628,4 @@ class action_location_copy_action(Action):
                              if l.type in self.possible_locations]
         loc = player.decide(game_state, "location", locations_of_type)
         loc.action.execute(game_state)
-
-
-class action_play_card(Action):
-    def __init__(self, max_points=99, pay=True):
-        self.max_points = max_points
-        self.pay = pay
-    
-    def execute_action(self, player: "Player", game_state=None):
-        meadow: "Meadow" = game_state["meadow"]
-        deck = game_state["deck"]
-        discardpile = game_state["discardpile"]
-        possible_cards = get_possible_cards(
-                                        game_state, self.max_points, self.pay)
-        
-        if len(possible_cards) == 0:
-            raise ValueError("No possible cards to play")
-        
-        else:
-            card = player.decide(game_state, "card_new", possible_cards)
-            in_hand = card in player.hand
-            in_meadow = card in meadow.cards
-
-            loc = (
-                player.decide(game_state, "card_hand_or_meadow", None)
-                if in_hand and in_meadow
-                else "hand" if in_hand
-                else "meadow"
-            )
-
-            if loc == "hand":
-                player.cards_remove([card], "hand")
-            else:
-                meadow.draw_cards([card], deck, discardpile)
-
-            # To do: card can be played if a related card is played,
-            #           no costs have to be paid, bút 
-            #           the relatedoccupied should be set to True
-            # To do: card can be played by discarding a card in the city,
-            #           no or less costs have to paid
-
-            # The player pays for the costs of the card if self.pay == True
-            if self.pay:
-                card_costs = card.requirements
-                for resource, amount in card_costs.items():
-                    player.resources_remove(resource, amount)
-            
-            # Card is added to the player's city and action_on_play is executed
-            player.cards_add([card], "city")
-            if card.action_on_play:
-                card.action_on_play.execute(game_state)        
-
-
-# ============================================
-# COMPOSITE ACTIONS
-# ============================================
-
-class CompositeAction(Action):
-    def __init__(self, listofactions):
-        self.actions = listofactions
-    
-    def execute_action(self, player: "Player", game_state=None):
-        for action in self.actions:
-            action.execute_action(player, game_state)
             
