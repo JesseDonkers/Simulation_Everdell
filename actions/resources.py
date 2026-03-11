@@ -13,8 +13,8 @@ __all__ = [
 ]
 
 if TYPE_CHECKING:
-    from Class_Player import Player
-    from Class_DiscardPile import DiscardPile
+    from class_player import Player
+    from class_discard_pile import DiscardPile
 
 
 class action_resource_general(Action):
@@ -85,3 +85,4 @@ class action_remove_card_from_city(Action):
         player.cards_remove([card], "city")
         discard_pile: "DiscardPile" = game_state["discardpile"]
         discard_pile.add_to_discardpile([card])
+

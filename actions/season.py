@@ -6,9 +6,9 @@ from actions.cards import action_cards_from_meadow_to_hand
 __all__ = ["action_advance_season"]
 
 if TYPE_CHECKING:
-    from Class_Card import Card
-    from Class_Location import Location
-    from Class_Player import Player
+    from class_card import Card
+    from class_location import Location
+    from class_player import Player
 
 
 class action_advance_season(Action):

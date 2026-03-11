@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from Class_Location import Location
+    from class_location import Location
 
 
 def get_possible_cards(game_state, max_points, pay):
@@ -40,7 +40,7 @@ def get_possible_cards(game_state, max_points, pay):
 
         # Free play of critters when related to a played construction
         if max_points == 99:
-            from Class_Card import Construction, Critter
+            from class_card import Construction, Critter
 
             constructions = [
                 c for c in player.city if isinstance(c, Construction)
@@ -103,7 +103,7 @@ def get_possible_moves(game_state):
 
 
 def get_critters_constructions_city(game_state, critter_and_construction):
-    from Class_Card import Construction, Critter
+    from class_card import Construction, Critter
 
     player = game_state["current_player"]
     critter = critter_and_construction[0]

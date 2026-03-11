@@ -11,7 +11,7 @@ __all__ = [
 ]
 
 if TYPE_CHECKING:
-    from Class_Player import Player
+    from class_player import Player
 
 
 class action_points_general(Action):

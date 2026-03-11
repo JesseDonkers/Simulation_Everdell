@@ -6,13 +6,13 @@ from tabulate import tabulate
 
 def clear_test_results():
     """
-    Clears all files and folders from the Test_results directory.
+    Clears all files and folders from the test_results directory.
     Creates the folder if it doesn't exist.
     """
-    test_results_folder = os.path.join(os.getcwd(), "Test_results")
+    test_results_folder = os.path.join(os.getcwd(), "test_results")
     os.makedirs(test_results_folder, exist_ok=True)
     
-    # Clear all files from Test_results folder
+    # Clear all files from test_results folder
     for filename in os.listdir(test_results_folder):
         file_path = os.path.join(test_results_folder, filename)
         try:
@@ -33,7 +33,7 @@ def game_state_as_df_to_text(game_state, output_file=None):
         game_state: Dictionary containing deck, discardpile, meadow, 
         locations, players
         output_file: Optional filename to save the output as a text file 
-        (saves to Test_results folder)
+        (saves to test_results folder)
                     Auto-increment counter is added to prevent overwriting
         
     Returns:
@@ -200,8 +200,8 @@ def game_state_as_df_to_text(game_state, output_file=None):
     
     saved_file_path = None
     if output_file:
-        # Create Test_results folder if it doesn't exist
-        test_results_folder = os.path.join(os.getcwd(), "Test_results")
+        # Create test_results folder if it doesn't exist
+        test_results_folder = os.path.join(os.getcwd(), "test_results")
         os.makedirs(test_results_folder, exist_ok=True)
         
         # Add auto-increment counter to filename
@@ -220,7 +220,7 @@ def game_state_as_df_to_text(game_state, output_file=None):
             saved_file_path = (
                 os.path.join(test_results_folder, count_filename))
         
-        # Save to file in Test_results folder
+        # Save to file in test_results folder
         with open(saved_file_path, 'w') as f:
             f.write(full_text)
     

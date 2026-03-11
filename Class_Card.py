@@ -1,6 +1,6 @@
 import copy
 
-from Class_Action import *
+from class_action import *
 
 
 class Card:

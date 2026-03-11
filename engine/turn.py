@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from Class_Player import Player
+    from class_player import Player
 
 
 def advance_current_player(game_state):

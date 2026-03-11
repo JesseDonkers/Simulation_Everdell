@@ -1,7 +1,7 @@
 """Compatibility facade for action and helper imports.
 
 This module re-exports action classes and engine helper functions so existing
-imports like `from Class_Action import *` keep working.
+imports like `from class_action import *` keep working.
 
 For easier navigation, action implementations are now split by domain:
 - actions/season.py

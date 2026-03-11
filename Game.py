@@ -1,13 +1,13 @@
-from Class_Deck import Deck
-from Class_DiscardPile import DiscardPile
-from Class_Meadow import Meadow
-from Class_Player import Player
-from Class_Action import *
-from Class_Card import init_cards
-from Class_Location import init_locations
-from Class_Strategy import *
-from Functions_statistics import *
-from Functions_testing import *
+from class_deck import Deck
+from class_discard_pile import DiscardPile
+from class_meadow import Meadow
+from class_player import Player
+from class_action import *
+from class_card import init_cards
+from class_location import init_locations
+from class_strategy import *
+from functions_statistics import *
+from functions_testing import *
 
 import copy
 
@@ -16,9 +16,9 @@ import copy
 # VARIABLES & PARAMETERS
 # ============================================
 
-nr_simulation_runs = 100
-nrPlayers = 2 # Number of players in the game (2-4)
-strategy_per_player = [Strategy_random, Strategy_random]
+NR_SIMULATION_RUNS = 100
+NR_PLAYERS = 2 # Number of players in the game (2-4)
+STRATEGY_PER_PLAYER = [Strategy_random, Strategy_random]
 
 
 # ============================================
@@ -27,7 +27,7 @@ strategy_per_player = [Strategy_random, Strategy_random]
 
 clear_test_results()
 
-for _ in range(nr_simulation_runs):
+for _ in range(NR_SIMULATION_RUNS):
 
 
     # ============================================
@@ -42,7 +42,7 @@ for _ in range(nr_simulation_runs):
     meadow = Meadow()
     meadow.add_to_meadow(8, deck, discardpile)
 
-    players = [Player() for _ in range(nrPlayers)]
+    players = [Player() for _ in range(NR_PLAYERS)]
     card_counter = 5
     for p in players:
         p.index = players.index(p)
@@ -70,11 +70,11 @@ for _ in range(nr_simulation_runs):
 
 
     # Each player is provided with a strategy.
-    if len(strategy_per_player) != len(players):
-        raise ValueError(f"Number of strategies ({len(strategy_per_player)})"   
+    if len(STRATEGY_PER_PLAYER) != len(players):
+        raise ValueError(f"Number of strategies ({len(STRATEGY_PER_PLAYER)})"   
                         f"does not match number of players ({len(players)})")
     for p in range(len(players)):
-        players[p].strategy = strategy_per_player[p]()
+        players[p].strategy = STRATEGY_PER_PLAYER[p]()
 
 
     # ============================================
@@ -83,7 +83,25 @@ for _ in range(nr_simulation_runs):
 
     player: "Player" = game_state["current_player"]
 
-    player.resources_add("berry", 5)
+    player.resources_add("pebble", 2)
+    player.resources_add("berry", 2)
+
+    game_state_as_df_to_text(game_state, "Game_state")
+
+    if len(get_possible_cards(game_state, 99, True)) > 0:
+        action_play_card().execute(game_state)
+    
+    if len(get_possible_cards(game_state, 99, True)) > 0:
+        action_play_card().execute(game_state)
+
+        if any(c.name == "Begrafenisondernemer" for c in player.city) and (
+            any(c.name == "Begraafplaats" for c in player.city)):
+
+            game_state_as_df_to_text(game_state, "Game_state")                
+            break
+
+    # To do: test begraafplaats, begrafenisondernemer, houtsnijder
+
 
 
     # ============================================
@@ -92,3 +110,4 @@ for _ in range(nr_simulation_runs):
 
     # No more possible actions or every player has passed
     # Winner is the one with the most points, when tie, most resources
+

@@ -12,10 +12,10 @@ __all__ = [
 ]
 
 if TYPE_CHECKING:
-    from Class_Deck import Deck
-    from Class_DiscardPile import DiscardPile
-    from Class_Meadow import Meadow
-    from Class_Player import Player
+    from class_deck import Deck
+    from class_discard_pile import DiscardPile
+    from class_meadow import Meadow
+    from class_player import Player
 
 
 class action_cards_from_deck_to_hand(Action):
@@ -149,3 +149,4 @@ class action_play_cards_from_deck_or_discardpile(Action):
         # Add the other opened cards to the discardpile
         possible_cards.remove(card)
         discardpile.add_to_discardpile(possible_cards)
+

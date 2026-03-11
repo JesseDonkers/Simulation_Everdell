@@ -12,8 +12,8 @@ __all__ = [
 ]
 
 if TYPE_CHECKING:
-    from Class_Location import Location
-    from Class_Player import Player
+    from class_location import Location
+    from class_player import Player
 
 
 class action_place_worker(Action):
@@ -40,7 +40,7 @@ class action_add_destination_card_as_location(Action):
         self.permanent_workers = permanent_workers
 
     def execute_action(self, player: "Player", game_state=None):
-        from Class_Location import Location
+        from class_location import Location
 
         locations = game_state["locations"]
         dest_card = Location(
@@ -70,7 +70,7 @@ class action_add_destination_if_card_present(Action):
         self.permanent_workers = permanent_workers
 
     def execute_action(self, player: "Player", game_state=None):
-        from Class_Location import Location
+        from class_location import Location
 
         locations = game_state["locations"]
 

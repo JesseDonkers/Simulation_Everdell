@@ -1,7 +1,7 @@
 """Action modules grouped by domain for easier discovery.
 
 To add a new action: write the class in the appropriate domain file below.
-It will automatically be available everywhere via `from Class_Action import *`.
+It will automatically be available everywhere via `from class_action import *`.
 
 Domain files:
 - base.py    : Action base class, CompositeAction

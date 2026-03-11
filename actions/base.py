@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from Class_Player import Player
+    from class_player import Player
 
 __all__ = ["Action", "CompositeAction"]
 
