@@ -1,3 +1,5 @@
+import copy
+
 from Class_Action import *
 
 
@@ -72,6 +74,25 @@ architect = Critter(
     action_on_finish=actions_points_for_resources_hand(["resin", "pebble"], 1),
     action_on_discard=action_remove_card_from_city("Architect"))
 
+begrafenisondernemer = Critter(
+    name="Begrafenisondernemer",
+    color="tan",
+    requirements=dict(twig=0, resin=0, pebble=0, berry=2),
+    cardsindeck=2,
+    unique=True,
+    points=1,
+
+    action_on_play=CompositeAction([
+        action_refresh_meadow_draw_cards(3),
+        action_add_destination_if_card_present(
+            "Begraafplaats 2", "destination_card", False, 1,
+            action_play_cards_from_deck_or_discardpile(4), 
+            check_card_name="Begraafplaats", permanent_workers=True)]),
+
+    action_on_discard=CompositeAction([
+        action_remove_destination("Begraafplaats 2"),
+        action_remove_card_from_city("Begrafenisondernemer")]))
+
 dokter = Critter(
     name="Dokter",
     color="green",
@@ -90,8 +111,19 @@ historicus = Critter(
     cardsindeck=3,
     unique=True,
     points=1,
-    action_on_play=action_draw_cards_from_deck(1),
+    action_on_play=action_cards_from_deck_to_hand(1),
     action_on_discard=action_remove_card_from_city("Historicus"))
+
+houtsnijder = Critter(
+    name="Houtsnijder",
+    color="green",
+    requirements=dict(twig=0, resin=0, pebble=0, berry=2),
+    cardsindeck=3,
+    unique=False,
+    points=2,
+    action_on_play=action_points_for_payed_resources(3, "twig", 1),
+    action_on_reactivate=action_points_for_payed_resources(3, "twig", 1),
+    action_on_discard=action_remove_card_from_city("Houtsnijder"))
 
 kikkerkapitein = Critter(
     name="Kikkerkapitein",
@@ -151,8 +183,10 @@ winkelier = Critter(
 
 
 cards_unique.append(architect)
+cards_unique.append(begrafenisondernemer)
 cards_unique.append(dokter)
 cards_unique.append(historicus)
+cards_unique.append(houtsnijder)
 cards_unique.append(kikkerkapitein)
 cards_unique.append(koningin)
 cards_unique.append(monnik)
@@ -165,6 +199,30 @@ cards_unique.append(winkelier)
 
 # To do: For blue constructions, action on play is not really relevant
 # how to model?
+
+begraafplaats = Construction(
+    name="Begraafplaats",
+    color="red",
+    requirements=dict(twig=0, resin=0, pebble=2, berry=0),
+    cardsindeck=2,
+    unique=True,
+    points=0,
+    relatedcritters=["Begrafenisondernemer"],
+
+    action_on_play=CompositeAction([
+        action_add_destination_card_as_location(
+            "Begraafplaats 1", "destination_card", False, 1,
+            action_play_cards_from_deck_or_discardpile(4),
+            permanent_workers=True),
+        action_add_destination_if_card_present(
+            "Begraafplaats 2", "destination_card", False, 1,
+            action_play_cards_from_deck_or_discardpile(4),
+            check_card_name="Begrafenisondernemer", permanent_workers=True)]),
+
+    action_on_discard=CompositeAction([
+            action_remove_destination("Begraafplaats 1"),
+            action_remove_destination("Begraafplaats 2"),
+            action_remove_card_from_city("Begraafplaats")]))
 
 boerderij = Construction(
     name="Boerderij",
@@ -221,8 +279,8 @@ kermis = Construction(
     unique=False,
     points=3,
     relatedcritters=["Dwaas"],
-    action_on_play=action_draw_cards_from_deck(2),
-    action_on_reactivate=action_draw_cards_from_deck(2),
+    action_on_play=action_cards_from_deck_to_hand(2),
+    action_on_reactivate=action_cards_from_deck_to_hand(2),
     action_on_discard=action_remove_card_from_city("Kermis"))
 
 klooster = Construction(
@@ -354,6 +412,7 @@ winkel = Construction(
     action_on_discard=action_remove_card_from_city("Winkel"))
 
 
+cards_unique.append(begraafplaats)
 cards_unique.append(boerderij)
 cards_unique.append(gerechtsgebouw)
 cards_unique.append(harsraffinaderij)
@@ -376,4 +435,5 @@ cards_unique.append(winkel)
 
 init_cards = []
 for c in cards_unique:
-    init_cards.extend([c] * c.cardsindeck)
+    for _ in range(c.cardsindeck):
+        init_cards.append(copy.deepcopy(c))

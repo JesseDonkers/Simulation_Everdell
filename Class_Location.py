@@ -79,11 +79,11 @@ resins_point = Location("Resins_point", "basic", False, 99,
 cards_point = Location("Cards_point", "basic", False, 99,
                         Class_Action.CompositeAction(
                         [Class_Action.action_points_general("token", 1),
-                        Class_Action.action_draw_cards_from_deck(2)]))
+                        Class_Action.action_cards_from_deck_to_hand(2)]))
 berry_card = Location("Berry_card", "basic", False, 1,
                         Class_Action.CompositeAction(
                         [Class_Action.action_resource_general("berry", 1),
-                        Class_Action.action_draw_cards_from_deck(1)]))
+                        Class_Action.action_cards_from_deck_to_hand(1)]))
 
 init_locations.extend([twigs, resins, pebble, berry])
 init_locations.extend([twigs_point, resins_point, cards_point, berry_card])
