@@ -8,6 +8,7 @@ __all__ = [
     "action_cards_from_meadow_to_hand",
     "action_give_discard_refill_hand",
     "action_play_card",
+    "action_remove_card_from_city",    
     "action_play_cards_from_deck_or_discardpile",
     "action_refresh_meadow_draw_cards",
 ]
@@ -98,6 +99,17 @@ class action_play_card(Action):
         player.cards_add([card], "city")
         if card.action_on_play:
             card.action_on_play.execute(game_state)
+
+
+class action_remove_card_from_city(Action):
+    def __init__(self, card_name):
+        self.card_name = card_name
+
+    def execute_action(self, player: "Player", game_state=None):
+        card = next(c for c in player.city if c.name == self.card_name)
+        player.cards_remove([card], "city")
+        discard_pile: "DiscardPile" = game_state["discardpile"]
+        discard_pile.add_to_discardpile([card])
 
 
 class action_refresh_meadow_draw_cards(Action):

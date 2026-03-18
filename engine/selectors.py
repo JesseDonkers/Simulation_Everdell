@@ -94,9 +94,12 @@ def get_possible_locations(game_state):
                                             in_own_city or accessible_open):
                 possible_locations.append(location)
 
+        # Haven locations
+        if location.type == "haven" and location.get_open_spaces() > 0:
+            possible_locations.append(location)
+
     # To do: forest locations
     # To do: event
-    # To do: haven
     # To do: journey
 
     return possible_locations

@@ -4,7 +4,7 @@ from actions.base import Action
 from engine.selectors import get_critters_constructions_city
 
 __all__ = [
-    "action_remove_card_from_city",
+    "action_resources_for_cards",
     "action_resource_general",
     "action_resource_if_other_card",
     "action_resource_per_other_card",
@@ -15,6 +15,7 @@ __all__ = [
 if TYPE_CHECKING:
     from class_player import Player
     from class_discard_pile import DiscardPile
+    from class_card import Card
 
 
 class action_resource_general(Action):
@@ -76,13 +77,30 @@ class action_resources_building_costs_discard(Action):
         card.action_on_discard.execute(game_state)
 
 
-class action_remove_card_from_city(Action):
-    def __init__(self, card_name):
-        self.card_name = card_name
+class action_resources_for_cards(Action):
+    """Discard any number of cards from hand;
+    gain 1 resource of choice per 2 discarded cards."""
 
     def execute_action(self, player: "Player", game_state=None):
-        card = next(c for c in player.city if c.name == self.card_name)
-        player.cards_remove([card], "city")
-        discard_pile: "DiscardPile" = game_state["discardpile"]
-        discard_pile.add_to_discardpile([card])
+        discardpile: "DiscardPile" = game_state["discardpile"]
 
+        # Player decides how many cards to discard (0 to len(hand))
+        nr_discard = player.decide(game_state, "nr_cards_discard_hand", None)
+        nr_discard = (nr_discard // 2) * 2  # Round down to nearest even number
+
+        # Player picks each card to discard
+        selectable = player.hand.copy()
+        cards_to_discard: list["Card"] = []
+        for _ in range(nr_discard):
+            card = player.decide(game_state, "card_discard", selectable)
+            cards_to_discard.append(card)
+            selectable.remove(card)
+
+        player.cards_remove(cards_to_discard, "hand")
+        discardpile.add_to_discardpile(cards_to_discard)
+
+        # Gain 1 resource of choice per 2 cards discarded
+        resources = ["twig", "resin", "pebble", "berry"]
+        for _ in range(nr_discard // 2):
+            choice = player.decide(game_state, "resource_new", resources)
+            player.resources_add(choice, 1)

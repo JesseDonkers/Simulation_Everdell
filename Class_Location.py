@@ -117,6 +117,9 @@ init_locations.extend([twigs_point, resins_point, cards_point, berry_card])
 # HAVEN
 # ============================================
 
+haven = Location("Haven", "haven", False, 99,
+                 class_action.action_resources_for_cards())
+init_locations.append(haven)
 
 # ============================================
 # JOURNEY
