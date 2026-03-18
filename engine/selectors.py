@@ -3,6 +3,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from class_location import Location
 
+__all__ = [
+    "get_critters_constructions_city",
+    "get_possible_cards",
+    "get_possible_locations",
+    "get_possible_moves",
+]
+
 
 def get_possible_cards(game_state, max_points, pay):
     player = game_state["current_player"]
@@ -48,7 +55,8 @@ def get_possible_cards(game_state, max_points, pay):
 
             if isinstance(card, Critter):
                 for constr in constructions:
-                    if card.name in constr.relatedcritters and not constr.relatedoccupied:
+                    if (card.name in constr.relatedcritters 
+                                            and not constr.relatedoccupied):
                         possible_cards.append(card)
                         break
 
@@ -59,10 +67,13 @@ def get_possible_cards(game_state, max_points, pay):
 
 def get_possible_locations(game_state):
     # To do: for a destination card, it should be checked if the action
-    # can be executed. For example, for the klooster, the player should have
+    # can be executed.
+    # 
+    # For example, for the klooster, the player should have
     # enough resources to execute the action, otherwise it should not be a
     # possible location to place a worker.
 
+    player = game_state["current_player"]
     locations = game_state["locations"]
     location: "Location"
     possible_locations = []
@@ -74,9 +85,13 @@ def get_possible_locations(game_state):
 
         # Destination cards
         if location.type == "destination_card":
-            # To do: check if card is in player's city
-            # or if the card is open if in another player's city
-            if location.get_open_spaces() > 0:
+            owner = getattr(location, "owner", None)
+            in_own_city = owner == player
+            accessible_open = owner is not None and (
+                                            owner != player and location.open)
+
+            if location.get_open_spaces() > 0 and (
+                                            in_own_city or accessible_open):
                 possible_locations.append(location)
 
     # To do: forest locations

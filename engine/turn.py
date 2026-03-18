@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from class_player import Player
 
+__all__ = ["advance_current_player", "finish_current_player"]
+
 
 def advance_current_player(game_state):
     players = game_state["players"]

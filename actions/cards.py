@@ -6,6 +6,7 @@ from engine.selectors import get_possible_cards
 __all__ = [
     "action_cards_from_deck_to_hand",
     "action_cards_from_meadow_to_hand",
+    "action_give_discard_refill_hand",
     "action_play_card",
     "action_play_cards_from_deck_or_discardpile",
     "action_refresh_meadow_draw_cards",
@@ -150,3 +151,55 @@ class action_play_cards_from_deck_or_discardpile(Action):
         possible_cards.remove(card)
         discardpile.add_to_discardpile(possible_cards)
 
+
+class action_give_discard_refill_hand(Action):
+    def __init__(self, nr_give):
+        self.nr_give = nr_give
+
+    def execute_action(self, player: "Player", game_state=None):
+        deck: "Deck" = game_state["deck"]
+        discardpile: "DiscardPile" = game_state["discardpile"]
+
+        # Give cards to another player, trying nr_give down to 1
+        players = game_state["players"]
+        nr_to_give = 0
+        for nr in range(self.nr_give, 0, -1):
+            can_receive = any(
+                p != player
+                and not p.finished
+                and p.cards_get_open_spaces("hand") >= nr
+                for p in players
+            )
+            if len(player.hand) >= nr and can_receive:
+                nr_to_give = nr
+                break
+
+        if nr_to_give > 0:
+            cards_to_give = []
+            selectable = player.hand.copy()
+            for _ in range(nr_to_give):
+                card = player.decide(game_state, "card_discard", selectable)
+                cards_to_give.append(card)
+                selectable.remove(card)
+
+            target = player.decide(game_state, "player_to_receive_cards", nr_to_give)
+            player.cards_remove(cards_to_give, "hand")
+            target.cards_add(cards_to_give, "hand")
+
+        # Discard a number of cards by choice from hand
+        nr_discard = player.decide(game_state, "nr_cards_discard_hand", None)
+        cards_to_discard = []
+        selectable = player.hand.copy()
+        for _ in range(nr_discard):
+            card = player.decide(game_state, "card_discard", selectable)
+            cards_to_discard.append(card)
+            selectable.remove(card)
+
+        player.cards_remove(cards_to_discard, "hand")
+        discardpile.add_to_discardpile(cards_to_discard)
+
+        # Refill hand to the limit
+        spaces = player.cards_get_open_spaces("hand")
+        if spaces > 0:
+            new_cards = deck.draw_cards(spaces, discardpile)
+            player.cards_add(new_cards, "hand")

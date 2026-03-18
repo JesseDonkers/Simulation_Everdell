@@ -1,16 +1,12 @@
-from engine.selectors import (
-    get_critters_constructions_city,
-    get_possible_cards,
-    get_possible_locations,
-    get_possible_moves,
-)
-from engine.turn import advance_current_player, finish_current_player
+"""Engine helpers grouped by domain for easier discovery.
 
-__all__ = [
-    "advance_current_player",
-    "finish_current_player",
-    "get_critters_constructions_city",
-    "get_possible_cards",
-    "get_possible_locations",
-    "get_possible_moves",
-]
+To add a new engine helper: write it in the appropriate domain file below
+and include it in that file's `__all__` list.
+
+Domain files:
+- selectors.py: move/card/location selection and eligibility helpers
+- turn.py     : turn progression and end-of-game helpers
+"""
+
+from engine.selectors import *
+from engine.turn import *

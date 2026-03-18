@@ -329,6 +329,21 @@ paleis = Construction(
     action_on_finish=actions_points_for_cards("Construction", True, 1),
     action_on_discard=action_remove_card_from_city("Paleis"))
 
+postkantoor = Construction(
+    name="Postkantoor",
+    color="red",
+    requirements=dict(twig=1, resin=2, pebble=0, berry=0),
+    cardsindeck=3,
+    unique=False,
+    points=2,
+    relatedcritters=["Postduif"],
+    action_on_play=action_add_destination_card_as_location(
+        "Postkantoor", "destination_card", True, 1,
+        action_give_discard_refill_hand(2)),
+    action_on_discard=CompositeAction([
+        action_remove_destination("Postkantoor"),
+        action_remove_card_from_city("Postkantoor")]))
+
 school = Construction(
     name="School",
     color="purple",
@@ -421,6 +436,7 @@ cards_unique.append(kermis)
 cards_unique.append(klooster)
 cards_unique.append(mijn)
 cards_unique.append(paleis)
+cards_unique.append(postkantoor)
 cards_unique.append(school)
 cards_unique.append(takkenboot)
 cards_unique.append(theater)

@@ -2,7 +2,16 @@ import class_action
 
 
 class Location:
-    def __init__(self, name, type, open, maxworkers, action, permanent_workers=False):
+    def __init__(
+        self,
+        name,
+        type,
+        open,
+        maxworkers,
+        action,
+        permanent_workers=False,
+        owner=None,
+    ):
         self.name = name
         self.type = type # Basic, forest, event, haven, journey, destination
         self.open = open # Attribute for destination cards
@@ -10,6 +19,7 @@ class Location:
         self.action = action
         self.workers = {}  # Tracking workers per player: {player: count}
         self.permanent_workers = permanent_workers
+        self.owner = owner  # Player that owns this destination location
         
     def __str__(self):
         return str(self.name)

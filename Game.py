@@ -83,25 +83,26 @@ for _ in range(NR_SIMULATION_RUNS):
 
     player: "Player" = game_state["current_player"]
 
-    player.resources_add("pebble", 2)
-    player.resources_add("berry", 2)
-
-    game_state_as_df_to_text(game_state, "Game_state")
+    player.resources_add("twig", 1)
+    player.resources_add("resin", 2)
 
     if len(get_possible_cards(game_state, 99, True)) > 0:
         action_play_card().execute(game_state)
-    
-    if len(get_possible_cards(game_state, 99, True)) > 0:
-        action_play_card().execute(game_state)
 
-        if any(c.name == "Begrafenisondernemer" for c in player.city) and (
-            any(c.name == "Begraafplaats" for c in player.city)):
 
-            game_state_as_df_to_text(game_state, "Game_state")                
+    if any(c.name == "Postkantoor" for c in player.city):
+
+        advance_current_player(game_state)
+
+        player: "Player" = game_state["current_player"]
+        action_place_worker().execute(game_state)
+        game_state_as_df_to_text(game_state, "Game_state")
+
+        if game_state["locations"][-1].get_player_workers(player) > 0:
+        
             break
 
-    # To do: test begraafplaats, begrafenisondernemer, houtsnijder
-
+    # To do: test open destionation card locations and if points are gained
 
 
     # ============================================

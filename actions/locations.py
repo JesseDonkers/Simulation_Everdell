@@ -27,6 +27,13 @@ class action_place_worker(Action):
         preferred_location = player.decide(game_state, "location", possib_loc)
         preferred_location.add_worker(player)
         player.workers_remove(1)
+
+        # If another player uses your open destination location, owner gains 1 token.
+        if preferred_location.type == "destination_card":
+            owner = getattr(preferred_location, "owner", None)
+            if owner is not None and owner != player and preferred_location.open:
+                owner.points_add("token", 1)
+
         preferred_location.action.execute(game_state)
 
 
@@ -50,6 +57,7 @@ class action_add_destination_card_as_location(Action):
             self.maxworkers,
             self.action,
             permanent_workers=self.permanent_workers,
+            owner=player,
         )
         locations.append(dest_card)
 
@@ -85,6 +93,7 @@ class action_add_destination_if_card_present(Action):
                 self.maxworkers,
                 self.action,
                 permanent_workers=self.permanent_workers,
+                owner=player,
             )
             locations.append(dest_card)
 

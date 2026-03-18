@@ -34,17 +34,16 @@ class Strategy_random(Strategy):
         opt = ["deck", "discardpile"]
         return random.choice(opt)
     
+    def choose_nr_cards_discard_hand(self, game_state, _):
+        player = game_state["current_player"]
+        max_nr = len(player.hand)
+        return random.randint(0, max_nr)
+    
     def choose_card_discard(self, game_state, possible_cards):
         return random.choice(possible_cards)
 
     def choose_location(self, game_state, possible_locations):
         return random.choice(possible_locations)
-
-    def choose_other_player(self, game_state, _):
-        player = game_state["current_player"]
-        players = game_state["players"]
-        other_players = [p for p in players if p != player]
-        return random.choice(other_players)
     
     def choose_resource_new(self, game_state, _):
         resources = ["twig", "resin", "pebble", "berry"]
@@ -83,3 +82,11 @@ class Strategy_random(Strategy):
         other_pls = [p for p in players if p != player and p.finished == False]
         return random.choice(other_pls)
     
+    def choose_player_to_receive_cards(self, game_state, nr_give):
+        player = game_state["current_player"]
+        players = game_state["players"]
+        other_pls = [p for p in players
+                     if p != player
+                     and not p.finished
+                     and p.cards_get_open_spaces("hand") >= nr_give]
+        return random.choice(other_pls)
