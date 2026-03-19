@@ -83,27 +83,23 @@ for _ in range(NR_SIMULATION_RUNS):
 
     player: "Player" = game_state["current_player"]
 
-    player.resources_add("twig", 1)
-    player.resources_add("resin", 2)
+    action_advance_season().execute(game_state)
+    action_advance_season().execute(game_state)
+    action_advance_season().execute(game_state)
 
-    if len(get_possible_cards(game_state, 99, True)) > 0:
-        action_play_card().execute(game_state)
+    action_place_worker().execute(game_state)
 
+    journey_workers_after = sum(
+        loc.get_player_workers(player)
+        for loc in game_state["locations"]
+        if loc.type == "journey"
+    )
 
-    if any(c.name == "Postkantoor" for c in player.city):
-
-        advance_current_player(game_state)
-
-        player: "Player" = game_state["current_player"]
-        action_place_worker().execute(game_state)
+    if journey_workers_after > 0:
         game_state_as_df_to_text(game_state, "Game_state")
-
-        if game_state["locations"][-1].get_player_workers(player) > 0:
-        
-            break
-
-    # To do: test open destionation card locations and if points are gained
-
+        finish_current_player(game_state)
+        game_state_as_df_to_text(game_state, "Game_state")
+        break
 
     # ============================================
     # END GAME

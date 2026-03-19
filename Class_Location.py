@@ -11,6 +11,7 @@ class Location:
         action,
         permanent_workers=False,
         owner=None,
+        points=0,
     ):
         self.name = name
         self.type = type # Basic, forest, event, haven, journey, destination
@@ -20,6 +21,7 @@ class Location:
         self.workers = {}  # Tracking workers per player: {player: count}
         self.permanent_workers = permanent_workers
         self.owner = owner  # Player that owns this destination location
+        self.points = points
         
     def __str__(self):
         return str(self.name)
@@ -125,4 +127,17 @@ init_locations.append(haven)
 # JOURNEY
 # ============================================
 
-# Only accessible in the last season (autumn)
+journey_2 = Location("Journey_2", "journey", False, 99,
+    class_action.action_discard_cards_from_hand(2),
+    permanent_workers=True, points=2)
+journey_3 = Location("Journey_3", "journey", False, 1,
+    class_action.action_discard_cards_from_hand(3),
+    permanent_workers=True, points=3)
+journey_4 = Location("Journey_4", "journey", False, 1,
+    class_action.action_discard_cards_from_hand(4),
+    permanent_workers=True, points=4)
+journey_5 = Location("Journey_5", "journey", False, 1,
+    class_action.action_discard_cards_from_hand(5),
+    permanent_workers=True, points=5)
+
+init_locations.extend([journey_2, journey_3, journey_4, journey_5])

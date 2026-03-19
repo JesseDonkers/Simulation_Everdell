@@ -98,9 +98,17 @@ def get_possible_locations(game_state):
         if location.type == "haven" and location.get_open_spaces() > 0:
             possible_locations.append(location)
 
+        # Journey locations (autumn only)
+        if location.type == "journey":
+            in_autumn = player.season == "autumn"
+            has_space = location.get_open_spaces() > 0
+            can_discard_required_cards = len(player.hand) >= location.points
+
+            if in_autumn and has_space and can_discard_required_cards:
+                possible_locations.append(location)
+
     # To do: forest locations
     # To do: event
-    # To do: journey
 
     return possible_locations
 

@@ -4,6 +4,7 @@ from actions.base import Action
 from engine.selectors import get_possible_cards
 
 __all__ = [
+    "action_discard_cards_from_hand",
     "action_cards_from_deck_to_hand",
     "action_cards_from_meadow_to_hand",
     "action_give_discard_refill_hand",
@@ -18,6 +19,27 @@ if TYPE_CHECKING:
     from class_discard_pile import DiscardPile
     from class_meadow import Meadow
     from class_player import Player
+
+
+class action_discard_cards_from_hand(Action):
+    def __init__(self, nr_cards):
+        self.nr_cards = nr_cards
+
+    def execute_action(self, player: "Player", game_state=None):
+        discardpile: "DiscardPile" = game_state["discardpile"]
+
+        if len(player.hand) < self.nr_cards:
+            raise ValueError("Not enough cards in hand to discard")
+
+        cards_to_discard = []
+        selectable = player.hand.copy()
+        for _ in range(self.nr_cards):
+            card = player.decide(game_state, "card_discard", selectable)
+            cards_to_discard.append(card)
+            selectable.remove(card)
+
+        player.cards_remove(cards_to_discard, "hand")
+        discardpile.add_to_discardpile(cards_to_discard)
 
 
 class action_cards_from_deck_to_hand(Action):

@@ -39,7 +39,11 @@ def finish_current_player(game_state):
             card.action_on_finish.execute(game_state)
 
     # Journey points
-    # To do
+    for location in game_state["locations"]:
+        if location.type == "journey":
+            nr_workers = location.get_player_workers(player)
+            for _ in range(nr_workers):
+                player.points_add("journey", location.points)
 
     # Event points
     # To do
