@@ -34,7 +34,7 @@ class action_resource_per_other_card(Action):
         self.amount = amount
 
     def execute_action(self, player: "Player", game_state=None):
-        for c in player.hand:
+        for c in player.city:
             if c.name == self.cardname:
                 player.resources[self.resource_type] += self.amount
 
@@ -46,7 +46,7 @@ class action_resource_if_other_card(Action):
         self.amount = amount
 
     def execute_action(self, player: "Player", game_state=None):
-        if any(card.name == self.cardname for card in player.hand):
+        if any(card.name == self.cardname for card in player.city):
             player.resources[self.resource_type] += self.amount
 
 

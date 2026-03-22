@@ -83,24 +83,26 @@ for _ in range(NR_SIMULATION_RUNS):
 
     player: "Player" = game_state["current_player"]
 
-    action_advance_season().execute(game_state)
-    action_advance_season().execute(game_state)
-    action_advance_season().execute(game_state)
+    player.resources_add("twig", 1)
+    player.resources_add("resin", 1)
+    player.resources_add("pebble", 1)
 
-    action_place_worker().execute(game_state)
+    if len(get_possible_cards(game_state)) > 0:
 
-    journey_workers_after = sum(
-        loc.get_player_workers(player)
-        for loc in game_state["locations"]
-        if loc.type == "journey"
-    )
+        action_play_card().execute(game_state)
 
-    if journey_workers_after > 0:
-        game_state_as_df_to_text(game_state, "Game_state")
-        finish_current_player(game_state)
-        game_state_as_df_to_text(game_state, "Game_state")
-        break
+        if len(get_possible_cards(game_state)) > 0:
+            
+            game_state_as_df_to_text(game_state, "Game_state")
+            
+            action_play_card().execute(game_state)
 
+            game_state_as_df_to_text(game_state, "Game_state")
+
+            print(player.city[0].relatedoccupied)
+
+            break
+    
     # ============================================
     # END GAME
     # ============================================

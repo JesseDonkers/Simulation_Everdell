@@ -1,25 +1,54 @@
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from class_card import Card
     from class_location import Location
 
 __all__ = [
+    "PlayCardOption",
+    "PlayMethod",
     "get_critters_constructions_city",
+    "get_possible_card_plays",
     "get_possible_cards",
     "get_possible_locations",
     "get_possible_moves",
 ]
 
 
-def get_possible_cards(game_state, max_points, pay):
+@dataclass(frozen=True)
+class PlayMethod:
+    method: str
+    requires_city_discard: bool
+    city_discard_optional: bool
+    related_construction: Any = None
+    city_discard_card: Any = None
+
+
+@dataclass(frozen=True)
+class PlayCardOption:
+    card: "Card"
+    methods: list[PlayMethod]
+
+
+def _has_resources(resources, requirements):
+    for resource, amount in requirements.items():
+        if resources.get(resource, 0) < amount:
+            return False
+    return True
+
+
+def get_possible_card_plays(game_state, max_points=99, pay=True, allow_city_discard_then_pay=False):
     player = game_state["current_player"]
     meadow = game_state["meadow"]
     all_cards = player.hand + meadow.cards
-    possible_cards = []
+    possible_card_plays = []
 
     # Maximum city size
     if player.cards_get_open_spaces("city") == 0:
-        return possible_cards
+        return possible_card_plays
+
+    from class_card import Construction, Critter
 
     for card in all_cards:
         # Cards are only allowed when not exceeding the max points
@@ -30,35 +59,95 @@ def get_possible_cards(game_state, max_points, pay):
         if card.unique and any(c.name == card.name for c in player.city):
             continue
 
-        # Check if player has enough resources for card requirements
+        methods = []
+
+        # Play actions that explicitly do not pay costs
+        if not pay:
+            methods.append(
+                PlayMethod(
+                    method="free_no_pay",
+                    requires_city_discard=False,
+                    city_discard_optional=False,
+                )
+            )
+
+        # Resource-paid and alternative methods
         if pay:
-            reqs = card.requirements
-            has_resources = True
-            for r, amt in reqs.items():
-                if player.resources.get(r) < amt:
-                    has_resources = False
-                    break
+            if _has_resources(player.resources, card.requirements):
+                methods.append(
+                    PlayMethod(
+                        method="pay_resources",
+                        requires_city_discard=False,
+                        city_discard_optional=True,
+                    )
+                )
 
-            if has_resources:
-                possible_cards.append(card)
-                continue
-        else:
-            possible_cards.append(card)
-
-        # Free play of critters when related to a played construction
-        if max_points == 99:
-            from class_card import Construction, Critter
-
-            constructions = [
-                c for c in player.city if isinstance(c, Construction)
-            ]
-
+            # Free play of critters when related to a played construction
             if isinstance(card, Critter):
+                constructions = [
+                    c for c in player.city if isinstance(c, Construction)
+                ]
                 for constr in constructions:
-                    if (card.name in constr.relatedcritters 
-                                            and not constr.relatedoccupied):
-                        possible_cards.append(card)
-                        break
+                    if card.name in constr.relatedcritters and not constr.relatedoccupied:
+                        methods.append(
+                            PlayMethod(
+                                method="related_free",
+                                requires_city_discard=False,
+                                city_discard_optional=False,
+                                related_construction=constr,
+                            )
+                        )
+
+            # Non-standard method: discard a city card to gain resources
+            # before paying. This is only available when explicitly enabled.
+            if allow_city_discard_then_pay:
+                for city_card in player.city:
+                    resources_after_discard = dict(player.resources)
+                    for resource, amount in city_card.requirements.items():
+                        resources_after_discard[resource] = (
+                            resources_after_discard.get(resource, 0) + amount
+                        )
+
+                    if _has_resources(resources_after_discard, card.requirements):
+                        methods.append(
+                            PlayMethod(
+                                method="city_discard_then_pay",
+                                requires_city_discard=True,
+                                city_discard_optional=_has_resources(
+                                    player.resources,
+                                    card.requirements,
+                                ),
+                                city_discard_card=city_card,
+                            )
+                        )
+
+        # Remove duplicate methods while preserving order.
+        unique_methods = []
+        seen = set()
+        for method in methods:
+            key = (
+                method.method,
+                id(method.related_construction) if method.related_construction else None,
+                id(method.city_discard_card) if method.city_discard_card else None,
+            )
+            if key not in seen:
+                seen.add(key)
+                unique_methods.append(method)
+
+        if len(unique_methods) > 0:
+            possible_card_plays.append(PlayCardOption(card=card, methods=unique_methods))
+
+    return possible_card_plays
+
+
+def get_possible_cards(game_state, max_points=99, pay=True, allow_city_discard_then_pay=False):
+    possible_card_plays = get_possible_card_plays(
+        game_state,
+        max_points,
+        pay,
+        allow_city_discard_then_pay=allow_city_discard_then_pay,
+    )
+    possible_cards = [entry.card for entry in possible_card_plays]
 
     # Remove duplicates while preserving order
     possible_cards = list(dict.fromkeys(possible_cards))

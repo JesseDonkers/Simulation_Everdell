@@ -14,7 +14,7 @@ class Location:
         points=0,
     ):
         self.name = name
-        self.type = type # Basic, forest, event, haven, journey, destination
+        self.type = type # For example basic, journey, haven
         self.open = open # Attribute for destination cards
         self.maxworkers = maxworkers
         self.action = action
@@ -113,6 +113,7 @@ init_locations.extend([twigs_point, resins_point, cards_point, berry_card])
 # ============================================
 
 # Player will get its worker back, but event stays in the city of the player
+# There are two types of events: basic event and special event
 
 
 # ============================================

@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from actions.base import Action
-from engine.selectors import get_possible_cards
+from engine.selectors import get_possible_card_plays
 
 __all__ = [
     "action_discard_cards_from_hand",
@@ -77,20 +77,34 @@ class action_cards_from_meadow_to_hand(Action):
 
 
 class action_play_card(Action):
-    def __init__(self, max_points=99, pay=True):
+    def __init__(self, max_points=99, pay=True, allow_city_discard_then_pay=False):
         self.max_points = max_points
         self.pay = pay
+        self.allow_city_discard_then_pay = allow_city_discard_then_pay
 
     def execute_action(self, player: "Player", game_state=None):
         meadow: "Meadow" = game_state["meadow"]
         deck = game_state["deck"]
         discardpile = game_state["discardpile"]
-        possible_cards = get_possible_cards(game_state, self.max_points, self.pay)
+        possible_card_plays = get_possible_card_plays(
+            game_state,
+            self.max_points,
+            self.pay,
+            allow_city_discard_then_pay=self.allow_city_discard_then_pay,
+        )
+        possible_cards = [entry.card for entry in possible_card_plays]
 
         if len(possible_cards) == 0:
             raise ValueError("No possible cards to play")
 
         card = player.decide(game_state, "card_new", possible_cards)
+        card_play_data = next(entry for entry in possible_card_plays if entry.card == card)
+        methods = card_play_data.methods
+
+        selected_method = methods[0]
+        if len(methods) > 1:
+            selected_method = player.decide(game_state, "card_play_method", methods)
+
         in_hand = card in player.hand
         in_meadow = card in meadow.cards
 
@@ -105,14 +119,14 @@ class action_play_card(Action):
         else:
             meadow.draw_cards([card], deck, discardpile)
 
-        # To do: card can be played if a related card is played,
-        #           no costs have to be paid, but
-        #           the relatedoccupied should be set to True
-        # To do: card can be played by discarding a card in the city,
-        #           no or less costs have to paid
+        pay_required = self._execute_selected_method(
+            player,
+            game_state,
+            selected_method,
+        )
 
         # The player pays for the costs of the card if self.pay == True
-        if self.pay:
+        if pay_required:
             card_costs = card.requirements
             for resource, amount in card_costs.items():
                 player.resources_remove(resource, amount)
@@ -121,6 +135,35 @@ class action_play_card(Action):
         player.cards_add([card], "city")
         if card.action_on_play:
             card.action_on_play.execute(game_state)
+
+    def _execute_selected_method(self, player: "Player", game_state, selected_method):
+        if selected_method.method == "pay_resources":
+            return self._method_pay_resources()
+        if selected_method.method == "related_free":
+            return self._method_related_free(selected_method)
+        if selected_method.method == "city_discard_then_pay":
+            return self._method_city_discard_then_pay(player, game_state, selected_method)
+        if selected_method.method == "free_no_pay":
+            return self._method_free_no_pay()
+
+        raise ValueError(f"Unknown card play method: {selected_method.method}")
+
+    def _method_pay_resources(self):
+        return True
+
+    def _method_related_free(self, selected_method):
+        selected_method.related_construction.relatedoccupied = True
+        return False
+
+    def _method_city_discard_then_pay(self, player: "Player", game_state, selected_method):
+        discard_card = selected_method.city_discard_card
+        for resource, amount in discard_card.requirements.items():
+            player.resources_add(resource, amount)
+        discard_card.action_on_discard.execute(game_state)
+        return True
+
+    def _method_free_no_pay(self):
+        return False
 
 
 class action_remove_card_from_city(Action):

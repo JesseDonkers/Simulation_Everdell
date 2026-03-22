@@ -26,6 +26,9 @@ class Strategy_random(Strategy):
     def choose_card_new(self, game_state, possible_cards):
         return random.choice(possible_cards)
 
+    def choose_card_play_method(self, game_state, possible_methods):
+        return random.choice(possible_methods)
+
     def choose_card_hand_or_meadow(self, game_state, _):
         opt = ["hand", "meadow"]
         return random.choice(opt)
