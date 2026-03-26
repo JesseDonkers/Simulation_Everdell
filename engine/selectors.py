@@ -21,8 +21,9 @@ class PlayMethod:
     method: str
     requires_city_discard: bool
     city_discard_optional: bool
-    related_construction: Any = None
-    city_discard_card: Any = None
+    pay_requirements: dict[str, int] | None = None
+    source_card: Any = None
+    consumed_cards: tuple[Any, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -38,7 +39,122 @@ def _has_resources(resources, requirements):
     return True
 
 
-def get_possible_card_plays(game_state, max_points=99, pay=True, allow_city_discard_then_pay=False):
+def _dedupe_play_methods(methods):
+    unique_methods = []
+    seen = set()
+
+    for method in methods:
+        pay_req_tuple = (
+            tuple(sorted(method.pay_requirements.items()))
+            if method.pay_requirements else None
+        )
+        key = (
+            method.method,
+            pay_req_tuple,
+            id(method.source_card) if method.source_card else None,
+            tuple(id(card) for card in method.consumed_cards),
+        )
+        if key not in seen:
+            seen.add(key)
+            unique_methods.append(method)
+
+    return unique_methods
+
+
+def _iter_discounted_requirements(requirements, discount):
+    twig = requirements.get("twig", 0)
+    resin = requirements.get("resin", 0)
+    pebble = requirements.get("pebble", 0)
+    berry = requirements.get("berry", 0)
+
+    max_discount = min(discount, twig + resin + pebble + berry)
+    unique_costs = []
+    seen = set()
+
+    for twig_reduce in range(min(twig, max_discount) + 1):
+        rem_after_twig = max_discount - twig_reduce
+
+        for resin_reduce in range(min(resin, rem_after_twig) + 1):
+            rem_after_resin = rem_after_twig - resin_reduce
+
+            for pebble_reduce in range(min(pebble, rem_after_resin) + 1):
+                rem_after_pebble = rem_after_resin - pebble_reduce
+
+                for berry_reduce in range(min(berry, rem_after_pebble) + 1):
+                    # Partial discount is allowed, so not all discount
+                    # must be used.
+                    cost = {
+                        "twig": twig - twig_reduce,
+                        "resin": resin - resin_reduce,
+                        "pebble": pebble - pebble_reduce,
+                        "berry": berry - berry_reduce,
+                    }
+
+                    key = (
+                        cost["twig"],
+                        cost["resin"],
+                        cost["pebble"],
+                        cost["berry"],
+                    )
+                    if key not in seen:
+                        seen.add(key)
+                        unique_costs.append(cost)
+
+    return unique_costs
+
+
+def _get_kerker_methods(player, card):
+    from class_card import Construction, Critter
+
+    if not isinstance(card, (Construction, Critter)):
+        return []
+
+    kerker = next(
+        (city_card for city_card in player.city
+         if city_card.name == "Kerker"),
+        None,
+    )
+    if kerker is None:
+        return []
+
+    has_boswachter = any(
+        city_card.name == "Boswachter" for city_card in player.city
+    )
+    capacity = 2 if has_boswachter else 1
+    if len(kerker.stored_cards) >= capacity:
+        return []
+
+    prisoners = [
+        city_card for city_card in player.city
+        if isinstance(city_card, Critter)
+    ]
+    methods = []
+
+    for prisoner in prisoners:
+        for reduced_cost in _iter_discounted_requirements(
+            card.requirements, discount=3
+        ):
+            if _has_resources(player.resources, reduced_cost):
+                methods.append(
+                    PlayMethod(
+                        method="kerker_discount",
+                        requires_city_discard=False,
+                        city_discard_optional=False,
+                        pay_requirements=reduced_cost,
+                        source_card=kerker,
+                        consumed_cards=(prisoner,),
+                    )
+                )
+
+    return methods
+
+
+def get_possible_card_plays(
+    game_state,
+    max_points=99,
+    pay=True,
+    allow_city_discard_then_pay=False,
+):
     player = game_state["current_player"]
     meadow = game_state["meadow"]
     all_cards = player.hand + meadow.cards
@@ -68,6 +184,7 @@ def get_possible_card_plays(game_state, max_points=99, pay=True, allow_city_disc
                     method="free_no_pay",
                     requires_city_discard=False,
                     city_discard_optional=False,
+                    pay_requirements=None,
                 )
             )
 
@@ -79,6 +196,7 @@ def get_possible_card_plays(game_state, max_points=99, pay=True, allow_city_disc
                         method="pay_resources",
                         requires_city_discard=False,
                         city_discard_optional=True,
+                        pay_requirements=dict(card.requirements),
                     )
                 )
 
@@ -88,13 +206,17 @@ def get_possible_card_plays(game_state, max_points=99, pay=True, allow_city_disc
                     c for c in player.city if isinstance(c, Construction)
                 ]
                 for constr in constructions:
-                    if card.name in constr.relatedcritters and not constr.relatedoccupied:
+                    if (
+                        card.name in constr.relatedcritters
+                        and not constr.relatedoccupied
+                    ):
                         methods.append(
                             PlayMethod(
                                 method="related_free",
                                 requires_city_discard=False,
                                 city_discard_optional=False,
-                                related_construction=constr,
+                                pay_requirements=None,
+                                source_card=constr,
                             )
                         )
 
@@ -108,7 +230,9 @@ def get_possible_card_plays(game_state, max_points=99, pay=True, allow_city_disc
                             resources_after_discard.get(resource, 0) + amount
                         )
 
-                    if _has_resources(resources_after_discard, card.requirements):
+                    if _has_resources(
+                        resources_after_discard, card.requirements
+                    ):
                         methods.append(
                             PlayMethod(
                                 method="city_discard_then_pay",
@@ -117,30 +241,29 @@ def get_possible_card_plays(game_state, max_points=99, pay=True, allow_city_disc
                                     player.resources,
                                     card.requirements,
                                 ),
-                                city_discard_card=city_card,
+                                pay_requirements=dict(card.requirements),
+                                consumed_cards=(city_card,),
                             )
                         )
 
-        # Remove duplicate methods while preserving order.
-        unique_methods = []
-        seen = set()
-        for method in methods:
-            key = (
-                method.method,
-                id(method.related_construction) if method.related_construction else None,
-                id(method.city_discard_card) if method.city_discard_card else None,
-            )
-            if key not in seen:
-                seen.add(key)
-                unique_methods.append(method)
+            methods.extend(_get_kerker_methods(player, card))
 
-        if len(unique_methods) > 0:
-            possible_card_plays.append(PlayCardOption(card=card, methods=unique_methods))
+        final_methods = _dedupe_play_methods(methods)
+
+        if len(final_methods) > 0:
+            possible_card_plays.append(
+                PlayCardOption(card=card, methods=final_methods)
+            )
 
     return possible_card_plays
 
 
-def get_possible_cards(game_state, max_points=99, pay=True, allow_city_discard_then_pay=False):
+def get_possible_cards(
+    game_state,
+    max_points=99,
+    pay=True,
+    allow_city_discard_then_pay=False,
+):
     possible_card_plays = get_possible_card_plays(
         game_state,
         max_points,

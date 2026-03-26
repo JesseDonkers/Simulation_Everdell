@@ -59,13 +59,19 @@ class action_points_for_given_resources(Action):
             self.resource_type = resource_type
             self.points_per_resource = points_per_resource
         else:
-            raise ValueError("Invalid arguments for action_points_for_given_resources")
+            raise ValueError(
+                "Invalid arguments for action_points_for_given_resources"
+            )
 
     def execute_action(self, player: "Player", game_state=None):
-        other_player = player.decide(game_state, "player_to_receive_resources", None)
+        other_player = player.decide(
+            game_state, "player_to_receive_resources", None
+        )
 
         if self.mode == "fixed_choose_types":
-            resources = player.decide(game_state, "resource_give_away", self.nr_resources)
+            resources = player.decide(
+                game_state, "resource_give_away", self.nr_resources
+            )
             for resource_type in resources:
                 player.resources_remove(resource_type, 1)
                 other_player.resources_add(resource_type, 1)
@@ -73,7 +79,9 @@ class action_points_for_given_resources(Action):
 
         else:  # max_fixed_type
             nr_and_type = [self.max_nr_resources, self.resource_type]
-            nr_give_away = player.decide(game_state, "nr_resources_to_give_away", nr_and_type)
+            nr_give_away = player.decide(
+                game_state, "nr_resources_to_give_away", nr_and_type
+            )
 
             for _ in range(nr_give_away):
                 player.resources_remove(self.resource_type, 1)
@@ -82,14 +90,21 @@ class action_points_for_given_resources(Action):
 
 
 class action_points_for_payed_resources(Action):
-    def __init__(self, max_nr_resources=None, resource_type=None, points_per_resource=None):
+    def __init__(
+        self,
+        max_nr_resources=None,
+        resource_type=None,
+        points_per_resource=None,
+    ):
         self.max_nr_resources = max_nr_resources
         self.resource_type = resource_type
         self.points_per_resource = points_per_resource
 
     def execute_action(self, player: "Player", game_state=None):
         nr_and_type = [self.max_nr_resources, self.resource_type]
-        nr_give_away = player.decide(game_state, "nr_resources_to_pay", nr_and_type)
+        nr_give_away = player.decide(
+            game_state, "nr_resources_to_pay", nr_and_type
+        )
 
         for _ in range(nr_give_away):
             player.resources_remove(self.resource_type, 1)
@@ -116,5 +131,8 @@ class actions_points_for_cards(Action):
 
     def execute_action(self, player: "Player", game_state=None):
         for card in player.city:
-            if card.unique is self.unique and type(card).__name__ == self.critter_or_construction:
+            if (
+                card.unique is self.unique
+                and type(card).__name__ == self.critter_or_construction
+            ):
                 player.points_add("prosperity", self.points_per_card)

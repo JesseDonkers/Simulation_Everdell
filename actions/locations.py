@@ -9,11 +9,33 @@ __all__ = [
     "action_location_copy_action",
     "action_place_worker",
     "action_remove_destination",
+    "action_replace_worker",
 ]
 
 if TYPE_CHECKING:
     from class_location import Location
     from class_player import Player
+
+
+def _resolve_worker_placement(
+    player: "Player",
+    location: "Location",
+    game_state=None,
+    remove_from_supply=True,
+):
+    location.add_worker(player)
+
+    if remove_from_supply:
+        player.workers_remove(1)
+
+    # If another player uses your open destination location, owner
+    # gains 1 token.
+    if location.type == "destination_card":
+        owner = getattr(location, "owner", None)
+        if owner is not None and owner != player and location.open:
+            owner.points_add("token", 1)
+
+    location.action.execute(game_state)
 
 
 class action_place_worker(Action):
@@ -24,21 +46,24 @@ class action_place_worker(Action):
         if len(possib_loc) == 0:
             raise ValueError("No possible locations to place worker")
 
-        preferred_location = player.decide(game_state, "location", possib_loc)
-        preferred_location.add_worker(player)
-        player.workers_remove(1)
-
-        # If another player uses your open destination location, owner gains 1 token.
-        if preferred_location.type == "destination_card":
-            owner = getattr(preferred_location, "owner", None)
-            if owner is not None and owner != player and preferred_location.open:
-                owner.points_add("token", 1)
-
-        preferred_location.action.execute(game_state)
+        preferred_location = player.decide(
+            game_state, "location_place_worker", possib_loc
+        )
+        _resolve_worker_placement(
+            player, preferred_location, game_state, remove_from_supply=True
+        )
 
 
 class action_add_destination_card_as_location(Action):
-    def __init__(self, name, type, open, maxworkers, action, permanent_workers=False):
+    def __init__(
+        self,
+        name,
+        type,
+        open,
+        maxworkers,
+        action,
+        permanent_workers=False,
+    ):
         self.name = name
         self.type = type
         self.open = open
@@ -68,7 +93,16 @@ class action_add_destination_if_card_present(Action):
     current player's city.
     """
 
-    def __init__(self, name, type, open, maxworkers, action, check_card_name, permanent_workers=False):
+    def __init__(
+        self,
+        name,
+        type,
+        open,
+        maxworkers,
+        action,
+        check_card_name,
+        permanent_workers=False,
+    ):
         self.name = name
         self.type = type
         self.open = open
@@ -83,7 +117,9 @@ class action_add_destination_if_card_present(Action):
         locations = game_state["locations"]
 
         # Check if the specified card is in the player's city
-        card_in_city = any(card.name == self.check_card_name for card in player.city)
+        card_in_city = any(
+            card.name == self.check_card_name for card in player.city
+        )
 
         if card_in_city:
             dest_card = Location(
@@ -132,11 +168,53 @@ class action_remove_destination(Action):
 
 
 class action_location_copy_action(Action):
-    def __init__(self, possible_locations):
-        self.possible_locations = possible_locations
+    def __init__(self, possible_types):
+        self.possible_types = possible_types
 
     def execute_action(self, player: "Player", game_state=None):
         locations = game_state["locations"]
-        locations_of_type = [l for l in locations if l.type in self.possible_locations]
-        loc = player.decide(game_state, "location", locations_of_type)
+        locations_of_type = [
+            l for l in locations if l.type in self.possible_types
+        ]
+        loc = player.decide(
+            game_state, "location_place_worker", locations_of_type
+        )
         loc.action.execute(game_state)
+
+
+class action_replace_worker(Action):
+    def execute_action(self, player: "Player", game_state=None):
+        # A worker can only be taken from locations where this player's worker
+        # is present and the worker is allowed to be removed.
+        removable_locations = [
+            loc
+            for loc in game_state["locations"]
+            if loc.get_player_workers(player) > 0
+            and not getattr(loc, "permanent_workers", False)]
+
+        if len(removable_locations) == 0:
+            raise ValueError("No placed worker can be removed")
+
+        loc_from = player.decide(
+            game_state,
+            "location_take_worker",
+            removable_locations)
+        
+        loc_from.remove_worker(player)
+
+        possible_target_locations = [
+            loc
+            for loc in get_possible_locations(game_state)
+            if loc != loc_from        ]
+
+        if len(possible_target_locations) == 0:
+            raise ValueError("No possible location to replace worker")
+
+        loc_to = player.decide(
+            game_state,
+            "location_place_worker",
+            possible_target_locations)
+        
+        _resolve_worker_placement(
+            player, loc_to, game_state, remove_from_supply=False
+        )

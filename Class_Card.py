@@ -20,6 +20,7 @@ class Card:
         self.action_on_reactivate = action_on_reactivate
         self.action_on_discard = action_on_discard
         self.action_on_finish = action_on_finish
+        self.stored_cards = []  # For cards attached to this card (e.g. Kerker)
         
     def __str__(self):
         return str(self.name)
@@ -93,6 +94,16 @@ begrafenisondernemer = Critter(
         action_remove_destination("Begraafplaats 2"),
         action_remove_card_from_city("Begrafenisondernemer")]))
 
+boswachter = Critter(
+    name="Boswachter",
+    color="tan",
+    requirements=dict(twig=0, resin=0, pebble=0, berry=2),
+    cardsindeck=2,
+    unique=True,
+    points=1,
+    action_on_play=action_replace_worker(),
+    action_on_discard=action_remove_card_from_city("Boswachter"))
+
 dokter = Critter(
     name="Dokter",
     color="green",
@@ -103,6 +114,12 @@ dokter = Critter(
     action_on_play=action_points_for_payed_resources(3, "berry", 1),
     action_on_reactivate=action_points_for_payed_resources(3, "berry", 1),
     action_on_discard=action_remove_card_from_city("Dokter"))
+
+# To do: dwaas
+
+# To do: herbergier
+
+# To do: herder
 
 historicus = Critter(
     name="Historicus",
@@ -135,6 +152,10 @@ kikkerkapitein = Critter(
     action_on_play=action_resource_per_other_card("Boerderij", "twig", 2),
     action_on_discard=action_remove_card_from_city("Kikkerkapitein"))
 
+# To do: leraar
+
+# To do: koning
+
 koningin = Critter(
     name="Koningin",
     color="red",
@@ -147,6 +168,12 @@ koningin = Critter(
     action_on_discard=CompositeAction(
         [action_remove_destination("Koningin"),
          action_remove_card_from_city("Koningin")]))
+
+# To do: man
+
+# To do: marskramer
+
+# To do: mijnwerkermol
 
 monnik = Critter(
     name="Monnik",
@@ -171,6 +198,14 @@ monnik = Critter(
         action_remove_destination("Klooster 2"),
         action_remove_card_from_city("Monnik")]))
 
+# To do: postduif
+
+# To do: rechter
+
+# To do: schoonmaker
+
+# To do: vrouw
+
 winkelier = Critter(
     name="Winkelier",
     color="blue",
@@ -178,12 +213,18 @@ winkelier = Critter(
     cardsindeck=3,
     unique=True,
     points=1,
+    # To do: when a critter is played
     action_on_play=action_resource_general("berry", 1),
     action_on_discard=action_remove_card_from_city("Winkelier"))
+
+# To do: zanger
+
+# To do: zwerver
 
 
 cards_unique.append(architect)
 cards_unique.append(begrafenisondernemer)
+cards_unique.append(boswachter)
 cards_unique.append(dokter)
 cards_unique.append(historicus)
 cards_unique.append(houtsnijder)
@@ -236,6 +277,8 @@ boerderij = Construction(
     action_on_reactivate=action_resource_general("berry", 1),
     action_on_discard=action_remove_card_from_city("Boerderij"))
 
+# To do: evertree
+
 gerechtsgebouw = Construction(
     name="Gerechtsgebouw",
     color="blue",
@@ -260,6 +303,10 @@ harsraffinaderij = Construction(
     action_on_reactivate=action_resource_general("resin", 1),
     action_on_discard=action_remove_card_from_city("Harsraffinaderij"))
 
+# To do: herberg
+
+# To do: kapel
+
 kasteel = Construction(
     name="Kasteel",
     color="purple",
@@ -270,6 +317,19 @@ kasteel = Construction(
     relatedcritters=["Koning"],    
     action_on_finish=actions_points_for_cards("Construction", False, 1),
     action_on_discard=action_remove_card_from_city("Kasteel"))
+
+kerker = Construction(
+    name="Kerker",
+    color="blue",
+    requirements=dict(twig=0, resin=1, pebble=2, berry=0),
+    cardsindeck=2,
+    unique=True,
+    points=0,
+    relatedcritters=["Boswachter"],
+    action_on_discard=CompositeAction([
+        action_discard_stored_cards("Kerker"),
+        action_remove_card_from_city("Kerker")
+    ]))
 
 kermis = Construction(
     name="Kermis",
@@ -282,6 +342,8 @@ kermis = Construction(
     action_on_play=action_cards_from_deck_to_hand(2),
     action_on_reactivate=action_cards_from_deck_to_hand(2),
     action_on_discard=action_remove_card_from_city("Kermis"))
+
+# To do: klokkentoren
 
 klooster = Construction(
     name="Klooster",
@@ -306,6 +368,8 @@ klooster = Construction(
             action_remove_destination("Klooster 2"),
             action_remove_card_from_city("Klooster")]))
 
+# To do: kraan
+
 mijn = Construction(
     name="Mijn",
     color="green",
@@ -317,6 +381,8 @@ mijn = Construction(
     action_on_play=action_resource_general("pebble", 1),
     action_on_reactivate=action_resource_general("pebble", 1),
     action_on_discard=action_remove_card_from_city("Mijn"))
+
+# To do: pakhuis
 
 paleis = Construction(
     name="Paleis",
@@ -343,6 +409,8 @@ postkantoor = Construction(
     action_on_discard=CompositeAction([
         action_remove_destination("Postkantoor"),
         action_remove_card_from_city("Postkantoor")]))
+
+# To do: ruines
 
 school = Construction(
     name="School",
@@ -432,6 +500,7 @@ cards_unique.append(boerderij)
 cards_unique.append(gerechtsgebouw)
 cards_unique.append(harsraffinaderij)
 cards_unique.append(kasteel)
+cards_unique.append(kerker)
 cards_unique.append(kermis)
 cards_unique.append(klooster)
 cards_unique.append(mijn)

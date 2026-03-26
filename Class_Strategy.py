@@ -45,7 +45,10 @@ class Strategy_random(Strategy):
     def choose_card_discard(self, game_state, possible_cards):
         return random.choice(possible_cards)
 
-    def choose_location(self, game_state, possible_locations):
+    def choose_location_place_worker(self, game_state, possible_locations):
+        return random.choice(possible_locations)
+
+    def choose_location_take_worker(self, game_state, possible_locations):
         return random.choice(possible_locations)
     
     def choose_resource_new(self, game_state, _):

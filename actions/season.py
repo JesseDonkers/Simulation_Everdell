@@ -38,7 +38,10 @@ class action_advance_season(Action):
         location: "Location"
         for location in game_state["locations"]:
             # Do not return workers placed on permanent locations
-            if location.get_player_workers(player) > 0 and not getattr(location, "permanent_workers", False):
+            if (
+                location.get_player_workers(player) > 0
+                and not getattr(location, "permanent_workers", False)
+            ):
                 location.remove_worker(player)
                 player.workers_add(1)
 

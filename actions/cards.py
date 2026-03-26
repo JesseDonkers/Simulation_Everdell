@@ -1,10 +1,11 @@
 from typing import TYPE_CHECKING
 
-from actions.base import Action
+from actions.base import Action, CompositeAction
 from engine.selectors import get_possible_card_plays
 
 __all__ = [
     "action_discard_cards_from_hand",
+    "action_discard_stored_cards",
     "action_cards_from_deck_to_hand",
     "action_cards_from_meadow_to_hand",
     "action_give_discard_refill_hand",
@@ -42,6 +43,25 @@ class action_discard_cards_from_hand(Action):
         discardpile.add_to_discardpile(cards_to_discard)
 
 
+class action_discard_stored_cards(Action):
+    """
+    Handles discarding all stored cards from a specified card in the
+    player's city by moving them to the discard pile and clearing the stored
+    cards list.
+    """
+    def __init__(self, card_name):
+        self.card_name = card_name
+
+    def execute_action(self, player: "Player", game_state=None):
+        host_card = next(c for c in player.city if c.name == self.card_name)
+        if len(host_card.stored_cards) == 0:
+            return
+
+        discard_pile: "DiscardPile" = game_state["discardpile"]
+        discard_pile.add_to_discardpile(list(host_card.stored_cards))
+        host_card.stored_cards.clear()
+
+
 class action_cards_from_deck_to_hand(Action):
     def __init__(self, nrCards):
         self.nrCards = nrCards
@@ -77,7 +97,12 @@ class action_cards_from_meadow_to_hand(Action):
 
 
 class action_play_card(Action):
-    def __init__(self, max_points=99, pay=True, allow_city_discard_then_pay=False):
+    def __init__(
+        self,
+        max_points=99,
+        pay=True,
+        allow_city_discard_then_pay=False,
+    ):
         self.max_points = max_points
         self.pay = pay
         self.allow_city_discard_then_pay = allow_city_discard_then_pay
@@ -98,12 +123,16 @@ class action_play_card(Action):
             raise ValueError("No possible cards to play")
 
         card = player.decide(game_state, "card_new", possible_cards)
-        card_play_data = next(entry for entry in possible_card_plays if entry.card == card)
+        card_play_data = next(
+            entry for entry in possible_card_plays if entry.card == card
+        )
         methods = card_play_data.methods
 
         selected_method = methods[0]
         if len(methods) > 1:
-            selected_method = player.decide(game_state, "card_play_method", methods)
+            selected_method = player.decide(
+                game_state, "card_play_method", methods
+            )
 
         in_hand = card in player.hand
         in_meadow = card in meadow.cards
@@ -125,9 +154,13 @@ class action_play_card(Action):
             selected_method,
         )
 
-        # The player pays for the costs of the card if self.pay == True
+        # Pay the cost defined by the chosen play method.
         if pay_required:
-            card_costs = card.requirements
+            card_costs = selected_method.pay_requirements
+            if card_costs is None:
+                raise ValueError(
+                    "Selected paid play method has no pay_requirements"
+                )
             for resource, amount in card_costs.items():
                 player.resources_remove(resource, amount)
 
@@ -136,13 +169,21 @@ class action_play_card(Action):
         if card.action_on_play:
             card.action_on_play.execute(game_state)
 
-    def _execute_selected_method(self, player: "Player", game_state, selected_method):
+    def _execute_selected_method(
+        self, player: "Player", game_state, selected_method
+    ):
         if selected_method.method == "pay_resources":
             return self._method_pay_resources()
         if selected_method.method == "related_free":
             return self._method_related_free(selected_method)
         if selected_method.method == "city_discard_then_pay":
-            return self._method_city_discard_then_pay(player, game_state, selected_method)
+            return self._method_city_discard_then_pay(
+                player, game_state, selected_method
+            )
+        if selected_method.method == "kerker_discount":
+            return self._method_kerker_discount(
+                player, game_state, selected_method
+            )
         if selected_method.method == "free_no_pay":
             return self._method_free_no_pay()
 
@@ -152,29 +193,83 @@ class action_play_card(Action):
         return True
 
     def _method_related_free(self, selected_method):
-        selected_method.related_construction.relatedoccupied = True
+        construction = selected_method.source_card
+        if construction is None:
+            raise ValueError("related_free method requires a source_card")
+        construction.relatedoccupied = True
         return False
 
-    def _method_city_discard_then_pay(self, player: "Player", game_state, selected_method):
-        discard_card = selected_method.city_discard_card
+    def _method_city_discard_then_pay(
+        self, player: "Player", game_state, selected_method
+    ):
+        if len(selected_method.consumed_cards) == 0:
+            raise ValueError(
+                "city_discard_then_pay requires one consumed city card"
+            )
+        discard_card = selected_method.consumed_cards[0]
         for resource, amount in discard_card.requirements.items():
             player.resources_add(resource, amount)
         discard_card.action_on_discard.execute(game_state)
         return True
+
+    def _method_kerker_discount(
+        self, player: "Player", game_state, selected_method
+    ):
+        if selected_method.source_card is None:
+            raise ValueError("kerker_discount requires a source_card")
+        if len(selected_method.consumed_cards) != 1:
+            raise ValueError("kerker_discount requires one prisoner card")
+
+        kerker = selected_method.source_card
+        prisoner = selected_method.consumed_cards[0]
+
+        # Imprisonment triggers discard side effects, but never sends
+        # the card to discard pile.
+        if prisoner.action_on_discard:
+            self._execute_leave_city_action(
+                player, game_state, prisoner.action_on_discard
+            )
+        elif prisoner in player.city:
+            player.cards_remove([prisoner], "city")
+
+        kerker.stored_cards.append(prisoner)
+        return True
+
+    def _execute_leave_city_action(self, player: "Player", game_state, action):
+        if isinstance(action, CompositeAction):
+            for sub_action in action.actions:
+                self._execute_leave_city_action(player, game_state, sub_action)
+            return
+
+        if isinstance(action, action_remove_card_from_city):
+            action.execute_action(player, game_state, add_to_discard=False)
+            return
+
+        action.execute_action(player, game_state)
 
     def _method_free_no_pay(self):
         return False
 
 
 class action_remove_card_from_city(Action):
-    def __init__(self, card_name):
+    def __init__(self, card_name, add_to_discard=True):
         self.card_name = card_name
+        self.add_to_discard = add_to_discard
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(
+        self, player: "Player", game_state=None, add_to_discard=None
+    ):
         card = next(c for c in player.city if c.name == self.card_name)
         player.cards_remove([card], "city")
-        discard_pile: "DiscardPile" = game_state["discardpile"]
-        discard_pile.add_to_discardpile([card])
+
+        effective_add_to_discard = (
+            self.add_to_discard
+            if add_to_discard is None
+            else add_to_discard
+        )
+        if effective_add_to_discard:
+            discard_pile: "DiscardPile" = game_state["discardpile"]
+            discard_pile.add_to_discardpile([card])
 
 
 class action_refresh_meadow_draw_cards(Action):
@@ -209,7 +304,9 @@ class action_play_cards_from_deck_or_discardpile(Action):
     def execute_action(self, player: "Player", game_state=None):
         deck: "Deck" = game_state["deck"]
         discardpile: "DiscardPile" = game_state["discardpile"]
-        deck_or_discardpile = player.decide(game_state, "card_deck_or_discardpile", None)
+        deck_or_discardpile = player.decide(
+            game_state, "card_deck_or_discardpile", None
+        )
 
         # Obtain possible cards
         # If there are no cards in the discardpile, it will automatically
@@ -259,7 +356,9 @@ class action_give_discard_refill_hand(Action):
                 cards_to_give.append(card)
                 selectable.remove(card)
 
-            target = player.decide(game_state, "player_to_receive_cards", nr_to_give)
+            target = player.decide(
+                game_state, "player_to_receive_cards", nr_to_give
+            )
             player.cards_remove(cards_to_give, "hand")
             target.cards_add(cards_to_give, "hand")
 

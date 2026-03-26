@@ -68,7 +68,9 @@ class action_resources_building_costs_discard(Action):
 
     def execute_action(self, player: "Player", game_state=None):
         critter_construction = [self.critter, self.construction]
-        options = get_critters_constructions_city(game_state, critter_construction)
+        options = get_critters_constructions_city(
+            game_state, critter_construction
+        )
         card = player.decide(game_state, "card_discard", options)
         resources = card.requirements
         for resource, amount in resources.items():
