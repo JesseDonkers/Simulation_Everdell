@@ -63,8 +63,6 @@ cards_unique = []
 # CRITTERS (sorted alphabetically)
 # ============================================
 
-# To do: For blue critters action on play is not really relevant, how to model?
-
 architect = Critter(
     name="Architect",
     color="purple",
@@ -86,7 +84,7 @@ begrafenisondernemer = Critter(
     action_on_play=CompositeAction([
         action_refresh_meadow_draw_cards(3),
         action_add_destination_if_card_present(
-            "Begraafplaats 2", "destination_card", False, 1,
+            "Begraafplaats 2", "destination_card", 1,
             action_play_cards_from_deck_or_discardpile(4), 
             check_card_name="Begraafplaats", permanent_workers=True)]),
 
@@ -164,7 +162,7 @@ koningin = Critter(
     unique=True,
     points=4,
     action_on_play=action_add_destination_card_as_location(
-        "Koningin", "destination_card", False, 1, action_play_card(3, False)),
+        "Koningin", "destination_card", 1, action_play_card(3, False)),
     action_on_discard=CompositeAction(
         [action_remove_destination("Koningin"),
          action_remove_card_from_city("Koningin")]))
@@ -187,7 +185,7 @@ monnik = Critter(
         action_points_for_given_resources(
             max_nr_resources=2, resource_type="berry", points_per_resource=2),
         action_add_destination_if_card_present(
-            "Klooster 2", "destination_card", False, 1,
+            "Klooster 2", "destination_card", 1,
             action_points_for_given_resources(nr_resources=2, points=4),
             check_card_name="Klooster", permanent_workers=True)]),
 
@@ -238,9 +236,6 @@ cards_unique.append(winkelier)
 # CONSTRUCTIONS (sorted alphabetically)
 # ============================================
 
-# To do: For blue constructions, action on play is not really relevant
-# how to model?
-
 begraafplaats = Construction(
     name="Begraafplaats",
     color="red",
@@ -252,11 +247,11 @@ begraafplaats = Construction(
 
     action_on_play=CompositeAction([
         action_add_destination_card_as_location(
-            "Begraafplaats 1", "destination_card", False, 1,
+            "Begraafplaats 1", "destination_card", 1,
             action_play_cards_from_deck_or_discardpile(4),
             permanent_workers=True),
         action_add_destination_if_card_present(
-            "Begraafplaats 2", "destination_card", False, 1,
+            "Begraafplaats 2", "destination_card", 1,
             action_play_cards_from_deck_or_discardpile(4),
             check_card_name="Begrafenisondernemer", permanent_workers=True)]),
 
@@ -355,11 +350,11 @@ klooster = Construction(
     relatedcritters=["Monnik"],
     action_on_play=CompositeAction([
         action_add_destination_card_as_location(
-            "Klooster 1", "destination_card", False, 1, 
+            "Klooster 1", "destination_card", 1, 
             action_points_for_given_resources(nr_resources=2, points=4),
             permanent_workers=True),
         action_add_destination_if_card_present(
-            "Klooster 2", "destination_card", False, 1,
+            "Klooster 2", "destination_card", 1,
             action_points_for_given_resources(nr_resources=2, points=4),
             check_card_name="Monnik", permanent_workers=True)]),
     
@@ -404,8 +399,9 @@ postkantoor = Construction(
     points=2,
     relatedcritters=["Postduif"],
     action_on_play=action_add_destination_card_as_location(
-        "Postkantoor", "destination_card", True, 1,
-        action_give_discard_refill_hand(2)),
+        "Postkantoor", "destination_card", 1,
+        action_give_discard_refill_hand(2),
+        is_open=True),
     action_on_discard=CompositeAction([
         action_remove_destination("Postkantoor"),
         action_remove_card_from_city("Postkantoor")]))
@@ -455,7 +451,7 @@ uitkijkpost = Construction(
     points=2,
     relatedcritters=["Zwerver"],
     action_on_play=action_add_destination_card_as_location(
-        "Uitkijkpost", "destination_card", False, 1, 
+        "Uitkijkpost", "destination_card", 1, 
         action_location_copy_action(["basic", "forest"])),
     action_on_discard=CompositeAction([
         action_remove_destination("Uitkijkpost"),
@@ -470,7 +466,7 @@ universiteit = Construction(
     points=3,
     relatedcritters=["Dokter"],
     action_on_play=action_add_destination_card_as_location(
-        "Universiteit", "destination_card", False, 1, CompositeAction([
+        "Universiteit", "destination_card", 1, CompositeAction([
             action_resources_building_costs_discard(True, True),
             action_resources_by_choice(
                 ["twig", "resin", "pebble", "berry"], 1),

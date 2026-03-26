@@ -40,7 +40,7 @@ def finish_current_player(game_state):
 
     # Journey points
     for location in game_state["locations"]:
-        if location.type == "journey":
+        if location.location_type == "journey":
             nr_workers = location.get_player_workers(player)
             for _ in range(nr_workers):
                 player.points_add("journey", location.points)

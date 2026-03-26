@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from actions.base import Action
 from engine.selectors import get_possible_locations
@@ -30,9 +30,9 @@ def _resolve_worker_placement(
 
     # If another player uses your open destination location, owner
     # gains 1 token.
-    if location.type == "destination_card":
+    if location.location_type == "destination_card":
         owner = getattr(location, "owner", None)
-        if owner is not None and owner != player and location.open:
+        if owner is not None and owner != player and location.is_open:
             owner.points_add("token", 1)
 
     location.action.execute(game_state)
@@ -57,16 +57,17 @@ class action_place_worker(Action):
 class action_add_destination_card_as_location(Action):
     def __init__(
         self,
-        name,
-        type,
-        open,
-        maxworkers,
-        action,
-        permanent_workers=False,
-    ):
+        name: str,
+        location_type: str,
+        maxworkers: int,
+        action: Any,
+        *,
+        is_open: bool = False,
+        permanent_workers: bool = False,
+    ) -> None:
         self.name = name
-        self.type = type
-        self.open = open
+        self.location_type = location_type
+        self.is_open = is_open
         self.maxworkers = maxworkers
         self.action = action
         self.permanent_workers = permanent_workers
@@ -77,10 +78,10 @@ class action_add_destination_card_as_location(Action):
         locations = game_state["locations"]
         dest_card = Location(
             self.name,
-            self.type,
-            self.open,
+            self.location_type,
             self.maxworkers,
             self.action,
+            is_open=self.is_open,
             permanent_workers=self.permanent_workers,
             owner=player,
         )
@@ -95,17 +96,18 @@ class action_add_destination_if_card_present(Action):
 
     def __init__(
         self,
-        name,
-        type,
-        open,
-        maxworkers,
-        action,
-        check_card_name,
-        permanent_workers=False,
-    ):
+        name: str,
+        location_type: str,
+        maxworkers: int,
+        action: Any,
+        check_card_name: str,
+        *,
+        is_open: bool = False,
+        permanent_workers: bool = False,
+    ) -> None:
         self.name = name
-        self.type = type
-        self.open = open
+        self.location_type = location_type
+        self.is_open = is_open
         self.maxworkers = maxworkers
         self.action = action
         self.check_card_name = check_card_name
@@ -124,10 +126,10 @@ class action_add_destination_if_card_present(Action):
         if card_in_city:
             dest_card = Location(
                 self.name,
-                self.type,
-                self.open,
+                self.location_type,
                 self.maxworkers,
                 self.action,
+                is_open=self.is_open,
                 permanent_workers=self.permanent_workers,
                 owner=player,
             )
@@ -147,8 +149,12 @@ class action_remove_destination(Action):
         locations = game_state["locations"]
         targets = [loc for loc in locations if loc.name == self.location_name]
 
-        temp_loc = next(l for l in locations if l.type == "temporary")
-        perm_loc = next(l for l in locations if l.type == "permanent")
+        temp_loc = next(
+            l for l in locations if l.location_type == "temporary"
+        )
+        perm_loc = next(
+            l for l in locations if l.location_type == "permanent"
+        )
 
         for loc in targets:
             # Choose where to move workers depending on the source location
@@ -174,7 +180,7 @@ class action_location_copy_action(Action):
     def execute_action(self, player: "Player", game_state=None):
         locations = game_state["locations"]
         locations_of_type = [
-            l for l in locations if l.type in self.possible_types
+            l for l in locations if l.location_type in self.possible_types
         ]
         loc = player.decide(
             game_state, "location_place_worker", locations_of_type

@@ -292,26 +292,26 @@ def get_possible_locations(game_state):
 
     for location in locations:
         # Basic locations
-        if location.type == "basic" and location.get_open_spaces() > 0:
+        if location.location_type == "basic" and location.get_open_spaces() > 0:
             possible_locations.append(location)
 
         # Destination cards
-        if location.type == "destination_card":
+        if location.location_type == "destination_card":
             owner = getattr(location, "owner", None)
             in_own_city = owner == player
             accessible_open = owner is not None and (
-                                            owner != player and location.open)
+                                         owner != player and location.is_open)
 
             if location.get_open_spaces() > 0 and (
                                             in_own_city or accessible_open):
                 possible_locations.append(location)
 
         # Haven locations
-        if location.type == "haven" and location.get_open_spaces() > 0:
+        if location.location_type == "haven" and location.get_open_spaces() > 0:
             possible_locations.append(location)
 
         # Journey locations (autumn only)
-        if location.type == "journey":
+        if location.location_type == "journey":
             in_autumn = player.season == "autumn"
             has_space = location.get_open_spaces() > 0
             can_discard_required_cards = len(player.hand) >= location.points
