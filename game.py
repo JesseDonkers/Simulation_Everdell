@@ -83,25 +83,20 @@ for _ in range(NR_SIMULATION_RUNS):
 
     player: "Player" = game_state["current_player"]
 
-    player.resources_add("twig", 1)
-    player.resources_add("resin", 1)
-    player.resources_add("pebble", 1)
+    player.resources_add("twig", 5)
+    player.resources_add("resin", 5)
+    player.resources_add("pebble", 5)
 
-    if len(get_possible_cards(game_state)) > 0:
+    action_play_card().execute(game_state)
 
-        action_play_card().execute(game_state)
+    game_state_as_df_to_text(game_state, "Game_state")
 
-        if len(get_possible_cards(game_state)) > 0:
-            
-            game_state_as_df_to_text(game_state, "Game_state")
-            
-            action_play_card().execute(game_state)
+    player.city[0].action_on_discard.execute(game_state)
 
-            game_state_as_df_to_text(game_state, "Game_state")
+    game_state_as_df_to_text(game_state, "Game_state")
 
-            print(player.city[0].relatedoccupied)
+    break
 
-            break
     
     # ============================================
     # END GAME
