@@ -39,6 +39,43 @@ def _has_resources(resources, requirements):
     return True
 
 
+def _location_requirement_met(player, loc, requirement, game_state):
+    kind = requirement.get("kind")
+
+    if kind == "min_color_cards":
+        color = requirement.get("color")
+        count = requirement.get("count", 0)
+        city_count = len([card for card in player.city if card.color == color])
+        return city_count >= count
+
+    if kind == "required_cards_in_city":
+        required_cards = requirement.get("cards", [])
+        city_names = {card.name for card in player.city}
+        return all(card_name in city_names for card_name in required_cards)
+
+    if kind == "can_add_location_resource":
+        resource = requirement.get("resource")
+        amount = requirement.get("amount", 1)
+        return player.resources.get(resource, 0) >= amount
+
+    return False
+
+
+def _location_requirements_met(player, loc, game_state):
+    requirements = getattr(loc, "requirements", None)
+
+    if requirements is None:
+        return True
+
+    if isinstance(requirements, (list, tuple)):
+        return all(
+            _location_requirement_met(player, loc, requirement, game_state)
+            for requirement in requirements
+        )
+
+    return _location_requirement_met(player, loc, requirements, game_state)
+
+
 def _dedupe_play_methods(methods):
     unique_methods = []
     seen = set()
@@ -287,40 +324,46 @@ def get_possible_locations(game_state):
 
     player = game_state["current_player"]
     locations = game_state["locations"]
-    location: "Location"
+    loc: "Location"
     possible_locations = []
 
-    for location in locations:
+    for loc in locations:
+        if not _location_requirements_met(player, loc, game_state):
+            continue
+
         # Basic locations
-        if location.location_type == "basic" and location.get_open_spaces() > 0:
-            possible_locations.append(location)
+        if loc.location_type == "basic" and loc.get_open_spaces() > 0:
+            possible_locations.append(loc)
 
         # Destination cards
-        if location.location_type == "destination_card":
-            owner = getattr(location, "owner", None)
+        if loc.location_type == "destination_card":
+            owner = getattr(loc, "owner", None)
             in_own_city = owner == player
             accessible_open = owner is not None and (
-                                         owner != player and location.is_open)
+                                         owner != player and loc.is_open)
 
-            if location.get_open_spaces() > 0 and (
+            if loc.get_open_spaces() > 0 and (
                                             in_own_city or accessible_open):
-                possible_locations.append(location)
+                possible_locations.append(loc)
 
         # Haven locations
-        if location.location_type == "haven" and location.get_open_spaces() > 0:
-            possible_locations.append(location)
+        if loc.location_type == "haven" and loc.get_open_spaces() > 0:
+            possible_locations.append(loc)
 
         # Journey locations (autumn only)
-        if location.location_type == "journey":
+        if loc.location_type == "journey":
             in_autumn = player.season == "autumn"
-            has_space = location.get_open_spaces() > 0
-            can_discard_required_cards = len(player.hand) >= location.points
+            has_space = loc.get_open_spaces() > 0
+            can_discard_required_cards = len(player.hand) >= loc.points
 
             if in_autumn and has_space and can_discard_required_cards:
-                possible_locations.append(location)
+                possible_locations.append(loc)
+
+        # Event locations (unclaimed only; claimed events are in player.events)
+        if loc.location_type == "event" and loc.get_open_spaces() > 0:
+            possible_locations.append(loc)
 
     # To do: forest locations
-    # To do: event
 
     return possible_locations
 

@@ -45,4 +45,10 @@ class action_advance_season(Action):
                 location.remove_worker(player)
                 player.workers_add(1)
 
+        # Return workers from claimed event locations
+        for event in player.events:
+            if event.get_player_workers(player) > 0:
+                event.remove_worker(player)
+                player.workers_add(1)
+
         player.season = seasons[(current_index + 1)]

@@ -35,7 +35,13 @@ def _resolve_worker_placement(
         if owner is not None and owner != player and location.is_open:
             owner.points_add("token", 1)
 
-    location.action.execute(game_state)
+    # Event locations: move to player's events
+    if location.location_type == "event":
+        game_state["locations"].remove(location)
+        player.events.append(location)
+
+    if location.action_on_place_worker:
+        location.action_on_place_worker.execute(game_state)
 
 
 class action_place_worker(Action):
@@ -60,7 +66,7 @@ class action_add_destination_card_as_location(Action):
         name: str,
         location_type: str,
         maxworkers: int,
-        action: Any,
+        action_on_place_worker: Any,
         *,
         is_open: bool = False,
         permanent_workers: bool = False,
@@ -69,7 +75,7 @@ class action_add_destination_card_as_location(Action):
         self.location_type = location_type
         self.is_open = is_open
         self.maxworkers = maxworkers
-        self.action = action
+        self.action_on_place_worker = action_on_place_worker
         self.permanent_workers = permanent_workers
 
     def execute_action(self, player: "Player", game_state=None):
@@ -80,7 +86,7 @@ class action_add_destination_card_as_location(Action):
             self.name,
             self.location_type,
             self.maxworkers,
-            self.action,
+            self.action_on_place_worker,
             is_open=self.is_open,
             permanent_workers=self.permanent_workers,
             owner=player,
@@ -99,7 +105,7 @@ class action_add_destination_if_card_present(Action):
         name: str,
         location_type: str,
         maxworkers: int,
-        action: Any,
+        action_on_place_worker: Any,
         check_card_name: str,
         *,
         is_open: bool = False,
@@ -109,7 +115,7 @@ class action_add_destination_if_card_present(Action):
         self.location_type = location_type
         self.is_open = is_open
         self.maxworkers = maxworkers
-        self.action = action
+        self.action_on_place_worker = action_on_place_worker
         self.check_card_name = check_card_name
         self.permanent_workers = permanent_workers
 
@@ -128,7 +134,7 @@ class action_add_destination_if_card_present(Action):
                 self.name,
                 self.location_type,
                 self.maxworkers,
-                self.action,
+                self.action_on_place_worker,
                 is_open=self.is_open,
                 permanent_workers=self.permanent_workers,
                 owner=player,
@@ -185,7 +191,7 @@ class action_location_copy_action(Action):
         loc = player.decide(
             game_state, "location_place_worker", locations_of_type
         )
-        loc.action.execute(game_state)
+        loc.action_on_place_worker.execute(game_state)
 
 
 class action_replace_worker(Action):

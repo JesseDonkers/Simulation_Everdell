@@ -46,7 +46,8 @@ def finish_current_player(game_state):
                 player.points_add("journey", location.points)
 
     # Event points
-    # To do
+    for event in player.events:
+        event.action_on_finish.execute(game_state)
 
     # If all players have finished the game, compare sum of points
     if all(p.finished for p in players):

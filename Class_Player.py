@@ -9,6 +9,7 @@ class Player:
         self.points = dict(card=0, token=0, prosperity=0, journey=0, event=0)
         self.resources = dict(twig=0, resin=0, pebble=0, berry=0)
         self.finished = False # Track if the player has finished their game
+        self.events = []  # Event locations claimed by this player
 
     def __str__(self):
         a = str("Index: " + str(self.index))
@@ -20,9 +21,10 @@ class Player:
         g = str("Points: " + str(self.points))
         h = str("Resources: " + str(self.resources))
         i = str("Finished: " + str(self.finished))
+        j = str("Events: " + str(self.events))
 
         return (a + "\n" + b + "\n" + c + "\n" + d + "\n" 
-                + e + "\n" + f + "\n" + g + "\n" + h + "\n" + i)
+                + e + "\n" + f + "\n" + g + "\n" + h + "\n" + i + "\n" + j)
 
     # Function to add cards to the player"s hand or city
     def cards_add(self, listofcards, handorcity):

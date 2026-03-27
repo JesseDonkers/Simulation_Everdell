@@ -12,9 +12,10 @@ class Location:
         name: str,
         location_type: str,
         maxworkers: int,
-        action: Any,
+        action_on_place_worker: Any,
         *,
         is_open: bool = False,
+        action_on_finish: Any = None,
         permanent_workers: bool = False,
         owner: "Player | None" = None,
         points: int = 0,
@@ -24,8 +25,10 @@ class Location:
         self.location_type = location_type # For example basic, journey, haven
         self.is_open = is_open # Attribute for destination cards
         self.maxworkers = maxworkers
-        self.action = action
+        self.action_on_place_worker = action_on_place_worker
+        self.action_on_finish = action_on_finish
         self.workers: dict["Player", int] = {}
+        self.resources = dict(twig=0, resin=0, pebble=0, berry=0)
         self.permanent_workers = permanent_workers
         self.owner = owner  # Player that owns this destination location
         self.points = points
@@ -54,6 +57,16 @@ class Location:
     # Function to get workers of a specific player
     def get_player_workers(self, player: "Player"):
         return self.workers.get(player, 0)
+
+    # Function to add resources to a specific category
+    def resources_add(self, resource, amount):
+        self.resources[resource] += amount
+        return self.resources
+
+    # Function to remove resources from a specific category
+    def resources_remove(self, resource, amount):
+        self.resources[resource] -= amount
+        return self.resources
 
 
 init_locations = []
@@ -129,46 +142,52 @@ two_resources = None # To do
 cards_pebble = None # To do
 berries = None # To do
 
-init_locations.extend(
-    loc for loc in [
-        cards_for_resources,
-        card_for_cards,
-        card_from_meadow,
-        copy_basic_location,
-        berries_card,
-        twig_resin_berry,
-        resins_twig,
-        cards_resource,
-        two_resources,
-        cards_pebble,
-        berries,
-    ] if loc is not None
-)
+# To do: should not be added to init_locations, but seperate forest_locations list
 
 
 # ============================================
 # BASIC EVENTS
 # ============================================
 
-# Player will get its worker back, but event stays in the city of the player
-
-# To do: seperate actions: action_on_place_worker, action_on_finish
-
-monument = None # To do
-tour = None # To do
-festival = None # To do
-expedition = None # To do
-
-init_locations.extend(
-    loc for loc in [monument, tour, festival, expedition] if loc is not None
+monument = Location(
+    "Monument",
+    "event",
+    1,
+    None,
+    action_on_finish=class_action.action_points_general("event", 3),
+    requirements={"kind": "min_color_cards", "color": "blue", "count": 3},
 )
+tour = Location(
+    "Tour",
+    "event",
+    1,
+    None,
+    action_on_finish=class_action.action_points_general("event", 3),
+    requirements={"kind": "min_color_cards", "color": "red", "count": 3},
+)
+festival = Location(
+    "Festival",
+    "event",
+    1,
+    None,
+    action_on_finish=class_action.action_points_general("event", 3),
+    requirements={"kind": "min_color_cards", "color": "green", "count": 4},
+)
+expedition = Location(
+    "Expedition",
+    "event",
+    1,
+    None,
+    action_on_finish=class_action.action_points_general("event", 3),
+    requirements={"kind": "min_color_cards", "color": "tan", "count": 3},
+)
+
+init_locations.extend([monument, tour, festival, expedition])
 
 
 # ============================================
 # SPECIAL EVENTS
 # ============================================
-
-# Player will get its worker back, but event stays in the city of the player
 
 hiru = None # To do
 heza = None # To do
@@ -187,26 +206,8 @@ uimi = None # To do
 hoka = None # To do
 leun = None # To do
 
-init_locations.extend(
-    loc for loc in [
-        hiru,
-        heza,
-        sckl,
-        reko,
-        dopo,
-        gebo,
-        behe,
-        klzw,
-        moke,
-        mawi,
-        wipo,
-        twve,
-        beki,
-        uimi,
-        hoka,
-        leun,
-    ] if loc is not None
-)
+# To do: should not be added to init_locations, but seperate special_events list
+
 
 # ============================================
 # HAVEN

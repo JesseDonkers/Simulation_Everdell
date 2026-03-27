@@ -147,7 +147,10 @@ kikkerkapitein = Critter(
     cardsindeck=3,
     unique=False,
     points=1,
-    action_on_play=action_resource_per_other_card("Boerderij", "twig", 2),
+    action_on_play=action_resource_per_other_card(
+                                                    "Boerderij", "twig", 2),
+    action_on_reactivate=action_resource_per_other_card(
+                                                    "Boerderij", "twig", 2),
     action_on_discard=action_remove_card_from_city("Kikkerkapitein"))
 
 # To do: leraar

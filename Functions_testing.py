@@ -160,6 +160,16 @@ def game_state_as_df_to_text(game_state, output_file=None):
             if player.hand else "")
         hand_row_data.append(hand_cards)
     all_rows.append(hand_row_data)
+
+    # Events row (newline-separated)
+    row_labels.append("Events")
+    events_row_data = []
+    for player in players:
+        events = (
+            "\n".join([event.name for event in player.events])
+            if player.events else "")
+        events_row_data.append(events)
+    all_rows.append(events_row_data)
     
     # Create dataframe
     players_df = pd.DataFrame(
