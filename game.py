@@ -83,19 +83,30 @@ for _ in range(NR_SIMULATION_RUNS):
 
     player: "Player" = game_state["current_player"]
 
-    player.resources_add("twig", 5)
-    player.resources_add("resin", 5)
-    player.resources_add("pebble", 5)
+    player.cards_add(deck.draw_cards(1, discardpile), "city")
+    player.cards_add(deck.draw_cards(1, discardpile), "city")
+    player.cards_add(deck.draw_cards(1, discardpile), "city")
+    player.cards_add(deck.draw_cards(1, discardpile), "city")
+    player.cards_add(deck.draw_cards(1, discardpile), "city")
+    player.cards_add(deck.draw_cards(1, discardpile), "city")
+    player.cards_add(deck.draw_cards(1, discardpile), "city")
 
-    action_play_card().execute(game_state)
+    action_place_worker().execute(game_state)
 
-    game_state_as_df_to_text(game_state, "Game_state")
+    if len([loc
+           for loc in game_state["locations"]
+           if loc.location_type == "event"
+        ]) < 4:
 
-    player.city[0].action_on_discard.execute(game_state)
+        print("Placed on event location")
 
-    game_state_as_df_to_text(game_state, "Game_state")
+        game_state_as_df_to_text(game_state, "Game_state")
+        
+        action_advance_season().execute(game_state)
 
-    break
+        game_state_as_df_to_text(game_state, "Game_state")
+
+        break
 
     
     # ============================================

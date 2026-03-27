@@ -148,7 +148,6 @@ berries = None # To do
 # ============================================
 # BASIC EVENTS
 # ============================================
-
 monument = Location(
     "Monument",
     "event",
