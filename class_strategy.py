@@ -37,9 +37,7 @@ class Strategy_random(Strategy):
         opt = ["deck", "discardpile"]
         return random.choice(opt)
     
-    def choose_nr_cards_discard_hand(self, game_state, _):
-        player = game_state["current_player"]
-        max_nr = len(player.hand)
+    def choose_nr_cards_discard_hand(self, game_state, max_nr):
         return random.randint(0, max_nr)
     
     def choose_card_discard(self, game_state, possible_cards):
@@ -55,44 +53,19 @@ class Strategy_random(Strategy):
         resources = ["twig", "resin", "pebble", "berry"]
         return random.choice(resources)
     
-    def choose_resource_give_away(self, game_state, quantity):
-        player = game_state["current_player"]
-        available = {r: player.resources.get(r, 0) for r in 
-                     ("twig", "resin", "pebble", "berry")}
-        picks = []
+    def choose_resource_give_away(self, game_state, parameters):
+        nr_to_pick, available = parameters
+        pool = [r for r, count in available.items() for _ in range(count)]
+        return random.sample(pool, nr_to_pick)
 
-        for _ in range(quantity):
-            options = [r for r, cnt in available.items() if cnt > 0]
-            choice = random.choice(options)
-            picks.append(choice)
-            available[choice] -= 1
-        return picks
-
-    def choose_nr_resources_to_give_away(self, game_state, nr_and_type):
-        player = game_state["current_player"]
-        max_nr_resources = nr_and_type[0]
-        resource_type = nr_and_type[1]
-        available_resources = player.resources.get(resource_type)
-        return random.randint(0, min(max_nr_resources, available_resources))
+    def choose_nr_resources_to_give_away(self, game_state, max_nr_resources):
+        return random.randint(0, max_nr_resources)
     
-    def choose_nr_resources_for_points(self, game_state, nr_and_type):
-        player = game_state["current_player"]
-        max_nr_resources = nr_and_type[0]
-        resource_type = nr_and_type[1]
-        available_resources = player.resources.get(resource_type)
-        return random.randint(0, min(max_nr_resources, available_resources))
+    def choose_nr_resources_for_points(self, game_state, max_nr_resources):
+        return random.randint(0, max_nr_resources)
     
-    def choose_player_to_receive_resources(self, game_state, _):
-        player = game_state["current_player"]
-        players = game_state["players"]
-        other_pls = [p for p in players if p != player and p.finished == False]
-        return random.choice(other_pls)
+    def choose_player_to_receive_resources(self, game_state, possible_players):
+        return random.choice(possible_players)
     
-    def choose_player_to_receive_cards(self, game_state, nr_give):
-        player = game_state["current_player"]
-        players = game_state["players"]
-        other_pls = [p for p in players
-                     if p != player
-                     and not p.finished
-                     and p.cards_get_open_spaces("hand") >= nr_give]
-        return random.choice(other_pls)
+    def choose_player_to_receive_cards(self, game_state, possible_players):
+        return random.choice(possible_players)

@@ -356,14 +356,24 @@ class action_give_discard_refill_hand(Action):
                 cards_to_give.append(card)
                 selectable.remove(card)
 
-            target = player.decide(
-                game_state, "player_to_receive_cards", nr_to_give
-            )
-            player.cards_remove(cards_to_give, "hand")
-            target.cards_add(cards_to_give, "hand")
+            eligible_targets = [
+                p for p in players
+                if p != player
+                and not p.finished
+                and p.cards_get_open_spaces("hand") >= nr_to_give
+            ]
+
+            if len(eligible_targets) > 0:
+                target = player.decide(
+                    game_state, "player_to_receive_cards", eligible_targets
+                )
+
+                player.cards_remove(cards_to_give, "hand")
+                target.cards_add(cards_to_give, "hand")
 
         # Discard a number of cards by choice from hand
-        nr_discard = player.decide(game_state, "nr_cards_discard_hand", None)
+        nr_discard = player.decide(
+                        game_state, "nr_cards_discard_hand", len(player.hand))
         cards_to_discard = []
         selectable = player.hand.copy()
         for _ in range(nr_discard):

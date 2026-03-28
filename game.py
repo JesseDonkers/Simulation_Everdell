@@ -4,7 +4,7 @@ from class_meadow import Meadow
 from class_player import Player
 from class_action import *
 from class_card import init_cards
-from class_location import init_locations
+from class_location import init_locations, special_events
 from class_strategy import *
 from functions_statistics import *
 from functions_testing import *
@@ -51,14 +51,6 @@ for _ in range(NR_SIMULATION_RUNS):
         card_counter += 1 # Each successive player draws one more card
         p.workers_add(2) # Each player starts with 2 workers
 
-
-    # To do:
-    #  - Shuffle special events
-    #  - Draw 4 special events (add to locations)
-    #  - Shuffle forest cards
-    #  - Place 3 or 4 forecst cards depending on nr players (add to locations)
-
-
     game_state = {
         "deck": deck,
         "discardpile": discardpile,
@@ -68,6 +60,16 @@ for _ in range(NR_SIMULATION_RUNS):
         "current_player": players[0],
     }
 
+    # Shuffle special events and add 4 to locations
+    special_events_copy = copy.deepcopy(special_events)
+    random.shuffle(special_events_copy)
+    for i in range(4):
+        event = special_events_copy[i]
+        game_state["locations"].append(event)
+
+    # To do:
+    #  - Shuffle forest cards
+    #  - Place 3 or 4 forecst cards depending on nr players (add to locations)
 
     # Each player is provided with a strategy.
     if len(STRATEGY_PER_PLAYER) != len(players):
@@ -83,30 +85,21 @@ for _ in range(NR_SIMULATION_RUNS):
 
     player: "Player" = game_state["current_player"]
 
-    player.cards_add(deck.draw_cards(1, discardpile), "city")
-    player.cards_add(deck.draw_cards(1, discardpile), "city")
-    player.cards_add(deck.draw_cards(1, discardpile), "city")
-    player.cards_add(deck.draw_cards(1, discardpile), "city")
-    player.cards_add(deck.draw_cards(1, discardpile), "city")
-    player.cards_add(deck.draw_cards(1, discardpile), "city")
-    player.cards_add(deck.draw_cards(1, discardpile), "city")
-
+    player.resources_add("berry", 3)
     action_place_worker().execute(game_state)
 
-    if len([loc
-           for loc in game_state["locations"]
-           if loc.location_type == "event"
-        ]) < 4:
+    game_state_as_df_to_text(game_state, "Game_state")
+    
+    action_play_card().execute(game_state)
 
-        print("Placed on event location")
+    if any(c.name == "Zanger" for c in player.city):
 
-        game_state_as_df_to_text(game_state, "Game_state")
-        
-        action_advance_season().execute(game_state)
+        print("Zanger in city")
 
         game_state_as_df_to_text(game_state, "Game_state")
 
         break
+
 
     
     # ============================================

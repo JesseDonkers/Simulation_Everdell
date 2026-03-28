@@ -57,6 +57,17 @@ def game_state_as_df_to_text(game_state, output_file=None):
     # TEXT FIELDS
     # ============================================
     
+    current_player = game_state["current_player"]
+    current_player_text = f"CURRENT PLAYER: Player {current_player.index}"
+
+    from engine.selectors import get_possible_moves
+    turn_options = get_possible_moves(game_state)
+    turn_options_text = (
+        "TURN OPTIONS: " + ", ".join(turn_options)
+        if turn_options
+        else "TURN OPTIONS: -"
+    )
+
     deck_size_text = f"DECK SIZE: {len(deck.cards)}"
     
     # ============================================
@@ -286,6 +297,9 @@ def game_state_as_df_to_text(game_state, output_file=None):
     text_output.append("")
     
     # Players dataframe with borders
+    text_output.append(current_player_text)
+    text_output.append(turn_options_text)
+    text_output.append("")
     text_output.append("PLAYERS:")
     text_output.append(tabulate(players_df, 
                         headers='keys', tablefmt='grid', showindex=True))
@@ -327,6 +341,8 @@ def game_state_as_df_to_text(game_state, output_file=None):
     # ============================================
     
     return {
+        'current_player': current_player_text,
+        'turn_options': turn_options,
         'deck_size': deck_size_text,
         'locations_board_df': locations_board_df,
         'locations_df': locations_df,

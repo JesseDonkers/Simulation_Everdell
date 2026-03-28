@@ -1,5 +1,6 @@
 import copy
 
+from actions import cards
 from class_action import *
 
 
@@ -218,7 +219,15 @@ winkelier = Critter(
     action_on_play=action_resource_general("berry", 1),
     action_on_discard=action_remove_card_from_city("Winkelier"))
 
-# To do: zanger
+zanger = Critter(
+    name="Zanger",
+    color="tan",
+    requirements=dict(twig=0, resin=0, pebble=0, berry=3),
+    cardsindeck=2,
+    unique=True,
+    points=0,
+    action_on_play=action_points_for_discarding_cards(5, 1),
+    action_on_discard=action_remove_card_from_city("Zanger"))
 
 # To do: zwerver
 
@@ -233,6 +242,7 @@ cards_unique.append(kikkerkapitein)
 cards_unique.append(koningin)
 cards_unique.append(monnik)
 cards_unique.append(winkelier)
+cards_unique.append(zanger)
 
 
 # ============================================
@@ -313,7 +323,8 @@ kasteel = Construction(
     unique=True,
     points=4,
     relatedcritters=["Koning"],    
-    action_on_finish=actions_points_for_cards("Construction", False, 1),
+    action_on_finish=actions_points_for_cards_in_city(
+                                                    "Construction", False, 1),
     action_on_discard=action_remove_card_from_city("Kasteel"))
 
 kerker = Construction(
@@ -390,7 +401,7 @@ paleis = Construction(
     unique=True,
     points=4,
     relatedcritters=["Koningin"],    
-    action_on_finish=actions_points_for_cards("Construction", True, 1),
+    action_on_finish=actions_points_for_cards_in_city("Construction", True, 1),
     action_on_discard=action_remove_card_from_city("Paleis"))
 
 postkantoor = Construction(
@@ -419,7 +430,7 @@ school = Construction(
     unique=True,
     points=2,
     relatedcritters=["Leraar"],
-    action_on_finish=actions_points_for_cards("Critter", False, 1),
+    action_on_finish=actions_points_for_cards_in_city("Critter", False, 1),
     action_on_discard=action_remove_card_from_city("School"))
 
 takkenboot = Construction(
@@ -442,7 +453,7 @@ theater = Construction(
     unique=True,
     points=3,
     relatedcritters=["Zanger"],
-    action_on_finish=actions_points_for_cards("Critter", True, 1),
+    action_on_finish=actions_points_for_cards_in_city("Critter", True, 1),
     action_on_discard=action_remove_card_from_city("Theater"))
 
 uitkijkpost = Construction(

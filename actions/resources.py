@@ -88,7 +88,8 @@ class action_resources_for_cards(Action):
         discardpile: "DiscardPile" = game_state["discardpile"]
 
         # Player decides how many cards to discard (0 to len(hand))
-        nr_discard = player.decide(game_state, "nr_cards_discard_hand", None)
+        nr_discard = player.decide(
+                    game_state, "nr_cards_discard_hand", len(player.hand))
         nr_discard = (nr_discard // 2) * 2  # Round down to nearest even number
 
         # Player picks each card to discard
@@ -120,18 +121,25 @@ class action_resources_to_location(Action):
             (loc for loc in player.events if loc.name == self.location_name),
             None,
         )
+        if target_location is None:
+            raise ValueError(
+                f"Location '{self.location_name}' not found in player events"
+            )
 
         remaining = self.max_nr_resources
         for resource_type in self.resources:
             if remaining == 0:
                 break
 
+            available = player.resources.get(resource_type, 0)
+            max_allowed = min(remaining, available)
+
             requested = player.decide(
                 game_state,
                 "nr_resources_for_points",
-                [remaining, resource_type],
+                max_allowed,
             )
-            amount = min(requested, remaining)
+            amount = max(0, min(requested, max_allowed))
 
             if amount == 0:
                 continue
