@@ -60,20 +60,108 @@ def game_state_as_df_to_text(game_state, output_file=None):
     deck_size_text = f"DECK SIZE: {len(deck.cards)}"
     
     # ============================================
-    # LOCATIONS DATAFRAME (VERTICAL)
+    # LOCATIONS DATAFRAMES
     # ============================================
 
-    location_data = []
-    for loc in locations:
-        # Format workers as "Player 0: 2, Player 1: 1" etc.
-        workers_str = (", ".join([f"Player {p.index}: {count}" for 
-                                  p, count in loc.workers.items()]))
-        location_data.append({
-            "Location": loc.name,
-            "Workers": workers_str
-        })
-    
-    locations_df = pd.DataFrame(location_data)
+    def _format_location_workers(loc):
+        if not loc.workers:
+            return "-"
+
+        return ", ".join(
+            [f"{p.index}:{count}" for p, count in loc.workers.items()]
+        )
+
+    basic_event_names = {"Monument", "Tour", "Festival", "Expedition"}
+
+    def _sorted_locations(group_locations):
+        return sorted(group_locations, key=lambda loc: loc.name)
+
+    def _locations_to_rows(group_locations):
+        return [
+            {
+                "Location": loc.name,
+                "Workers": _format_location_workers(loc),
+            }
+            for loc in _sorted_locations(group_locations)
+        ]
+
+    left_rows = []
+    left_rows.extend(
+        _locations_to_rows(
+            [loc for loc in locations if loc.location_type == "permanent"]
+        )
+    )
+    left_rows.extend(
+        _locations_to_rows(
+            [loc for loc in locations if loc.location_type == "temporary"]
+        )
+    )
+    left_rows.extend(
+        _locations_to_rows(
+            [loc for loc in locations if loc.location_type == "basic"]
+        )
+    )
+    left_rows.extend(
+        _locations_to_rows(
+            [loc for loc in locations if loc.location_type == "journey"]
+        )
+    )
+
+    right_rows = []
+    right_rows.extend(
+        _locations_to_rows(
+            [loc for loc in locations if loc.location_type == "haven"]
+        )
+    )
+    right_rows.extend(
+        _locations_to_rows(
+            [loc for loc in locations if loc.location_type == "forest"]
+        )
+    )
+    right_rows.extend(
+        _locations_to_rows(
+            [
+                loc for loc in locations
+                if loc.location_type == "event" and loc.name in basic_event_names
+            ]
+        )
+    )
+    right_rows.extend(
+        _locations_to_rows(
+            [
+                loc for loc in locations
+                if loc.location_type == "event" and loc.name not in basic_event_names
+            ]
+        )
+    )
+    right_rows.extend(
+        _locations_to_rows(
+            [loc for loc in locations if loc.location_type == "destination_card"]
+        )
+    )
+
+    nr_rows = max(len(left_rows), len(right_rows))
+
+    board_data = {
+        "Location": [
+            left_rows[i]["Location"] if i < len(left_rows) else ""
+            for i in range(nr_rows)
+        ],
+        "Workers": [
+            left_rows[i]["Workers"] if i < len(left_rows) else ""
+            for i in range(nr_rows)
+        ],
+        "Loc cont.": [
+            right_rows[i]["Location"] if i < len(right_rows) else ""
+            for i in range(nr_rows)
+        ],
+        "Workers cont.": [
+            right_rows[i]["Workers"] if i < len(right_rows) else ""
+            for i in range(nr_rows)
+        ],
+    }
+    locations_board_df = pd.DataFrame(board_data)
+    locations_df = locations_board_df.copy()
     
     # ============================================
     # MEADOW + DISCARDPILE DATAFRAME
@@ -185,9 +273,9 @@ def game_state_as_df_to_text(game_state, output_file=None):
     text_output.append(deck_size_text)
     text_output.append("")
     
-    # Locations dataframe with borders
+    # Board locations dataframe with borders
     text_output.append("LOCATIONS:")
-    text_output.append(tabulate(locations_df, 
+    text_output.append(tabulate(locations_board_df,
                         headers='keys', tablefmt='grid', showindex=False))
     text_output.append("")
     
@@ -240,6 +328,7 @@ def game_state_as_df_to_text(game_state, output_file=None):
     
     return {
         'deck_size': deck_size_text,
+        'locations_board_df': locations_board_df,
         'locations_df': locations_df,
         'meadow_discardpile_df': meadow_discardpile_df,
         'players_df': players_df,

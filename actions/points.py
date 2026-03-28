@@ -7,6 +7,7 @@ __all__ = [
     "action_points_for_payed_resources",
     "action_points_general",
     "actions_points_for_cards",
+    "actions_points_for_resources_event_location",
     "actions_points_for_resources_hand",
 ]
 
@@ -103,7 +104,7 @@ class action_points_for_payed_resources(Action):
     def execute_action(self, player: "Player", game_state=None):
         nr_and_type = [self.max_nr_resources, self.resource_type]
         nr_give_away = player.decide(
-            game_state, "nr_resources_to_pay", nr_and_type
+            game_state, "nr_resources_for_points", nr_and_type
         )
 
         for _ in range(nr_give_away):
@@ -121,6 +122,26 @@ class actions_points_for_resources_hand(Action):
             qty = player.resources.get(r, 0)
             for _ in range(qty):
                 player.points_add("prosperity", self.point_per_resource)
+
+
+class actions_points_for_resources_event_location(Action):
+    def __init__(self, resources, point_per_resource, location_name=None):
+        self.resources = resources
+        self.point_per_resource = point_per_resource
+        self.location_name = location_name
+
+    def execute_action(self, player: "Player", game_state=None):
+        target_location = next(
+            (loc for loc in player.events if loc.name == self.location_name),
+            None,
+        )
+
+        total_resources = sum(
+            target_location.resources.get(resource_type, 0)
+            for resource_type in self.resources
+        )
+
+        player.points_add("event", total_resources * self.point_per_resource)
 
 
 class actions_points_for_cards(Action):

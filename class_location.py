@@ -188,8 +188,24 @@ init_locations.extend([monument, tour, festival, expedition])
 # SPECIAL EVENTS
 # ============================================
 
+special_events = []
+
 hiru = None # To do
-heza = None # To do
+
+heza = Location(
+    "Heza",
+    "event",
+    1,
+    class_action.action_resources_to_location("Heza", ["berry"], 3),
+
+    action_on_finish=class_action.actions_points_for_resources_event_location(
+        ["berry"], 1, location_name="Heza"),
+    
+    requirements=[{"kind": "required_cards_in_city", 
+                   "cards": ["Herberg", "Zanger"]},
+                  {"kind": "can_add_location_resource", 
+                   "resource": "berry", "amount": 1}])
+
 sckl = None # To do
 reko = None # To do
 dopo = None # To do
@@ -205,7 +221,8 @@ uimi = None # To do
 hoka = None # To do
 leun = None # To do
 
-# To do: should not be added to init_locations, but seperate special_events list
+# Special events should not be added to init_locations, but to a separate list
+special_events.extend([heza, heza, heza, heza]) # To do: add all special events
 
 
 # ============================================

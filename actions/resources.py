@@ -10,6 +10,7 @@ __all__ = [
     "action_resource_per_other_card",
     "action_resources_building_costs_discard",
     "action_resources_by_choice",
+    "action_resources_to_location",
 ]
 
 if TYPE_CHECKING:
@@ -106,3 +107,35 @@ class action_resources_for_cards(Action):
         for _ in range(nr_discard // 2):
             choice = player.decide(game_state, "resource_new", resources)
             player.resources_add(choice, 1)
+
+
+class action_resources_to_location(Action):
+    def __init__(self, location_name, resources, max_nr_resources):
+        self.location_name = location_name
+        self.resources = resources
+        self.max_nr_resources = max_nr_resources
+
+    def execute_action(self, player: "Player", game_state=None):
+        target_location = next(
+            (loc for loc in player.events if loc.name == self.location_name),
+            None,
+        )
+
+        remaining = self.max_nr_resources
+        for resource_type in self.resources:
+            if remaining == 0:
+                break
+
+            requested = player.decide(
+                game_state,
+                "nr_resources_for_points",
+                [remaining, resource_type],
+            )
+            amount = min(requested, remaining)
+
+            if amount == 0:
+                continue
+
+            player.resources_remove(resource_type, amount)
+            target_location.resources_add(resource_type, amount)
+            remaining -= amount

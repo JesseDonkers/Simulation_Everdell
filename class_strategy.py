@@ -75,7 +75,7 @@ class Strategy_random(Strategy):
         available_resources = player.resources.get(resource_type)
         return random.randint(0, min(max_nr_resources, available_resources))
     
-    def choose_nr_resources_to_pay(self, game_state, nr_and_type):
+    def choose_nr_resources_for_points(self, game_state, nr_and_type):
         player = game_state["current_player"]
         max_nr_resources = nr_and_type[0]
         resource_type = nr_and_type[1]
