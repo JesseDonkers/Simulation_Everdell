@@ -59,6 +59,9 @@ def _location_requirement_met(player, loc, requirement, game_state):
         amount = requirement.get("amount", 1)
         return player.resources.get(resource, 0) >= amount
 
+    if kind == "has_any_resource":
+        return sum(player.resources.values()) >= 1
+
     return False
 
 

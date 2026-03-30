@@ -10,6 +10,7 @@ __all__ = [
     "action_place_worker",
     "action_remove_destination",
     "action_replace_worker",
+    "action_retake_worker",
 ]
 
 if TYPE_CHECKING:
@@ -230,3 +231,23 @@ class action_replace_worker(Action):
         _resolve_worker_placement(
             player, loc_to, game_state, remove_from_supply=False
         )
+
+
+class action_retake_worker(Action):
+    def execute_action(self, player: "Player", game_state=None):
+        removable_locations = [
+            loc
+            for loc in game_state["locations"]
+            if loc.get_player_workers(player) > 0
+            and not getattr(loc, "permanent_workers", False)]
+
+        if len(removable_locations) == 0:
+            raise ValueError("No placed worker can be removed")
+
+        loc_from = player.decide(
+            game_state,
+            "location_take_worker",
+            removable_locations)
+        
+        loc_from.remove_worker(player)
+        player.workers_add(1)

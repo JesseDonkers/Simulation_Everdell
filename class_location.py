@@ -197,16 +197,24 @@ heza = Location(
     "event",
     1,
     class_action.action_resources_to_location("Heza", ["berry"], 3),
-
     action_on_finish=class_action.actions_points_for_resources_event_location(
         ["berry"], 2, location_name="Heza"),
-    
     requirements=[{"kind": "required_cards_in_city", 
                    "cards": ["Herberg", "Zanger"]},
                   {"kind": "can_add_location_resource", 
-                   "resource": "berry", "amount": 1}])
+                   "resource": "berry", "amount": 1}]
+)
 
-sckl = None # To do
+sckl = Location(
+    "Sckl",
+    "event",
+    1,
+    class_action.action_retake_worker(),
+    action_on_finish=class_action.action_points_general("event", 4),
+    requirements={"kind": "required_cards_in_city", 
+                   "cards": ["Schoonmaker", "Klokkentoren"]}\
+)
+
 reko = None # To do
 dopo = None # To do
 gebo = None # To do
@@ -214,15 +222,40 @@ behe = None # To do
 klzw = None # To do
 moke = None # To do
 mawi = None # To do
-wipo = None # To do
+
+wipo = Location(
+    "Wipo",
+    "event",
+    1,
+    class_action.action_points_for_given_resources(
+        max_nr_resources=3, points_per_resource=2),
+    requirements=[{"kind": "required_cards_in_city", 
+                   "cards": ["Winkelier", "Postkantoor"]},
+                  {"kind": "has_any_resource"}]
+)
+
 twve = None # To do
 beki = None # To do
-uimi = None # To do
+
+uimi = Location(
+    "Uimi",
+    "event",
+    1,
+    class_action.action_resources_to_location("Uimi", ["twig"], 3),
+    action_on_finish=class_action.actions_points_for_resources_event_location(
+        ["twig"], 2, location_name="Uimi"),
+    requirements=[{"kind": "required_cards_in_city", 
+                   "cards": ["Uitkijkpost", "Mijnwerker mol"]},
+                  {"kind": "can_add_location_resource", 
+                   "resource": "twig", "amount": 1}]
+)
+
 hoka = None # To do
 leun = None # To do
 
 # Special events should not be added to init_locations, but to a separate list
-special_events.extend([heza, heza, heza, heza]) # To do: add all special events
+special_events.extend([heza, sckl, wipo, uimi])
+# To do: add all special events
 
 
 # ============================================

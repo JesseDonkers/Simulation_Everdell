@@ -29,7 +29,7 @@ class action_points_general(Action):
 
 class action_points_for_given_resources(Action):
     """
-    Action that handles two patterns:
+    Action that handles three patterns:
 
     - Fixed choose type
         player chooses which resources to give, fixed points
@@ -39,6 +39,11 @@ class action_points_for_given_resources(Action):
         Player chooses how many to give (up to max), resource type fixed, and
         points per resource
         (max_nr_resources=2, resource_type='berry', points_per_resource=2)
+
+    - Max choose type
+        Player chooses how many resources to give (up to max), resource types
+        chosen freely, and points per resource
+        (max_nr_resources=3, points_per_resource=2)
     """
 
     def __init__(
@@ -62,10 +67,20 @@ class action_points_for_given_resources(Action):
             self.max_nr_resources = max_nr_resources
             self.resource_type = resource_type
             self.points_per_resource = points_per_resource
+        elif max_nr_resources is not None and points_per_resource is not None:
+            self.mode = "max_choose_types"
+            self.max_nr_resources = max_nr_resources
+            self.points_per_resource = points_per_resource
         else:
             raise ValueError(
                 "Invalid arguments for action_points_for_given_resources"
             )
+
+    def _get_available_resources(self, player: "Player"):
+        return {
+            resource_type: player.resources.get(resource_type, 0)
+            for resource_type in ("twig", "resin", "pebble", "berry")
+        }
 
     def execute_action(self, player: "Player", game_state=None):
         players = game_state["players"]
@@ -80,10 +95,7 @@ class action_points_for_given_resources(Action):
         )
 
         if self.mode == "fixed_choose_types":
-            available = {
-                r: player.resources.get(r, 0)
-                for r in ("twig", "resin", "pebble", "berry")
-            }
+            available = self._get_available_resources(player)
             actual_nr = min(self.nr_resources, sum(available.values()))
             if actual_nr == 0:
                 raise ValueError("No resources can be given away")
@@ -97,7 +109,7 @@ class action_points_for_given_resources(Action):
                 other_player.resources_add(resource_type, 1)
             player.points["token"] += self.points
 
-        else:  # max_fixed_type
+        elif self.mode == "max_fixed_type":
             available = player.resources.get(self.resource_type, 0)
             max_allowed = min(self.max_nr_resources, available)
             requested = player.decide(
@@ -109,6 +121,25 @@ class action_points_for_given_resources(Action):
                 player.resources_remove(self.resource_type, 1)
                 player.points["token"] += self.points_per_resource
                 other_player.resources_add(self.resource_type, 1)
+
+        else:  # max_choose_types
+            available = self._get_available_resources(player)
+            max_allowed = min(self.max_nr_resources, sum(available.values()))
+            requested = player.decide(
+                game_state, "nr_resources_to_give_away", max_allowed
+            )
+            nr_give_away = max(0, min(requested, max_allowed))
+            if nr_give_away == 0:
+                return
+
+            requested_resources = player.decide(
+                game_state, "resource_give_away", (nr_give_away, available)
+            )
+            
+            for resource_type in requested_resources:
+                player.resources_remove(resource_type, 1)
+                player.points["token"] += self.points_per_resource
+                other_player.resources_add(resource_type, 1)
 
 
 class action_points_for_payed_resources(Action):
