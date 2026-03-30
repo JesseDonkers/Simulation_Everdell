@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 
 from actions.base import Action, CompositeAction
-from engine.selectors import get_possible_card_plays
 
 __all__ = [
     "action_discard_cards_from_hand",
@@ -10,6 +9,7 @@ __all__ = [
     "action_cards_from_meadow_to_hand",
     "action_give_discard_refill_hand",
     "action_play_card",
+    "action_play_meadow_card_with_discount",
     "action_remove_card_from_city",    
     "action_play_cards_from_deck_or_discardpile",
     "action_refresh_meadow_draw_cards",
@@ -108,6 +108,8 @@ class action_play_card(Action):
         self.allow_city_discard_then_pay = allow_city_discard_then_pay
 
     def execute_action(self, player: "Player", game_state=None):
+        from engine.selectors import get_possible_card_plays
+        
         meadow: "Meadow" = game_state["meadow"]
         deck = game_state["deck"]
         discardpile = game_state["discardpile"]
@@ -249,6 +251,70 @@ class action_play_card(Action):
 
     def _method_free_no_pay(self):
         return False
+
+
+class action_play_meadow_card_with_discount(action_play_card):
+    """
+    Play a Critter or Construction from the Meadow for `discount` fewer
+    resources of the player's choice (Herberg destination card effect).
+
+    - Source is always the meadow; hand cards are excluded.
+    - Kerker-discount cannot be combined with this effect.
+    - Other compatible play methods (related_free, etc.) are preserved.
+    """
+
+    def __init__(self, discount=3):
+        super().__init__()
+        self.discount = discount
+
+    def execute_action(self, player: "Player", game_state=None):
+        from engine.selectors import get_possible_meadow_card_plays_with_discount
+
+        meadow: "Meadow" = game_state["meadow"]
+        deck = game_state["deck"]
+        discardpile = game_state["discardpile"]
+
+        possible_card_plays = get_possible_meadow_card_plays_with_discount(
+            game_state, self.discount
+        )
+        possible_cards = [entry.card for entry in possible_card_plays]
+
+        if len(possible_cards) == 0:
+            raise ValueError(
+                "No meadow cards can be played with the Herberg discount"
+            )
+
+        card = player.decide(game_state, "card_new", possible_cards)
+        card_play_data = next(
+            entry for entry in possible_card_plays if entry.card == card
+        )
+        methods = card_play_data.methods
+
+        selected_method = methods[0]
+        if len(methods) > 1:
+            selected_method = player.decide(
+                game_state, "card_play_method", methods
+            )
+
+        # Always remove from meadow; Herberg only plays meadow cards
+        meadow.draw_cards([card], deck, discardpile)
+
+        pay_required = self._execute_selected_method(
+            player, game_state, selected_method
+        )
+
+        if pay_required:
+            card_costs = selected_method.pay_requirements
+            if card_costs is None:
+                raise ValueError(
+                    "Selected paid play method has no pay_requirements"
+                )
+            for resource, amount in card_costs.items():
+                player.resources_remove(resource, amount)
+
+        player.cards_add([card], "city")
+        if card.action_on_play:
+            card.action_on_play.execute(game_state)
 
 
 class action_remove_card_from_city(Action):

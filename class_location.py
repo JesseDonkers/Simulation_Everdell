@@ -199,7 +199,7 @@ heza = Location(
     class_action.action_resources_to_location("Heza", ["berry"], 3),
 
     action_on_finish=class_action.actions_points_for_resources_event_location(
-        ["berry"], 1, location_name="Heza"),
+        ["berry"], 2, location_name="Heza"),
     
     requirements=[{"kind": "required_cards_in_city", 
                    "cards": ["Herberg", "Zanger"]},

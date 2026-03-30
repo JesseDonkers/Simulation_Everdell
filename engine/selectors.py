@@ -12,6 +12,7 @@ __all__ = [
     "get_possible_card_plays",
     "get_possible_cards",
     "get_possible_locations",
+    "get_possible_meadow_card_plays_with_discount",
     "get_possible_moves",
 ]
 
@@ -98,13 +99,16 @@ def _dedupe_play_methods(methods):
     return unique_methods
 
 
-def _iter_discounted_requirements(requirements, discount):
+def _iter_discounted_requirements(
+    requirements, discount, min_discount_used=0
+):
     twig = requirements.get("twig", 0)
     resin = requirements.get("resin", 0)
     pebble = requirements.get("pebble", 0)
     berry = requirements.get("berry", 0)
 
     max_discount = min(discount, twig + resin + pebble + berry)
+    min_discount = min(min_discount_used, max_discount)
     unique_costs = []
     seen = set()
 
@@ -118,6 +122,15 @@ def _iter_discounted_requirements(requirements, discount):
                 rem_after_pebble = rem_after_resin - pebble_reduce
 
                 for berry_reduce in range(min(berry, rem_after_pebble) + 1):
+                    total_reduced = (
+                        twig_reduce
+                        + resin_reduce
+                        + pebble_reduce
+                        + berry_reduce
+                    )
+                    if total_reduced < min_discount:
+                        continue
+
                     # Partial discount is allowed, so not all discount
                     # must be used.
                     cost = {
@@ -169,7 +182,7 @@ def _get_kerker_methods(player, card):
 
     for prisoner in prisoners:
         for reduced_cost in _iter_discounted_requirements(
-            card.requirements, discount=3
+            card.requirements, discount=3, min_discount_used=1
         ):
             if _has_resources(player.resources, reduced_cost):
                 methods.append(
@@ -182,6 +195,106 @@ def _get_kerker_methods(player, card):
                         consumed_cards=(prisoner,),
                     )
                 )
+
+    return methods
+
+
+def _get_methods_for_card(
+    player,
+    card,
+    *,
+    pay=True,
+    discount=0,
+    allow_city_discard_then_pay=False,
+    allow_kerker=True,
+    allow_related_free=True,
+):
+    """
+    Build the list of PlayMethod options for a single card.
+
+    Adding a new play method (e.g. Rechter) only requires editing this
+    function — both get_possible_card_plays and
+    get_possible_meadow_card_plays_with_discount pick it up automatically
+    through their flag arguments.
+    """
+    from class_card import Construction, Critter
+
+    methods = []
+
+    if not pay:
+        methods.append(
+            PlayMethod(
+                method="free_no_pay",
+                requires_city_discard=False,
+                city_discard_optional=False,
+                pay_requirements=None,
+            )
+        )
+
+    if pay:
+        # Resource-paid (with optional discount; discount=0 → full cost only)
+        min_discount_used = 1 if discount > 0 else 0
+        for reduced_cost in _iter_discounted_requirements(
+            card.requirements,
+            discount,
+            min_discount_used=min_discount_used,
+        ):
+            if _has_resources(player.resources, reduced_cost):
+                methods.append(
+                    PlayMethod(
+                        method="pay_resources",
+                        requires_city_discard=False,
+                        city_discard_optional=(discount == 0),
+                        pay_requirements=reduced_cost,
+                    )
+                )
+
+        # Free play of critters when related to a played construction
+        if allow_related_free and isinstance(card, Critter):
+            for constr in player.city:
+                if (
+                    isinstance(constr, Construction)
+                    and card.name in constr.relatedcritters
+                    and not constr.relatedoccupied
+                ):
+                    methods.append(
+                        PlayMethod(
+                            method="related_free",
+                            requires_city_discard=False,
+                            city_discard_optional=False,
+                            pay_requirements=None,
+                            source_card=constr,
+                        )
+                    )
+
+        # Non-standard method: discard a city card to gain resources
+        # before paying. This is only available when explicitly enabled.
+        if allow_city_discard_then_pay:
+            for city_card in player.city:
+                resources_after_discard = dict(player.resources)
+                for resource, amount in city_card.requirements.items():
+                    resources_after_discard[resource] = (
+                        resources_after_discard.get(resource, 0) + amount
+                    )
+
+                if _has_resources(
+                    resources_after_discard, card.requirements
+                ):
+                    methods.append(
+                        PlayMethod(
+                            method="city_discard_then_pay",
+                            requires_city_discard=True,
+                            city_discard_optional=_has_resources(
+                                player.resources,
+                                card.requirements,
+                            ),
+                            pay_requirements=dict(card.requirements),
+                            consumed_cards=(city_card,),
+                        )
+                    )
+
+        if allow_kerker:
+            methods.extend(_get_kerker_methods(player, card))
 
     return methods
 
@@ -201,92 +314,23 @@ def get_possible_card_plays(
     if player.cards_get_open_spaces("city") == 0:
         return possible_card_plays
 
-    from class_card import Construction, Critter
-
     for card in all_cards:
-        # Cards are only allowed when not exceeding the max points
         if card.points > max_points:
             continue
-
-        # Player may only have one specific copy of any unique card
         if card.unique and any(c.name == card.name for c in player.city):
             continue
 
-        methods = []
-
-        # Play actions that explicitly do not pay costs
-        if not pay:
-            methods.append(
-                PlayMethod(
-                    method="free_no_pay",
-                    requires_city_discard=False,
-                    city_discard_optional=False,
-                    pay_requirements=None,
-                )
-            )
-
-        # Resource-paid and alternative methods
-        if pay:
-            if _has_resources(player.resources, card.requirements):
-                methods.append(
-                    PlayMethod(
-                        method="pay_resources",
-                        requires_city_discard=False,
-                        city_discard_optional=True,
-                        pay_requirements=dict(card.requirements),
-                    )
-                )
-
-            # Free play of critters when related to a played construction
-            if isinstance(card, Critter):
-                constructions = [
-                    c for c in player.city if isinstance(c, Construction)
-                ]
-                for constr in constructions:
-                    if (
-                        card.name in constr.relatedcritters
-                        and not constr.relatedoccupied
-                    ):
-                        methods.append(
-                            PlayMethod(
-                                method="related_free",
-                                requires_city_discard=False,
-                                city_discard_optional=False,
-                                pay_requirements=None,
-                                source_card=constr,
-                            )
-                        )
-
-            # Non-standard method: discard a city card to gain resources
-            # before paying. This is only available when explicitly enabled.
-            if allow_city_discard_then_pay:
-                for city_card in player.city:
-                    resources_after_discard = dict(player.resources)
-                    for resource, amount in city_card.requirements.items():
-                        resources_after_discard[resource] = (
-                            resources_after_discard.get(resource, 0) + amount
-                        )
-
-                    if _has_resources(
-                        resources_after_discard, card.requirements
-                    ):
-                        methods.append(
-                            PlayMethod(
-                                method="city_discard_then_pay",
-                                requires_city_discard=True,
-                                city_discard_optional=_has_resources(
-                                    player.resources,
-                                    card.requirements,
-                                ),
-                                pay_requirements=dict(card.requirements),
-                                consumed_cards=(city_card,),
-                            )
-                        )
-
-            methods.extend(_get_kerker_methods(player, card))
+        methods = _get_methods_for_card(
+            player,
+            card,
+            pay=pay,
+            discount=0,
+            allow_city_discard_then_pay=allow_city_discard_then_pay,
+            allow_kerker=True,
+            allow_related_free=True,
+        )
 
         final_methods = _dedupe_play_methods(methods)
-
         if len(final_methods) > 0:
             possible_card_plays.append(
                 PlayCardOption(card=card, methods=final_methods)
@@ -381,6 +425,44 @@ def get_possible_moves(game_state):
     if game_state["current_player"].season != "autumn" and workers == 0:
         possible_moves.append("advance_season")
     return possible_moves
+
+
+def get_possible_meadow_card_plays_with_discount(game_state, discount=3):
+    """
+    Returns PlayCardOption list for meadow-only cards with a resource discount.
+
+    Only discounted pay_resources methods are offered — related_free is
+    excluded (using Herberg when a free play is available is wasteful) and
+    Kerker-discount is excluded (Kerker cannot be combined with this effect).
+    Any future method added to _get_methods_for_card with allow_* flags will
+    be picked up here too once the appropriate flag is added.
+    """
+    player = game_state["current_player"]
+    meadow = game_state["meadow"]
+
+    if player.cards_get_open_spaces("city") == 0:
+        return []
+
+    result = []
+    for card in meadow.cards:
+        if card.unique and any(c.name == card.name for c in player.city):
+            continue
+
+        methods = _get_methods_for_card(
+            player,
+            card,
+            pay=True,
+            discount=discount,
+            allow_city_discard_then_pay=False,
+            allow_kerker=False,
+            allow_related_free=False,
+        )
+
+        final_methods = _dedupe_play_methods(methods)
+        if final_methods:
+            result.append(PlayCardOption(card=card, methods=final_methods))
+
+    return result
 
 
 def get_critters_constructions_city(game_state, critter_and_construction):

@@ -6,6 +6,7 @@ from class_action import *
 from class_card import init_cards
 from class_location import init_locations, special_events
 from class_strategy import *
+from engine.selectors import get_possible_cards
 from functions_statistics import *
 from functions_testing import *
 
@@ -85,19 +86,46 @@ for _ in range(NR_SIMULATION_RUNS):
 
     player: "Player" = game_state["current_player"]
 
-    player.resources_add("berry", 3)
-    action_place_worker().execute(game_state)
+    player.resources_add("twig", 2)
+    player.resources_add("resin", 1)
+    player.resources_add("berry", 4)
 
-    game_state_as_df_to_text(game_state, "Game_state")
-    
-    action_play_card().execute(game_state)
+    for _ in range(2):
+        possible_cards = get_possible_cards(game_state, 99, True)
+        if len(possible_cards) == 0:
+            break
+        try:
+            action_play_card().execute(game_state)
+        except ValueError:
+            # Test harness: skip runs where random play picks a card whose
+            # on-play action cannot currently be resolved (e.g. replace worker
+            # with no worker placed yet).
+            break
 
-    if any(c.name == "Zanger" for c in player.city):
+    if any(c.name == "Herberg" for c in player.city) and (
+        any(c.name == "Zanger" for c in player.city)
+    ):
 
-        print("Zanger in city")
+        print("Herberg and Zanger in city")
 
         game_state_as_df_to_text(game_state, "Game_state")
 
+        action_place_worker().execute(game_state)
+
+        heza_location = next(
+            (loc for loc in game_state["locations"] if loc.name == "Heza"),
+            None,
+        )
+        if (
+            heza_location is not None
+            and heza_location.get_player_workers(player) > 0
+        ):
+            print("Worker placed on Heza")
+
+        finish_current_player(game_state)
+
+        game_state_as_df_to_text(game_state, "Game_state")
+        
         break
 
 

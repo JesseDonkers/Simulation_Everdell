@@ -311,7 +311,21 @@ harsraffinaderij = Construction(
     action_on_reactivate=action_resource_general("resin", 1),
     action_on_discard=action_remove_card_from_city("Harsraffinaderij"))
 
-# To do: herberg
+herberg = Construction(
+    name="Herberg",
+    color="red",
+    requirements=dict(twig=2, resin=1, pebble=0, berry=0),
+    cardsindeck=3,
+    unique=False,
+    points=2,
+    relatedcritters=["Herbergier"],
+    action_on_play=action_add_destination_card_as_location(
+        "Herberg", "destination_card", 1,
+        action_play_meadow_card_with_discount(3),
+        is_open=True),
+    action_on_discard=CompositeAction([
+        action_remove_destination("Herberg"),
+        action_remove_card_from_city("Herberg")]))
 
 # To do: kapel
 
@@ -509,6 +523,7 @@ cards_unique.append(begraafplaats)
 cards_unique.append(boerderij)
 cards_unique.append(gerechtsgebouw)
 cards_unique.append(harsraffinaderij)
+cards_unique.append(herberg)
 cards_unique.append(kasteel)
 cards_unique.append(kerker)
 cards_unique.append(kermis)
