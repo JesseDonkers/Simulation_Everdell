@@ -62,6 +62,19 @@ def _location_requirement_met(player, loc, requirement, game_state):
     if kind == "has_any_resource":
         return sum(player.resources.values()) >= 1
 
+    if kind == "has_hand_cards":
+        amount = requirement.get("amount", 1)
+        return len(player.hand) >= amount
+
+    if kind == "other_player_has_hand_space":
+        amount = requirement.get("amount", 1)
+        return any(
+            p != player
+            and not p.finished
+            and p.cards_get_open_spaces("hand") >= amount
+            for p in game_state["players"]
+        )
+
     if kind == "has_placed_worker":
         return any(
             loc.get_player_workers(player) > 0

@@ -178,6 +178,9 @@ koningin = Critter(
         [action_remove_destination("Koningin"),
          action_remove_card_from_city("Koningin")]))
 
+    # To do: add requirement for placing worker: space in city
+    # To do: add requirement for placing worker: card available with max 3 points
+
 # To do: man
 
 # To do: marskramer
@@ -282,6 +285,8 @@ begraafplaats = Construction(
             action_remove_destination("Begraafplaats 1"),
             action_remove_destination("Begraafplaats 2"),
             action_remove_card_from_city("Begraafplaats")]))
+
+    # To do: add requirement for placing worker: space in city
 
 boerderij = Construction(
     name="Boerderij",
@@ -443,7 +448,11 @@ postkantoor = Construction(
     action_on_play=action_add_destination_card_as_location(
         "Postkantoor", "destination_card", 1,
         action_give_discard_refill_hand(2),
-        is_open=True),
+        is_open=True,
+        requirements=[
+            {"kind": "has_hand_cards", "amount": 2},
+            {"kind": "other_player_has_hand_space", "amount": 2},
+        ]),
     action_on_discard=CompositeAction([
         action_remove_destination("Postkantoor"),
         action_remove_card_from_city("Postkantoor")]))
@@ -495,11 +504,15 @@ uitkijkpost = Construction(
     action_on_play=action_add_destination_card_as_location(
         "Uitkijkpost", "destination_card", 1, 
         action_location_copy_action(["basic", "forest"])),
+
+        # To do: check if requirement is necessary?
+        # Copying basic locations is no problem, but forest locations?
+
     action_on_discard=CompositeAction([
         action_remove_destination("Uitkijkpost"),
         action_remove_card_from_city("Uitkijkpost")]))
 
-universiteit = Construction(
+universiteit = Construction(#
     name="Universiteit",
     color="red",
     costs=dict(twig=0, resin=1, pebble=2, berry=0),
@@ -513,6 +526,8 @@ universiteit = Construction(
             action_resources_by_choice(
                 ["twig", "resin", "pebble", "berry"], 1),
             action_points_general("token", 1)])),
+        
+        # To do: add requirement for placing worker: at least 1 card in city
 
     action_on_discard=CompositeAction([
         action_remove_destination("Universiteit"),

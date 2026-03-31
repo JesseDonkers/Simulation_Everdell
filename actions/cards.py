@@ -400,42 +400,34 @@ class action_give_discard_refill_hand(Action):
         deck: "Deck" = game_state["deck"]
         discardpile: "DiscardPile" = game_state["discardpile"]
 
-        # Give cards to another player, trying nr_give down to 1
+        # Give exactly nr_give cards to another eligible player.
         players = game_state["players"]
-        nr_to_give = 0
-        for nr in range(self.nr_give, 0, -1):
-            can_receive = any(
-                p != player
-                and not p.finished
-                and p.cards_get_open_spaces("hand") >= nr
-                for p in players
-            )
-            if len(player.hand) >= nr and can_receive:
-                nr_to_give = nr
-                break
+        nr_to_give = self.nr_give
+        eligible_targets = [
+            p for p in players
+            if p != player
+            and not p.finished
+            and p.cards_get_open_spaces("hand") >= nr_to_give
+        ]
 
-        if nr_to_give > 0:
-            cards_to_give = []
-            selectable = player.hand.copy()
-            for _ in range(nr_to_give):
-                card = player.decide(game_state, "card_discard", selectable)
-                cards_to_give.append(card)
-                selectable.remove(card)
+        if len(player.hand) < nr_to_give:
+            raise ValueError("Not enough cards in hand to give away")
+        if len(eligible_targets) == 0:
+            raise ValueError("No eligible player can receive cards")
 
-            eligible_targets = [
-                p for p in players
-                if p != player
-                and not p.finished
-                and p.cards_get_open_spaces("hand") >= nr_to_give
-            ]
+        cards_to_give = []
+        selectable = player.hand.copy()
+        for _ in range(nr_to_give):
+            card = player.decide(game_state, "card_discard", selectable)
+            cards_to_give.append(card)
+            selectable.remove(card)
 
-            if len(eligible_targets) > 0:
-                target = player.decide(
-                    game_state, "player_to_receive_cards", eligible_targets
-                )
+        target = player.decide(
+            game_state, "player_to_receive_cards", eligible_targets
+        )
 
-                player.cards_remove(cards_to_give, "hand")
-                target.cards_add(cards_to_give, "hand")
+        player.cards_remove(cards_to_give, "hand")
+        target.cards_add(cards_to_give, "hand")
 
         # Discard a number of cards by choice from hand
         nr_discard = player.decide(

@@ -69,8 +69,6 @@ def create_game_state(nr_players, strategy_per_player):
     for i in range(4):
         game_state["locations"].append(special_events_copy[i])
 
-    # To do: each special event can only be chosen once, is that modelled?
-
     # To do:
     #  - Shuffle forest cards
     #  - Place 3 or 4 forest cards depending on nr players (add to locations)

@@ -183,26 +183,27 @@ def game_state_as_df_to_text(game_state, output_file=None):
     meadow_first_half = meadow_cards[:4] if len(meadow_cards) > 0 else []
     meadow_second_half = meadow_cards[4:] if len(meadow_cards) > 4 else []
     
-    # Split discard pile into two halves (1-4 and 5-8)
+    # Show only the last 8 discard pile cards, split into two halves (1-4 and 5-8)
     discard_cards = [card.name for card in discardpile.cards]
-    discard_first_half = discard_cards[:4] if len(discard_cards) > 0 else []
-    discard_second_half = discard_cards[4:] if len(discard_cards) > 4 else []
+    discard_last_eight = discard_cards[-8:]
+    discard_first_half = discard_last_eight[:4] if len(discard_last_eight) > 0 else []
+    discard_second_half = discard_last_eight[4:] if len(discard_last_eight) > 4 else []
     
     # Create dataframe with flexible row count
     max_rows = max(len(meadow_first_half), len(meadow_second_half), 
                    len(discard_first_half), len(discard_second_half))
     
     meadow_discard_data = {
-        "Meadow 1-4": [meadow_first_half[i] 
+        "Meadow": [meadow_first_half[i] 
                        if i < len(meadow_first_half) 
                        else "" for i in range(max_rows)],
-        "Meadow 5-8": [meadow_second_half[i] 
+        "Meadow cont.": [meadow_second_half[i] 
                        if i < len(meadow_second_half) 
                        else "" for i in range(max_rows)],
-        "Discardpile 1-4": [discard_first_half[i] 
+        "Discardpile last 8": [discard_first_half[i] 
                             if i < len(discard_first_half) 
                             else "" for i in range(max_rows)],
-        "Discardpile 5-8": [discard_second_half[i] 
+        "Discardpile cont.": [discard_second_half[i] 
                             if i < len(discard_second_half) 
                             else "" for i in range(max_rows)],
     }
