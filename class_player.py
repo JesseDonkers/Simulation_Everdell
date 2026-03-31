@@ -66,6 +66,10 @@ class Player:
     def resources_remove(self, resoure, amount):
         self.resources[resoure] -= amount
         return self.resources
+    
+    # Calculate the total remaining resources of the player
+    def resources_total(self):
+        return sum(self.resources.values())    
 
     # Function to add points to a specific category
     def points_add(self, category, points):

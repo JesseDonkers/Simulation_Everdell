@@ -71,6 +71,7 @@ class action_add_destination_card_as_location(Action):
         *,
         is_open: bool = False,
         permanent_workers: bool = False,
+        requirements: Any = None,
     ) -> None:
         self.name = name
         self.location_type = location_type
@@ -78,6 +79,7 @@ class action_add_destination_card_as_location(Action):
         self.maxworkers = maxworkers
         self.action_on_place_worker = action_on_place_worker
         self.permanent_workers = permanent_workers
+        self.requirements = requirements
 
     def execute_action(self, player: "Player", game_state=None):
         from class_location import Location
@@ -91,6 +93,7 @@ class action_add_destination_card_as_location(Action):
             is_open=self.is_open,
             permanent_workers=self.permanent_workers,
             owner=player,
+            requirements=self.requirements,
         )
         locations.append(dest_card)
 
@@ -111,6 +114,7 @@ class action_add_destination_if_card_present(Action):
         *,
         is_open: bool = False,
         permanent_workers: bool = False,
+        requirements: Any = None,
     ) -> None:
         self.name = name
         self.location_type = location_type
@@ -119,6 +123,7 @@ class action_add_destination_if_card_present(Action):
         self.action_on_place_worker = action_on_place_worker
         self.check_card_name = check_card_name
         self.permanent_workers = permanent_workers
+        self.requirements = requirements
 
     def execute_action(self, player: "Player", game_state=None):
         from class_location import Location
@@ -139,6 +144,7 @@ class action_add_destination_if_card_present(Action):
                 is_open=self.is_open,
                 permanent_workers=self.permanent_workers,
                 owner=player,
+                requirements=self.requirements,
             )
             locations.append(dest_card)
 

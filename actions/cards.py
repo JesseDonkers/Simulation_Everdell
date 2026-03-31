@@ -209,7 +209,7 @@ class action_play_card(Action):
                 "city_discard_then_pay requires one consumed city card"
             )
         discard_card = selected_method.consumed_cards[0]
-        for resource, amount in discard_card.requirements.items():
+        for resource, amount in discard_card.costs.items():
             player.resources_add(resource, amount)
         discard_card.action_on_discard.execute(game_state)
         return True

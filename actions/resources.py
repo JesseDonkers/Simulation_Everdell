@@ -73,7 +73,7 @@ class action_resources_building_costs_discard(Action):
             game_state, critter_construction
         )
         card = player.decide(game_state, "card_discard", options)
-        resources = card.requirements
+        resources = card.costs
         for resource, amount in resources.items():
             player.resources_add(resource, amount)
 

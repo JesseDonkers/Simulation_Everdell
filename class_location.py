@@ -201,7 +201,7 @@ heza = Location(
         ["berry"], 2, location_name="Heza"),
     requirements=[{"kind": "required_cards_in_city", 
                    "cards": ["Herberg", "Zanger"]},
-                  {"kind": "can_add_location_resource", 
+                  {"kind": "has_resource_type", 
                    "resource": "berry", "amount": 1}]
 )
 
@@ -246,7 +246,7 @@ uimi = Location(
         ["twig"], 2, location_name="Uimi"),
     requirements=[{"kind": "required_cards_in_city", 
                    "cards": ["Uitkijkpost", "Mijnwerker mol"]},
-                  {"kind": "can_add_location_resource", 
+                  {"kind": "has_resource_type", 
                    "resource": "twig", "amount": 1}]
 )
 

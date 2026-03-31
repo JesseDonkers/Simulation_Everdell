@@ -54,13 +54,26 @@ def _location_requirement_met(player, loc, requirement, game_state):
         city_names = {card.name for card in player.city}
         return all(card_name in city_names for card_name in required_cards)
 
-    if kind == "can_add_location_resource":
+    if kind == "has_resource_type":
         resource = requirement.get("resource")
         amount = requirement.get("amount", 1)
         return player.resources.get(resource, 0) >= amount
 
     if kind == "has_any_resource":
         return sum(player.resources.values()) >= 1
+
+    if kind == "has_placed_worker":
+        return any(
+            loc.get_player_workers(player) > 0
+            and not getattr(loc, "permanent_workers", False)
+            for loc in game_state["locations"]
+        )
+
+    if kind == "has_playable_meadow_card":
+        discount = requirement.get("discount", 3)
+        return len(get_possible_meadow_card_plays_with_discount(
+            game_state, discount
+        )) > 0
 
     return False
 
@@ -185,7 +198,7 @@ def _get_kerker_methods(player, card):
 
     for prisoner in prisoners:
         for reduced_cost in _iter_discounted_requirements(
-            card.requirements, discount=3, min_discount_used=1
+            card.costs, discount=3, min_discount_used=1
         ):
             if _has_resources(player.resources, reduced_cost):
                 methods.append(
@@ -238,7 +251,7 @@ def _get_methods_for_card(
         # Resource-paid (with optional discount; discount=0 → full cost only)
         min_discount_used = 1 if discount > 0 else 0
         for reduced_cost in _iter_discounted_requirements(
-            card.requirements,
+            card.costs,
             discount,
             min_discount_used=min_discount_used,
         ):
@@ -275,13 +288,13 @@ def _get_methods_for_card(
         if allow_city_discard_then_pay:
             for city_card in player.city:
                 resources_after_discard = dict(player.resources)
-                for resource, amount in city_card.requirements.items():
+                for resource, amount in city_card.costs.items():
                     resources_after_discard[resource] = (
                         resources_after_discard.get(resource, 0) + amount
                     )
 
                 if _has_resources(
-                    resources_after_discard, card.requirements
+                    resources_after_discard, card.costs
                 ):
                     methods.append(
                         PlayMethod(
@@ -289,9 +302,9 @@ def _get_methods_for_card(
                             requires_city_discard=True,
                             city_discard_optional=_has_resources(
                                 player.resources,
-                                card.requirements,
+                                card.costs,
                             ),
-                            pay_requirements=dict(card.requirements),
+                            pay_requirements=dict(card.costs),
                             consumed_cards=(city_card,),
                         )
                     )
@@ -321,6 +334,8 @@ def get_possible_card_plays(
         if card.points > max_points:
             continue
         if card.unique and any(c.name == card.name for c in player.city):
+            continue
+        if not _location_requirements_met(player, card, game_state):
             continue
 
         methods = _get_methods_for_card(
@@ -449,6 +464,8 @@ def get_possible_meadow_card_plays_with_discount(game_state, discount=3):
     result = []
     for card in meadow.cards:
         if card.unique and any(c.name == card.name for c in player.city):
+            continue
+        if not _location_requirements_met(player, card, game_state):
             continue
 
         methods = _get_methods_for_card(

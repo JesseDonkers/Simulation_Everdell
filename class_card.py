@@ -5,15 +5,16 @@ from class_action import *
 
 
 class Card:
-    def __init__(self, name, color, requirements,
+    def __init__(self, name, color, costs,
                  cardsindeck, unique, points,
                  action_on_play=None,
                  action_on_reactivate=None,
                  action_on_discard=None,
-                 action_on_finish=None):
+                 action_on_finish=None,
+                 requirements=None):
         self.name = name
         self.color = color
-        self.requirements = requirements
+        self.costs = costs
         self.cardsindeck = cardsindeck
         self.unique = unique
         self.points = points
@@ -21,38 +22,43 @@ class Card:
         self.action_on_reactivate = action_on_reactivate
         self.action_on_discard = action_on_discard
         self.action_on_finish = action_on_finish
+        self.requirements = requirements  # Optional play preconditions
         self.stored_cards = []  # For cards attached to this card (e.g. Kerker)
         
     def __str__(self):
         return str(self.name)
 
 class Critter(Card):
-    def __init__(self, name, color, requirements, 
+    def __init__(self, name, color, costs,
                  cardsindeck, unique, points,
                  action_on_play=None,
                  action_on_reactivate=None,
                  action_on_discard=None,
-                 action_on_finish=None):
-        super().__init__(name, color, requirements, 
+                 action_on_finish=None,
+                 requirements=None):
+        super().__init__(name, color, costs,
                          cardsindeck, unique, points,
                          action_on_play=action_on_play,
                          action_on_reactivate=action_on_reactivate,
                          action_on_discard=action_on_discard,
-                         action_on_finish=action_on_finish)
+                         action_on_finish=action_on_finish,
+                         requirements=requirements)
 
 class Construction(Card):
-    def __init__(self, name, color, requirements, 
+    def __init__(self, name, color, costs,
                  cardsindeck, unique, points, relatedcritters,
                  action_on_play=None,
                  action_on_reactivate=None,
                  action_on_discard=None,
-                 action_on_finish=None):
-        super().__init__(name, color, requirements, 
+                 action_on_finish=None,
+                 requirements=None):
+        super().__init__(name, color, costs,
                          cardsindeck, unique, points,
                          action_on_play=action_on_play,
                          action_on_reactivate=action_on_reactivate,
                          action_on_discard=action_on_discard,
-                         action_on_finish=action_on_finish)
+                         action_on_finish=action_on_finish,
+                         requirements=requirements)
         self.relatedcritters = relatedcritters
         self.relatedoccupied = False
 
@@ -67,7 +73,7 @@ cards_unique = []
 architect = Critter(
     name="Architect",
     color="purple",
-    requirements=dict(twig=0, resin=0, pebble=0, berry=4),
+    costs=dict(twig=0, resin=0, pebble=0, berry=4),
     cardsindeck=2,
     unique=True,
     points=2,
@@ -77,7 +83,7 @@ architect = Critter(
 begrafenisondernemer = Critter(
     name="Begrafenisondernemer",
     color="tan",
-    requirements=dict(twig=0, resin=0, pebble=0, berry=2),
+    costs=dict(twig=0, resin=0, pebble=0, berry=2),
     cardsindeck=2,
     unique=True,
     points=1,
@@ -96,17 +102,18 @@ begrafenisondernemer = Critter(
 boswachter = Critter(
     name="Boswachter",
     color="tan",
-    requirements=dict(twig=0, resin=0, pebble=0, berry=2),
+    costs=dict(twig=0, resin=0, pebble=0, berry=2),
     cardsindeck=2,
     unique=True,
     points=1,
     action_on_play=action_replace_worker(),
-    action_on_discard=action_remove_card_from_city("Boswachter"))
+    action_on_discard=action_remove_card_from_city("Boswachter"),
+    requirements={"kind": "has_placed_worker"})
 
 dokter = Critter(
     name="Dokter",
     color="green",
-    requirements=dict(twig=0, resin=0, pebble=0, berry=4),
+    costs=dict(twig=0, resin=0, pebble=0, berry=4),
     cardsindeck=2,
     unique=True,
     points=4,
@@ -123,7 +130,7 @@ dokter = Critter(
 historicus = Critter(
     name="Historicus",
     color="blue",
-    requirements=dict(twig=0, resin=0, pebble=0, berry=2),
+    costs=dict(twig=0, resin=0, pebble=0, berry=2),
     cardsindeck=3,
     unique=True,
     points=1,
@@ -133,7 +140,7 @@ historicus = Critter(
 houtsnijder = Critter(
     name="Houtsnijder",
     color="green",
-    requirements=dict(twig=0, resin=0, pebble=0, berry=2),
+    costs=dict(twig=0, resin=0, pebble=0, berry=2),
     cardsindeck=3,
     unique=False,
     points=2,
@@ -144,7 +151,7 @@ houtsnijder = Critter(
 kikkerkapitein = Critter(
     name="Kikkerkapitein",
     color="green",
-    requirements=dict(twig=0, resin=0, pebble=0, berry=2),
+    costs=dict(twig=0, resin=0, pebble=0, berry=2),
     cardsindeck=3,
     unique=False,
     points=1,
@@ -161,7 +168,7 @@ kikkerkapitein = Critter(
 koningin = Critter(
     name="Koningin",
     color="red",
-    requirements=dict(twig=0, resin=0, pebble=0, berry=5),
+    costs=dict(twig=0, resin=0, pebble=0, berry=5),
     cardsindeck=2,
     unique=True,
     points=4,
@@ -180,7 +187,7 @@ koningin = Critter(
 monnik = Critter(
     name="Monnik",
     color="green",
-    requirements=dict(twig=0, resin=0, pebble=0, berry=1),
+    costs=dict(twig=0, resin=0, pebble=0, berry=1),
     cardsindeck=2,
     unique=True,
     points=0,
@@ -191,14 +198,17 @@ monnik = Critter(
         action_add_destination_if_card_present(
             "Klooster 2", "destination_card", 1,
             action_points_for_given_resources(nr_resources=2, points=4),
-            check_card_name="Klooster", permanent_workers=True)]),
+            check_card_name="Klooster",
+            permanent_workers=True,
+            requirements={"kind": "has_resource_type",
+                          "resource": "berry", "amount": 1})]),
 
     action_on_reactivate=action_points_for_given_resources(
         max_nr_resources=2, resource_type="berry", points_per_resource=2),
 
-    action_on_discard=CompositeAction([
-        action_remove_destination("Klooster 2"),
-        action_remove_card_from_city("Monnik")]))
+    action_on_discard=CompositeAction(
+        [action_remove_destination("Klooster 2"),
+         action_remove_card_from_city("Monnik")]))
 
 # To do: postduif
 
@@ -211,7 +221,7 @@ monnik = Critter(
 winkelier = Critter(
     name="Winkelier",
     color="blue",
-    requirements=dict(twig=0, resin=0, pebble=0, berry=2),
+    costs=dict(twig=0, resin=0, pebble=0, berry=2),
     cardsindeck=3,
     unique=True,
     points=1,
@@ -222,7 +232,7 @@ winkelier = Critter(
 zanger = Critter(
     name="Zanger",
     color="tan",
-    requirements=dict(twig=0, resin=0, pebble=0, berry=3),
+    costs=dict(twig=0, resin=0, pebble=0, berry=3),
     cardsindeck=2,
     unique=True,
     points=0,
@@ -252,7 +262,7 @@ cards_unique.append(zanger)
 begraafplaats = Construction(
     name="Begraafplaats",
     color="red",
-    requirements=dict(twig=0, resin=0, pebble=2, berry=0),
+    costs=dict(twig=0, resin=0, pebble=2, berry=0),
     cardsindeck=2,
     unique=True,
     points=0,
@@ -276,7 +286,7 @@ begraafplaats = Construction(
 boerderij = Construction(
     name="Boerderij",
     color="green",
-    requirements=dict(twig=2, resin=1, pebble=0, berry=0),
+    costs=dict(twig=2, resin=1, pebble=0, berry=0),
     cardsindeck=8,
     unique=False,
     points=1,
@@ -290,7 +300,7 @@ boerderij = Construction(
 gerechtsgebouw = Construction(
     name="Gerechtsgebouw",
     color="blue",
-    requirements=dict(twig=1, resin=1, pebble=2, berry=0),
+    costs=dict(twig=1, resin=1, pebble=2, berry=0),
     cardsindeck=2,
     unique=True,
     points=2,
@@ -302,7 +312,7 @@ gerechtsgebouw = Construction(
 harsraffinaderij = Construction(
     name="Harsraffinaderij",
     color="green",
-    requirements=dict(twig=0, resin=1, pebble=1, berry=0),
+    costs=dict(twig=0, resin=1, pebble=1, berry=0),
     cardsindeck=3,
     unique=False,
     points=1,
@@ -314,7 +324,7 @@ harsraffinaderij = Construction(
 herberg = Construction(
     name="Herberg",
     color="red",
-    requirements=dict(twig=2, resin=1, pebble=0, berry=0),
+    costs=dict(twig=2, resin=1, pebble=0, berry=0),
     cardsindeck=3,
     unique=False,
     points=2,
@@ -322,7 +332,8 @@ herberg = Construction(
     action_on_play=action_add_destination_card_as_location(
         "Herberg", "destination_card", 1,
         action_play_meadow_card_with_discount(3),
-        is_open=True),
+        is_open=True,
+        requirements={"kind": "has_playable_meadow_card", "discount": 3}),
     action_on_discard=CompositeAction([
         action_remove_destination("Herberg"),
         action_remove_card_from_city("Herberg")]))
@@ -332,7 +343,7 @@ herberg = Construction(
 kasteel = Construction(
     name="Kasteel",
     color="purple",
-    requirements=dict(twig=2, resin=3, pebble=3, berry=0),
+    costs=dict(twig=2, resin=3, pebble=3, berry=0),
     cardsindeck=2,
     unique=True,
     points=4,
@@ -344,7 +355,7 @@ kasteel = Construction(
 kerker = Construction(
     name="Kerker",
     color="blue",
-    requirements=dict(twig=0, resin=1, pebble=2, berry=0),
+    costs=dict(twig=0, resin=1, pebble=2, berry=0),
     cardsindeck=2,
     unique=True,
     points=0,
@@ -357,7 +368,7 @@ kerker = Construction(
 kermis = Construction(
     name="Kermis",
     color="green",
-    requirements=dict(twig=1, resin=2, pebble=1, berry=0),
+    costs=dict(twig=1, resin=2, pebble=1, berry=0),
     cardsindeck=3,
     unique=False,
     points=3,
@@ -371,7 +382,7 @@ kermis = Construction(
 klooster = Construction(
     name="Klooster",
     color="red",
-    requirements=dict(twig=1, resin=1, pebble=1, berry=0),
+    costs=dict(twig=1, resin=1, pebble=1, berry=0),
     cardsindeck=2,
     unique=True,
     points=1,
@@ -380,23 +391,26 @@ klooster = Construction(
         action_add_destination_card_as_location(
             "Klooster 1", "destination_card", 1, 
             action_points_for_given_resources(nr_resources=2, points=4),
-            permanent_workers=True),
+            permanent_workers=True,
+            requirements={"kind": "has_any_resource"}),
         action_add_destination_if_card_present(
             "Klooster 2", "destination_card", 1,
             action_points_for_given_resources(nr_resources=2, points=4),
-            check_card_name="Monnik", permanent_workers=True)]),
-    
+            check_card_name="Monnik",
+            permanent_workers=True,
+            requirements={"kind": "has_any_resource"})]),
+
     action_on_discard=CompositeAction([
-            action_remove_destination("Klooster 1"),
-            action_remove_destination("Klooster 2"),
-            action_remove_card_from_city("Klooster")]))
+        action_remove_destination("Klooster 1"),
+        action_remove_destination("Klooster 2"),
+        action_remove_card_from_city("Klooster")]))
 
 # To do: kraan
 
 mijn = Construction(
     name="Mijn",
     color="green",
-    requirements=dict(twig=1, resin=1, pebble=1, berry=0),
+    costs=dict(twig=1, resin=1, pebble=1, berry=0),
     cardsindeck=3,
     unique=False,
     points=2,
@@ -410,7 +424,7 @@ mijn = Construction(
 paleis = Construction(
     name="Paleis",
     color="purple",
-    requirements=dict(twig=2, resin=3, pebble=3, berry=0),
+    costs=dict(twig=2, resin=3, pebble=3, berry=0),
     cardsindeck=2,
     unique=True,
     points=4,
@@ -421,7 +435,7 @@ paleis = Construction(
 postkantoor = Construction(
     name="Postkantoor",
     color="red",
-    requirements=dict(twig=1, resin=2, pebble=0, berry=0),
+    costs=dict(twig=1, resin=2, pebble=0, berry=0),
     cardsindeck=3,
     unique=False,
     points=2,
@@ -439,7 +453,7 @@ postkantoor = Construction(
 school = Construction(
     name="School",
     color="purple",
-    requirements=dict(twig=2, resin=2, pebble=0, berry=0),
+    costs=dict(twig=2, resin=2, pebble=0, berry=0),
     cardsindeck=2,
     unique=True,
     points=2,
@@ -450,7 +464,7 @@ school = Construction(
 takkenboot = Construction(
     name="Takkenboot",
     color="green",
-    requirements=dict(twig=1, resin=0, pebble=1, berry=0),
+    costs=dict(twig=1, resin=0, pebble=1, berry=0),
     cardsindeck=3,
     unique=False,
     points=1,
@@ -462,7 +476,7 @@ takkenboot = Construction(
 theater = Construction(
     name="Theater",
     color="purple",
-    requirements=dict(twig=3, resin=1, pebble=1, berry=0),
+    costs=dict(twig=3, resin=1, pebble=1, berry=0),
     cardsindeck=2,
     unique=True,
     points=3,
@@ -473,7 +487,7 @@ theater = Construction(
 uitkijkpost = Construction(
     name="Uitkijkpost",
     color="red",
-    requirements=dict(twig=1, resin=1, pebble=1, berry=0),
+    costs=dict(twig=1, resin=1, pebble=1, berry=0),
     cardsindeck=2,
     unique=True,
     points=2,
@@ -488,7 +502,7 @@ uitkijkpost = Construction(
 universiteit = Construction(
     name="Universiteit",
     color="red",
-    requirements=dict(twig=0, resin=1, pebble=2, berry=0),
+    costs=dict(twig=0, resin=1, pebble=2, berry=0),
     cardsindeck=2,
     unique=True,
     points=3,
@@ -507,7 +521,7 @@ universiteit = Construction(
 winkel = Construction(
     name="Winkel",
     color="green",
-    requirements=dict(twig=0, resin=1, pebble=1, berry=0),
+    costs=dict(twig=0, resin=1, pebble=1, berry=0),
     cardsindeck=3,
     unique=False,
     points=1,

@@ -12,13 +12,15 @@ def advance_current_player(game_state):
     current_player_index = players.index(current_player)
 
     nr_not_finished = len([p for p in players if p.finished is False])
-    if nr_not_finished != 1:
-        # Find the next player that has not finished
-        new_player_index = (current_player_index + 1) % len(players)
-        while players[new_player_index].finished:
-            new_player_index = (new_player_index + 1) % len(players)
+    if nr_not_finished == 0:
+        return
 
-        game_state["current_player"] = players[new_player_index]
+    # Find the next player that has not finished
+    new_player_index = (current_player_index + 1) % len(players)
+    while players[new_player_index].finished:
+        new_player_index = (new_player_index + 1) % len(players)
+
+    game_state["current_player"] = players[new_player_index]
 
 
 def finish_current_player(game_state):
@@ -47,7 +49,8 @@ def finish_current_player(game_state):
 
     # Event points
     for event in player.events:
-        event.action_on_finish.execute(game_state)
+        if event.action_on_finish is not None:
+            event.action_on_finish.execute(game_state)
 
     # If all players have finished the game, compare sum of points
     if all(p.finished for p in players):
