@@ -26,7 +26,6 @@ def advance_current_player(game_state):
 def finish_current_player(game_state):
     """
     Sets player.finished to True and evaluates all points.
-    Returns list of points of all players if all players finished the game.
     """
     player: "Player" = game_state["current_player"]
     players = game_state["players"]
@@ -51,8 +50,3 @@ def finish_current_player(game_state):
     for event in player.events:
         if event.action_on_finish is not None:
             event.action_on_finish.execute(game_state)
-
-    # If all players have finished the game, compare sum of points
-    if all(p.finished for p in players):
-        points = [p.points_total() for p in players]
-        return points

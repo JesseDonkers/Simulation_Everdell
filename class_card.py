@@ -173,13 +173,18 @@ koningin = Critter(
     unique=True,
     points=4,
     action_on_play=action_add_destination_card_as_location(
-        "Koningin", "destination_card", 1, action_play_card(3, False)),
+        "Koningin",
+        "destination_card",
+        1,
+        action_play_card(3, False),
+        requirements={
+            "kind": "has_playable_card_with_max_points",
+            "max_points": 3,
+        },
+    ),
     action_on_discard=CompositeAction(
         [action_remove_destination("Koningin"),
          action_remove_card_from_city("Koningin")]))
-
-    # To do: add requirement for placing worker: space in city
-    # To do: add requirement for placing worker: card available with max 3 points
 
 # To do: man
 
@@ -273,13 +278,22 @@ begraafplaats = Construction(
 
     action_on_play=CompositeAction([
         action_add_destination_card_as_location(
-            "Begraafplaats 1", "destination_card", 1,
+            "Begraafplaats 1",
+            "destination_card",
+            1,
             action_play_cards_from_deck_or_discardpile(4),
-            permanent_workers=True),
+            permanent_workers=True,
+            requirements={"kind": "has_city_space"},
+        ),
         action_add_destination_if_card_present(
-            "Begraafplaats 2", "destination_card", 1,
+            "Begraafplaats 2",
+            "destination_card",
+            1,
             action_play_cards_from_deck_or_discardpile(4),
-            check_card_name="Begrafenisondernemer", permanent_workers=True)]),
+            check_card_name="Begrafenisondernemer",
+            permanent_workers=True,
+            requirements={"kind": "has_city_space"},
+        )]),
 
     action_on_discard=CompositeAction([
             action_remove_destination("Begraafplaats 1"),
@@ -512,7 +526,7 @@ uitkijkpost = Construction(
         action_remove_destination("Uitkijkpost"),
         action_remove_card_from_city("Uitkijkpost")]))
 
-universiteit = Construction(#
+universiteit = Construction(
     name="Universiteit",
     color="red",
     costs=dict(twig=0, resin=1, pebble=2, berry=0),
@@ -521,14 +535,16 @@ universiteit = Construction(#
     points=3,
     relatedcritters=["Dokter"],
     action_on_play=action_add_destination_card_as_location(
-        "Universiteit", "destination_card", 1, CompositeAction([
+        "Universiteit",
+        "destination_card",
+        1,
+        CompositeAction([
             action_resources_building_costs_discard(True, True),
             action_resources_by_choice(
                 ["twig", "resin", "pebble", "berry"], 1),
-            action_points_general("token", 1)])),
-        
-        # To do: add requirement for placing worker: at least 1 card in city
-
+            action_points_general("token", 1)]),
+        requirements={"kind": "has_city_cards", "amount": 1},
+    ),
     action_on_discard=CompositeAction([
         action_remove_destination("Universiteit"),
         action_remove_card_from_city("Universiteit")]))

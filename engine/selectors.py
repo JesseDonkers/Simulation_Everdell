@@ -82,10 +82,26 @@ def _location_requirement_met(player, loc, requirement, game_state):
             for loc in game_state["locations"]
         )
 
+    if kind == "has_city_cards":
+        amount = requirement.get("amount", 1)
+        return len(player.city) >= amount
+
+    if kind == "has_city_space":
+        return player.cards_get_open_spaces("city") > 0
+
     if kind == "has_playable_meadow_card":
         discount = requirement.get("discount", 3)
         return len(get_possible_meadow_card_plays_with_discount(
             game_state, discount
+        )) > 0
+
+    if kind == "has_playable_card_with_max_points":
+        max_points = requirement.get("max_points", 99)
+        return len(get_possible_card_plays(
+            game_state,
+            max_points=max_points,
+            pay=True,
+            allow_city_discard_then_pay=False,
         )) > 0
 
     return False
@@ -390,13 +406,6 @@ def get_possible_cards(
 
 
 def get_possible_locations(game_state):
-    # To do: for a destination card, it should be checked if the action
-    # can be executed.
-    # 
-    # For example, for the klooster, the player should have
-    # enough resources to execute the action, otherwise it should not be a
-    # possible location to place a worker.
-
     player = game_state["current_player"]
     locations = game_state["locations"]
     loc: "Location"

@@ -98,25 +98,25 @@ def _execute_move(game_state, move):
 def run_single_turn(game_state):
     player = game_state["current_player"]
 
+    # Branch 1: this player is already finished; skip to next player.
     if player.finished:
-        if not all(p.finished for p in game_state["players"]):
-            advance_current_player(game_state)
-        return
-
-    possible_moves = get_possible_moves(game_state)
-    if len(possible_moves) == 0:
+        pass
+    
+    # Branch 2: active player has no legal moves and therefore finishes.
+    elif len(get_possible_moves(game_state)) == 0:
         finish_current_player(game_state)
-        if not all(p.finished for p in game_state["players"]):
-            advance_current_player(game_state)
-        return
+    
+    # Branch 3: active player takes one move; may finish if that was final.
+    else:
+        possible_moves = get_possible_moves(game_state)
+        chosen_move = player.decide(game_state, "move", possible_moves)
+        _execute_move(game_state, chosen_move)
 
-    chosen_move = player.decide(game_state, "move", possible_moves)
-    _execute_move(game_state, chosen_move)
+        updated_moves = get_possible_moves(game_state)
+        if len(updated_moves) == 0:
+            finish_current_player(game_state)
 
-    updated_moves = get_possible_moves(game_state)
-    if len(updated_moves) == 0:
-        finish_current_player(game_state)
-
+    # Advance turn unless all players have already finished.
     if not all(p.finished for p in game_state["players"]):
         advance_current_player(game_state)
 
