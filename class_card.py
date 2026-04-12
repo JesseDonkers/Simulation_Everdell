@@ -190,7 +190,16 @@ koningin = Critter(
 
 # To do: marskramer
 
-# To do: mijnwerkermol
+mijnwerkermol = Critter(
+    name="Mijnwerkermol",
+    color="green",
+    costs=dict(twig=0, resin=0, pebble=0, berry=3),
+    cardsindeck=3,
+    unique=False,
+    points=1,
+    action_on_play=action_reactivate_green_card(from_own_city=False),
+    action_on_reactivate=action_reactivate_green_card(from_own_city=False),
+    action_on_discard=action_remove_card_from_city("Mijnwerkermol"))
 
 monnik = Critter(
     name="Monnik",
@@ -222,7 +231,16 @@ monnik = Critter(
 
 # To do: rechter
 
-# To do: schoonmaker
+schoonmaker = Critter(
+    name="Schoonmaker",
+    color="green",
+    costs=dict(twig=0, resin=0, pebble=0, berry=3),
+    cardsindeck=3,
+    unique=False,
+    points=2,
+    action_on_play=action_reactivate_green_card(from_own_city=True),
+    action_on_reactivate=action_reactivate_green_card(from_own_city=True),
+    action_on_discard=action_remove_card_from_city("Schoonmaker"))
 
 # To do: vrouw
 
@@ -258,7 +276,9 @@ cards_unique.append(historicus)
 cards_unique.append(houtsnijder)
 cards_unique.append(kikkerkapitein)
 cards_unique.append(koningin)
+cards_unique.append(mijnwerkermol)
 cards_unique.append(monnik)
+cards_unique.append(schoonmaker)
 cards_unique.append(winkelier)
 cards_unique.append(zanger)
 
@@ -433,7 +453,7 @@ mijn = Construction(
     cardsindeck=3,
     unique=False,
     points=2,
-    relatedcritters=["Mijnwerker mol"],
+    relatedcritters=["Mijnwerkermol"],
     action_on_play=action_resource_general("pebble", 1),
     action_on_reactivate=action_resource_general("pebble", 1),
     action_on_discard=action_remove_card_from_city("Mijn"))

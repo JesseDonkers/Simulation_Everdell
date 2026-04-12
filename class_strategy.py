@@ -42,6 +42,9 @@ class Strategy_random(Strategy):
     
     def choose_card_discard(self, game_state, possible_cards):
         return random.choice(possible_cards)
+    
+    def choose_card_reactivate_green(self, game_state, possible_cards):
+        return random.choice(possible_cards)    
 
     def choose_location_place_worker(self, game_state, possible_locations):
         return random.choice(possible_locations)

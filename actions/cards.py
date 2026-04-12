@@ -13,6 +13,7 @@ __all__ = [
     "action_remove_card_from_city",    
     "action_play_cards_from_deck_or_discardpile",
     "action_refresh_meadow_draw_cards",
+    "action_reactivate_green_card",
 ]
 
 if TYPE_CHECKING:
@@ -447,3 +448,52 @@ class action_give_discard_refill_hand(Action):
         if spaces > 0:
             new_cards = deck.draw_cards(spaces, discardpile)
             player.cards_add(new_cards, "hand")
+
+
+class action_reactivate_green_card(Action):
+    """
+    Reactivate a green card by executing its action_on_reactivate.
+    
+    Args:
+        from_own_city (bool): If True, choose from player's own city.
+                             If False, choose from other players' cities.
+    """
+    def __init__(self, from_own_city=True):
+        self.from_own_city = from_own_city
+
+    def execute_action(self, player: "Player", game_state=None):
+        if self.from_own_city:
+            # Reactivate a green card from own city
+            green_cards = [
+                card for card in player.city if card.color == "green"]
+        else:
+            # Reactivate a green card from other players' cities
+            green_cards = []
+            for other_player in game_state["players"]:
+                if other_player != player:
+                    green_cards.extend([card 
+                                        for card 
+                                        in other_player.city 
+                                        if card.color == "green"]
+                    )
+
+        # Exclude cards whose action_on_reactivate is 
+        # action_reactivate_green_card only if it would cause recursion
+        # (i.e., if there are no other green cards with different actions)
+        non_recursive_cards = [card 
+                               for card 
+                               in green_cards 
+                               if not isinstance(card.action_on_reactivate, 
+                                                 action_reactivate_green_card)]
+        if len(non_recursive_cards) == 0:
+            # All green cards would cause recursion, 
+            # so exclude them all to prevent infinite loop
+            green_cards = []
+        # Else, allow all
+
+        if len(green_cards) > 0:
+            card = player.decide(
+                            game_state, "card_reactivate_green", green_cards)
+            if not card.action_on_reactivate:
+                raise ValueError(f"{card.name} has no action_on_reactivate")
+            card.action_on_reactivate.execute(game_state)
