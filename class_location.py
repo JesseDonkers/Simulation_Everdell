@@ -22,8 +22,8 @@ class Location:
         requirements: Any = None
     ):
         self.name = name
-        self.location_type = location_type # For example basic, journey, haven
-        self.is_open = is_open # Attribute for destination cards
+        self.location_type = location_type  # For example basic, journey, haven
+        self.is_open = is_open  # Attribute for destination cards
         self.maxworkers = maxworkers
         self.action_on_place_worker = action_on_place_worker
         self.action_on_finish = action_on_finish
@@ -33,7 +33,7 @@ class Location:
         self.owner = owner  # Player that owns this destination location
         self.points = points
         self.requirements = requirements
-        
+
     def __str__(self):
         return str(self.name)
 
@@ -42,18 +42,18 @@ class Location:
         if player not in self.workers:
             self.workers[player] = 0
         self.workers[player] += 1
-    
+
     # Function to remove a worker from a player
     def remove_worker(self, player: "Player"):
         self.workers[player] -= 1
         if self.workers[player] == 0:
             del self.workers[player]
-    
+
     # Function to check open spaces for workers
     def get_open_spaces(self):
         total_workers = sum(self.workers.values())
         return self.maxworkers - total_workers
-    
+
     # Function to get workers of a specific player
     def get_player_workers(self, player: "Player"):
         return self.workers.get(player, 0)
@@ -80,11 +80,9 @@ init_locations = []
 # and already placed workers need to be stored somewhere temporarily.
 temp = Location("Temporary", "temporary", 0, None)
 
-# A permanent location is added which can be used when a permanent location 
+# A permanent location is added which can be used when a permanent location
 # is removed and already placed workers need to be stored somewhere.
-permanent = Location(
-    "Permanent", "permanent", 0, None, permanent_workers=True
-)
+permanent = Location("Permanent", "permanent", 0, None, permanent_workers=True)
 
 init_locations.append(temp)
 init_locations.append(permanent)
@@ -94,31 +92,63 @@ init_locations.append(permanent)
 # BASIC
 # ============================================
 
-twigs = Location("Three_twigs", "basic", 1,
-           class_action.action_resource_general("twig", 3))
-resins = Location("Two_resins", "basic", 1,
-            class_action.action_resource_general("resin", 2))
-pebble = Location("One_pebble", "basic", 1,
-            class_action.action_resource_general("pebble", 1))
-berry = Location("One_berry", "basic", 99,
-           class_action.action_resource_general("berry", 1))
+twigs = Location(
+    "Three_twigs", "basic", 1, class_action.action_resource_general("twig", 3)
+)
+resins = Location(
+    "Two_resins", "basic", 1, class_action.action_resource_general("resin", 2)
+)
+pebble = Location(
+    "One_pebble", "basic", 1, class_action.action_resource_general("pebble", 1)
+)
+berry = Location(
+    "One_berry", "basic", 99, class_action.action_resource_general("berry", 1)
+)
 
-twigs_card = Location("Twigs_point", "basic", 99,
-               class_action.CompositeAction(
-               [class_action.action_resource_general("twig", 2), 
-               class_action.action_cards_from_deck_to_hand(1)]))
-resin_card = Location("Resins_point", "basic", 99,
-               class_action.CompositeAction(
-               [class_action.action_resource_general("resin", 1), 
-               class_action.action_cards_from_deck_to_hand(1)]))
-cards_point = Location("Cards_point", "basic", 99,
-               class_action.CompositeAction(
-               [class_action.action_points_general("token", 1),
-               class_action.action_cards_from_deck_to_hand(2)]))
-berry_card = Location("Berry_card", "basic", 1,
-               class_action.CompositeAction(
-               [class_action.action_resource_general("berry", 1),
-               class_action.action_cards_from_deck_to_hand(1)]))
+twigs_card = Location(
+    "Twigs_point",
+    "basic",
+    99,
+    class_action.CompositeAction(
+        [
+            class_action.action_resource_general("twig", 2),
+            class_action.action_cards_from_deck_to_hand(1),
+        ]
+    ),
+)
+resin_card = Location(
+    "Resins_point",
+    "basic",
+    99,
+    class_action.CompositeAction(
+        [
+            class_action.action_resource_general("resin", 1),
+            class_action.action_cards_from_deck_to_hand(1),
+        ]
+    ),
+)
+cards_point = Location(
+    "Cards_point",
+    "basic",
+    99,
+    class_action.CompositeAction(
+        [
+            class_action.action_points_general("token", 1),
+            class_action.action_cards_from_deck_to_hand(2),
+        ]
+    ),
+)
+berry_card = Location(
+    "Berry_card",
+    "basic",
+    1,
+    class_action.CompositeAction(
+        [
+            class_action.action_resource_general("berry", 1),
+            class_action.action_cards_from_deck_to_hand(1),
+        ]
+    ),
+)
 
 init_locations.extend([twigs, resins, pebble, berry])
 init_locations.extend([twigs_card, resin_card, cards_point, berry_card])
@@ -130,19 +160,19 @@ init_locations.extend([twigs_card, resin_card, cards_point, berry_card])
 
 # Add constraint for number of workers per player = max 1
 
-cards_for_resources = None # To do
-card_for_cards = None # To do
-card_from_meadow = None # To do
-copy_basic_location = None # To do
-berries_card = None # To do
-twig_resin_berry = None # To do
-resins_twig = None # To do
-cards_resource = None # To do
-two_resources = None # To do
-cards_pebble = None # To do
-berries = None # To do
+cards_for_resources = None  # TODO
+card_for_cards = None  # TODO
+card_from_meadow = None  # TODO
+copy_basic_location = None  # TODO
+berries_card = None  # TODO
+twig_resin_berry = None  # TODO
+resins_twig = None  # TODO
+cards_resource = None  # TODO
+two_resources = None  # TODO
+cards_pebble = None  # TODO
+berries = None  # TODO
 
-# To do: should not be added to init_locations, but seperate forest_locations list
+# TODO: should not be added to init_locations, but seperate forest_locations list
 
 
 # ============================================
@@ -190,7 +220,7 @@ init_locations.extend([monument, tour, festival, expedition])
 
 special_events = []
 
-hiru = None # To do
+hiru = None  # TODO
 
 heza = Location(
     "Heza",
@@ -198,11 +228,12 @@ heza = Location(
     1,
     class_action.action_resources_to_location("Heza", ["berry"], 3),
     action_on_finish=class_action.actions_points_for_resources_event_location(
-        ["berry"], 2, location_name="Heza"),
-    requirements=[{"kind": "required_cards_in_city", 
-                   "cards": ["Herberg", "Zanger"]},
-                  {"kind": "has_resource_type", 
-                   "resource": "berry", "amount": 1}]
+        ["berry"], 2, location_name="Heza"
+    ),
+    requirements=[
+        {"kind": "required_cards_in_city", "cards": ["Herberg", "Zanger"]},
+        {"kind": "has_resource_type", "resource": "berry", "amount": 1},
+    ],
 )
 
 sckl = Location(
@@ -211,31 +242,35 @@ sckl = Location(
     1,
     class_action.action_retake_worker(),
     action_on_finish=class_action.action_points_general("event", 4),
-    requirements={"kind": "required_cards_in_city", 
-                   "cards": ["Schoonmaker", "Klokkentoren"]}\
+    requirements={
+        "kind": "required_cards_in_city",
+        "cards": ["Schoonmaker", "Klokkentoren"],
+    },
 )
 
-reko = None # To do
-dopo = None # To do
-gebo = None # To do
-behe = None # To do
-klzw = None # To do
-moke = None # To do
-mawi = None # To do
+reko = None  # TODO
+dopo = None  # TODO
+gebo = None  # TODO
+behe = None  # TODO
+klzw = None  # TODO
+moke = None  # TODO
+mawi = None  # TODO
 
 wipo = Location(
     "Wipo",
     "event",
     1,
     class_action.action_points_for_given_resources(
-        max_nr_resources=3, points_per_resource=2),
-    requirements=[{"kind": "required_cards_in_city", 
-                   "cards": ["Winkelier", "Postkantoor"]},
-                  {"kind": "has_any_resource"}]
+        max_nr_resources=3, points_per_resource=2
+    ),
+    requirements=[
+        {"kind": "required_cards_in_city", "cards": ["Winkelier", "Postkantoor"]},
+        {"kind": "has_any_resource"},
+    ],
 )
 
-twve = None # To do
-beki = None # To do
+twve = None  # TODO
+beki = None  # TODO
 
 uimi = Location(
     "Uimi",
@@ -243,44 +278,64 @@ uimi = Location(
     1,
     class_action.action_resources_to_location("Uimi", ["twig"], 3),
     action_on_finish=class_action.actions_points_for_resources_event_location(
-        ["twig"], 2, location_name="Uimi"),
-    requirements=[{"kind": "required_cards_in_city", 
-                   "cards": ["Uitkijkpost", "Mijnwerker mol"]},
-                  {"kind": "has_resource_type", 
-                   "resource": "twig", "amount": 1}]
+        ["twig"], 2, location_name="Uimi"
+    ),
+    requirements=[
+        {"kind": "required_cards_in_city", "cards": ["Uitkijkpost", "Mijnwerker mol"]},
+        {"kind": "has_resource_type", "resource": "twig", "amount": 1},
+    ],
 )
 
-hoka = None # To do
-leun = None # To do
+hoka = None  # TODO
+leun = None  # TODO
 
 # Special events should not be added to init_locations, but to a separate list
 special_events.extend([heza, sckl, wipo, uimi])
-# To do: add all special events
+# TODO: add all special events
 
 
 # ============================================
 # HAVEN
 # ============================================
 
-haven = Location("Haven", "haven", 99,
-                 class_action.action_resources_for_cards())
+haven = Location("Haven", "haven", 99, class_action.action_resources_for_cards())
 init_locations.append(haven)
 
 # ============================================
 # JOURNEY
 # ============================================
 
-journey_2 = Location("Journey_2", "journey", 99,
+journey_2 = Location(
+    "Journey_2",
+    "journey",
+    99,
     class_action.action_discard_cards_from_hand(2),
-    permanent_workers=True, points=2)
-journey_3 = Location("Journey_3", "journey", 1,
+    permanent_workers=True,
+    points=2,
+)
+journey_3 = Location(
+    "Journey_3",
+    "journey",
+    1,
     class_action.action_discard_cards_from_hand(3),
-    permanent_workers=True, points=3)
-journey_4 = Location("Journey_4", "journey", 1,
+    permanent_workers=True,
+    points=3,
+)
+journey_4 = Location(
+    "Journey_4",
+    "journey",
+    1,
     class_action.action_discard_cards_from_hand(4),
-    permanent_workers=True, points=4)
-journey_5 = Location("Journey_5", "journey", 1,
+    permanent_workers=True,
+    points=4,
+)
+journey_5 = Location(
+    "Journey_5",
+    "journey",
+    1,
     class_action.action_discard_cards_from_hand(5),
-    permanent_workers=True, points=5)
+    permanent_workers=True,
+    points=5,
+)
 
 init_locations.extend([journey_2, journey_3, journey_4, journey_5])

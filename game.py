@@ -1,5 +1,6 @@
 import copy
 import random
+from typing import Any
 
 from class_action import *
 from class_card import init_cards
@@ -19,14 +20,13 @@ from functions_statistics import (
 )
 from functions_testing import clear_test_results, game_state_as_df_to_text
 
-
 # ============================================
 # VARIABLES & PARAMETERS
 # ============================================
 
 MODE = "simulation"  # "scenario" or "simulation"
 
-NR_SIMULATION_RUNS = 1000  # Number of times to run the scenario or simulation
+NR_SIMULATION_RUNS = 100  # Number of times to run the scenario or simulation
 NR_PLAYERS = 2  # Number of players in the game (2-4)
 STRATEGY_PER_PLAYER = [Strategy_random, Strategy_random]
 MAX_TURNS_PER_GAME = 10_000
@@ -35,6 +35,7 @@ MAX_TURNS_PER_GAME = 10_000
 # ============================================
 # FUNCTIONS FOR SIMULATION AND SCENARIO RUNS
 # ============================================
+
 
 def create_game_state(nr_players, strategy_per_player):
     cards = copy.deepcopy(init_cards)
@@ -54,11 +55,12 @@ def create_game_state(nr_players, strategy_per_player):
         card_counter += 1
         player.workers_add(2)
 
-    game_state = {
+    locations: list[Any] = copy.deepcopy(init_locations)
+    game_state: dict[str, Any] = {
         "deck": deck,
         "discardpile": discardpile,
         "meadow": meadow,
-        "locations": copy.deepcopy(init_locations),
+        "locations": locations,
         "players": players,
         "current_player": players[0],
     }
@@ -69,7 +71,7 @@ def create_game_state(nr_players, strategy_per_player):
     for i in range(4):
         game_state["locations"].append(special_events_copy[i])
 
-    # To do:
+    # TODO: forecast cards shuffle and place
     #  - Shuffle forest cards
     #  - Place 3 or 4 forest cards depending on nr players (add to locations)
 
@@ -101,11 +103,11 @@ def run_single_turn(game_state):
     # Branch 1: this player is already finished; skip to next player.
     if player.finished:
         pass
-    
+
     # Branch 2: active player has no legal moves and therefore finishes.
     elif len(get_possible_moves(game_state)) == 0:
         finish_current_player(game_state)
-    
+
     # Branch 3: active player takes one move; may finish if that was final.
     else:
         possible_moves = get_possible_moves(game_state)
@@ -123,9 +125,7 @@ def run_single_turn(game_state):
 
 def run_full_game(game_state, max_turns=MAX_TURNS_PER_GAME):
     nr_turns = 0
-    status_game_finished = all(
-        player.finished for player in game_state["players"]
-    )
+    status_game_finished = all(player.finished for player in game_state["players"])
 
     while not status_game_finished:
         if nr_turns >= max_turns:
@@ -133,9 +133,7 @@ def run_full_game(game_state, max_turns=MAX_TURNS_PER_GAME):
 
         run_single_turn(game_state)
         nr_turns += 1
-        status_game_finished = all(
-            player.finished for player in game_state["players"]
-        )
+        status_game_finished = all(player.finished for player in game_state["players"])
 
     return game_state
 
@@ -168,7 +166,7 @@ def run_scenario(game_state):
 
             finish_current_player(game_state)
             game_state_as_df_to_text(game_state, "Game_state")
-            
+
             return True
 
 
@@ -186,6 +184,9 @@ def run_simulation_mode():
     simulation_results = init_simulation_results(NR_PLAYERS)
 
     game_state = None
+
+    # TODO: tqdm progress bar
+
     for _ in range(NR_SIMULATION_RUNS):
         game_state = create_game_state(NR_PLAYERS, STRATEGY_PER_PLAYER)
         run_full_game(game_state, max_turns=MAX_TURNS_PER_GAME)
@@ -218,4 +219,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

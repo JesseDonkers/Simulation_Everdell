@@ -11,7 +11,7 @@ def clear_test_results():
     """
     test_results_folder = os.path.join(os.getcwd(), "test_results")
     os.makedirs(test_results_folder, exist_ok=True)
-    
+
     # Clear all files from test_results folder
     for filename in os.listdir(test_results_folder):
         file_path = os.path.join(test_results_folder, filename)
@@ -26,16 +26,16 @@ def clear_test_results():
 
 def game_state_as_df_to_text(game_state, output_file=None):
     """
-    Converts game state into formatted dataframes and text, 
+    Converts game state into formatted dataframes and text,
     optionally saving to file.
-    
+
     Args:
-        game_state: Dictionary containing deck, discardpile, meadow, 
+        game_state: Dictionary containing deck, discardpile, meadow,
         locations, players
-        output_file: Optional filename to save the output as a text file 
+        output_file: Optional filename to save the output as a text file
         (saves to test_results folder)
                     Auto-increment counter is added to prevent overwriting
-        
+
     Returns:
         Dictionary containing formatted output:
         - 'deck_size': Text with deck size
@@ -45,22 +45,23 @@ def game_state_as_df_to_text(game_state, output_file=None):
         - 'full_text': Complete formatted text output
         - 'saved_file_path': Path where file was saved
     """
-    
+
     # Extract game state components
     deck = game_state["deck"]
     discardpile = game_state["discardpile"]
     meadow = game_state["meadow"]
     locations = game_state["locations"]
     players = game_state["players"]
-    
+
     # ============================================
     # TEXT FIELDS
     # ============================================
-    
+
     current_player = game_state["current_player"]
     current_player_text = f"CURRENT PLAYER: Player {current_player.index}"
 
     from engine.selectors import get_possible_moves
+
     turn_options = get_possible_moves(game_state)
     turn_options_text = (
         "TURN OPTIONS: " + ", ".join(turn_options)
@@ -69,7 +70,7 @@ def game_state_as_df_to_text(game_state, output_file=None):
     )
 
     deck_size_text = f"DECK SIZE: {len(deck.cards)}"
-    
+
     # ============================================
     # LOCATIONS DATAFRAMES
     # ============================================
@@ -78,9 +79,7 @@ def game_state_as_df_to_text(game_state, output_file=None):
         if not loc.workers:
             return "-"
 
-        return ", ".join(
-            [f"{p.index}:{count}" for p, count in loc.workers.items()]
-        )
+        return ", ".join([f"{p.index}:{count}" for p, count in loc.workers.items()])
 
     basic_event_names = {"Monument", "Tour", "Festival", "Expedition"}
 
@@ -108,31 +107,24 @@ def game_state_as_df_to_text(game_state, output_file=None):
         )
     )
     left_rows.extend(
-        _locations_to_rows(
-            [loc for loc in locations if loc.location_type == "basic"]
-        )
+        _locations_to_rows([loc for loc in locations if loc.location_type == "basic"])
     )
     left_rows.extend(
-        _locations_to_rows(
-            [loc for loc in locations if loc.location_type == "journey"]
-        )
+        _locations_to_rows([loc for loc in locations if loc.location_type == "journey"])
     )
 
     right_rows = []
     right_rows.extend(
-        _locations_to_rows(
-            [loc for loc in locations if loc.location_type == "haven"]
-        )
+        _locations_to_rows([loc for loc in locations if loc.location_type == "haven"])
     )
     right_rows.extend(
-        _locations_to_rows(
-            [loc for loc in locations if loc.location_type == "forest"]
-        )
+        _locations_to_rows([loc for loc in locations if loc.location_type == "forest"])
     )
     right_rows.extend(
         _locations_to_rows(
             [
-                loc for loc in locations
+                loc
+                for loc in locations
                 if loc.location_type == "event" and loc.name in basic_event_names
             ]
         )
@@ -140,7 +132,8 @@ def game_state_as_df_to_text(game_state, output_file=None):
     right_rows.extend(
         _locations_to_rows(
             [
-                loc for loc in locations
+                loc
+                for loc in locations
                 if loc.location_type == "event" and loc.name not in basic_event_names
             ]
         )
@@ -173,91 +166,112 @@ def game_state_as_df_to_text(game_state, output_file=None):
     }
     locations_board_df = pd.DataFrame(board_data)
     locations_df = locations_board_df.copy()
-    
+
     # ============================================
     # MEADOW + DISCARDPILE DATAFRAME
     # ============================================
-    
+
     # Split meadow into two halves (1-4 and 5-8)
     meadow_cards = [card.name for card in meadow.cards]
     meadow_first_half = meadow_cards[:4] if len(meadow_cards) > 0 else []
     meadow_second_half = meadow_cards[4:] if len(meadow_cards) > 4 else []
-    
+
     # Show only the last 8 discard pile cards, split into two halves (1-4 and 5-8)
     discard_cards = [card.name for card in discardpile.cards]
     discard_last_eight = discard_cards[-8:]
     discard_first_half = discard_last_eight[:4] if len(discard_last_eight) > 0 else []
     discard_second_half = discard_last_eight[4:] if len(discard_last_eight) > 4 else []
-    
+
     # Create dataframe with flexible row count
-    max_rows = max(len(meadow_first_half), len(meadow_second_half), 
-                   len(discard_first_half), len(discard_second_half))
-    
+    max_rows = max(
+        len(meadow_first_half),
+        len(meadow_second_half),
+        len(discard_first_half),
+        len(discard_second_half),
+    )
+
     meadow_discard_data = {
-        "Meadow": [meadow_first_half[i] 
-                       if i < len(meadow_first_half) 
-                       else "" for i in range(max_rows)],
-        "Meadow cont.": [meadow_second_half[i] 
-                       if i < len(meadow_second_half) 
-                       else "" for i in range(max_rows)],
-        "Discardpile last 8": [discard_first_half[i] 
-                            if i < len(discard_first_half) 
-                            else "" for i in range(max_rows)],
-        "Discardpile cont.": [discard_second_half[i] 
-                            if i < len(discard_second_half) 
-                            else "" for i in range(max_rows)],
+        "Meadow": [
+            meadow_first_half[i] if i < len(meadow_first_half) else ""
+            for i in range(max_rows)
+        ],
+        "Meadow cont.": [
+            meadow_second_half[i] if i < len(meadow_second_half) else ""
+            for i in range(max_rows)
+        ],
+        "Discardpile last 8": [
+            discard_first_half[i] if i < len(discard_first_half) else ""
+            for i in range(max_rows)
+        ],
+        "Discardpile cont.": [
+            discard_second_half[i] if i < len(discard_second_half) else ""
+            for i in range(max_rows)
+        ],
     }
-    
+
     meadow_discardpile_df = pd.DataFrame(meadow_discard_data)
-    
+
     # ============================================
     # PLAYERS DATAFRAME
     # ============================================
-    
+
     all_rows = []
     row_labels = []
-    
+
     # Workers row
     row_labels.append("Workers")
     all_rows.append([p.workers for p in players])
-    
+
     # Season row
     row_labels.append("Season")
     all_rows.append([p.season.capitalize() for p in players])
-    
+
     # Finished row
     row_labels.append("Finished")
     all_rows.append([str(p.finished) for p in players])
-    
+
     # Points row (comma-separated with label)
     row_labels.append("Points (card, token,\npros., jour., event)")
-    all_rows.append([", ".join([str(p.points[pt]) 
-                for pt in ["card", "token", "prosperity", "journey", "event"]])
-                for p in players])
-    
+    all_rows.append(
+        [
+            ", ".join(
+                [
+                    str(p.points[pt])
+                    for pt in ["card", "token", "prosperity", "journey", "event"]
+                ]
+            )
+            for p in players
+        ]
+    )
+
     # Resources row (comma-separated with label)
     row_labels.append("Resources (twig,\nresin, pebble, berry)")
-    all_rows.append([", ".join([str(p.resources[rt]) 
-                for rt in ["twig", "resin", "pebble", "berry"]]) 
-                for p in players])
-    
+    all_rows.append(
+        [
+            ", ".join(
+                [str(p.resources[rt]) for rt in ["twig", "resin", "pebble", "berry"]]
+            )
+            for p in players
+        ]
+    )
+
     # City row (newline-separated)
     row_labels.append("City")
     city_row_data = []
     for player in players:
         city_cards = (
-            "\n".join([card.name for card in player.city]) 
-            if player.city else "")
+            "\n".join([card.name for card in player.city]) if player.city else ""
+        )
         city_row_data.append(city_cards)
     all_rows.append(city_row_data)
-    
+
     # Hand row (newline-separated)
     row_labels.append("Hand")
     hand_row_data = []
     for player in players:
         hand_cards = (
-            "\n".join([card.name for card in player.hand]) 
-            if player.hand else "")
+            "\n".join([card.name for card in player.hand]) if player.hand else ""
+        )
         hand_row_data.append(hand_cards)
     all_rows.append(hand_row_data)
 
@@ -266,89 +280,104 @@ def game_state_as_df_to_text(game_state, output_file=None):
     events_row_data = []
     for player in players:
         events = (
-            "\n".join([event.name for event in player.events])
-            if player.events else "")
+            "\n".join([event.name for event in player.events]) if player.events else ""
+        )
         events_row_data.append(events)
     all_rows.append(events_row_data)
-    
+
     # Create dataframe
     players_df = pd.DataFrame(
-        all_rows,
-        columns=[f"Player {p.index}" for p in players],
-        index=row_labels)
-    
+        all_rows, columns=[f"Player {p.index}" for p in players], index=row_labels
+    )
+
     # ============================================
     # CREATE FULL TEXT OUTPUT WITH BORDERS
     # ============================================
-    
+
     text_output = []
     text_output.append(deck_size_text)
     text_output.append("")
-    
+
     # Board locations dataframe with borders
     text_output.append("LOCATIONS:")
-    text_output.append(tabulate(locations_board_df,
-                        headers='keys', tablefmt='grid', showindex=False))
+    text_output.append(
+        tabulate(
+            locations_board_df.values.tolist(),
+            headers=list(locations_board_df.columns),
+            tablefmt="grid",
+            showindex=False,
+        )
+    )
     text_output.append("")
-    
+
     # Meadow + Discardpile dataframe with borders
     text_output.append("MEADOW & DISCARDPILE:")
-    text_output.append(tabulate(meadow_discardpile_df, 
-                        headers='keys', tablefmt='grid', showindex=False))
+    text_output.append(
+        tabulate(
+            meadow_discardpile_df.values.tolist(),
+            headers=list(meadow_discardpile_df.columns),
+            tablefmt="grid",
+            showindex=False,
+        )
+    )
     text_output.append("")
-    
+
     # Players dataframe with borders
     text_output.append(current_player_text)
     text_output.append(turn_options_text)
     text_output.append("")
     text_output.append("PLAYERS:")
-    text_output.append(tabulate(players_df, 
-                        headers='keys', tablefmt='grid', showindex=True))
-    
+    text_output.append(
+        tabulate(
+            players_df.values.tolist(),
+            headers=list(players_df.columns),
+            tablefmt="grid",
+            showindex=True,
+        )
+    )
+
     full_text = "\n".join(text_output)
-    
+
     # ============================================
     # SAVE TO FILE IF SPECIFIED
     # ============================================
-    
+
     saved_file_path = None
     if output_file:
         # Create test_results folder if it doesn't exist
         test_results_folder = os.path.join(os.getcwd(), "test_results")
         os.makedirs(test_results_folder, exist_ok=True)
-        
+
         # Add auto-increment counter to filename
         filename_blank = os.path.splitext(output_file)[0]
         file_extension = os.path.splitext(output_file)[1] or ".txt"
-        
+
         counter = 1
         count_filename = f"{filename_blank}_{counter}{file_extension}"
-        saved_file_path = (
-            os.path.join(test_results_folder, count_filename))
-        
+        saved_file_path = os.path.join(test_results_folder, count_filename)
+
         # Find next available filename if it exists
         while os.path.exists(saved_file_path):
             counter += 1
             count_filename = f"{filename_blank}_{counter}{file_extension}"
-            saved_file_path = (
-                os.path.join(test_results_folder, count_filename))
-        
+            saved_file_path = os.path.join(test_results_folder, count_filename)
+
         # Save to file in test_results folder
-        with open(saved_file_path, 'w') as f:
+        with open(saved_file_path, "w") as f:
             f.write(full_text)
-    
+
     # ============================================
     # RETURN RESULTS
     # ============================================
-    
+
     return {
-        'current_player': current_player_text,
-        'turn_options': turn_options,
-        'deck_size': deck_size_text,
-        'locations_board_df': locations_board_df,
-        'locations_df': locations_df,
-        'meadow_discardpile_df': meadow_discardpile_df,
-        'players_df': players_df,
-        'full_text': full_text,
-        'saved_file_path': saved_file_path
+        "current_player": current_player_text,
+        "turn_options": turn_options,
+        "deck_size": deck_size_text,
+        "locations_board_df": locations_board_df,
+        "locations_df": locations_df,
+        "meadow_discardpile_df": meadow_discardpile_df,
+        "players_df": players_df,
+        "full_text": full_text,
+        "saved_file_path": saved_file_path,
     }

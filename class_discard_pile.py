@@ -1,22 +1,23 @@
 from collections import deque
+from typing import Any
 from numpy import random
 
 
 class DiscardPile:
     def __init__(self):
-        self.cards = deque([])
-        
+        self.cards: deque[Any] = deque([])
+
     def __str__(self):
         return str(self.cards)
-    
+
     def add_to_discardpile(self, listofcards):
         self.cards.extend(listofcards)
         return self.cards
-    
+
     def shuffle_discardpile(self):
         random.shuffle(self.cards)
         return self.cards
-    
+
     # Function to obtain one ore more cards that were placed most recently
     def draw_cards(self, nrCards):
         cards = []
@@ -25,8 +26,8 @@ class DiscardPile:
             self.cards.pop()
             cards.append(card)
         return cards
-    
-    # When the deck is empty and the discard pile is reshuffled and 
+
+    # When the deck is empty and the discard pile is reshuffled and
     # added to the deck, it should be possible to clear the discard pile
     def clear_discardpile(self):
         self.cards.clear()

@@ -69,9 +69,7 @@ def _location_requirement_met(player, loc, requirement, game_state):
     if kind == "other_player_has_hand_space":
         amount = requirement.get("amount", 1)
         return any(
-            p != player
-            and not p.finished
-            and p.cards_get_open_spaces("hand") >= amount
+            p != player and not p.finished and p.cards_get_open_spaces("hand") >= amount
             for p in game_state["players"]
         )
 
@@ -91,18 +89,23 @@ def _location_requirement_met(player, loc, requirement, game_state):
 
     if kind == "has_playable_meadow_card":
         discount = requirement.get("discount", 3)
-        return len(get_possible_meadow_card_plays_with_discount(
-            game_state, discount
-        )) > 0
+        return (
+            len(get_possible_meadow_card_plays_with_discount(game_state, discount)) > 0
+        )
 
     if kind == "has_playable_card_with_max_points":
         max_points = requirement.get("max_points", 99)
-        return len(get_possible_card_plays(
-            game_state,
-            max_points=max_points,
-            pay=True,
-            allow_city_discard_then_pay=False,
-        )) > 0
+        return (
+            len(
+                get_possible_card_plays(
+                    game_state,
+                    max_points=max_points,
+                    pay=True,
+                    allow_city_discard_then_pay=False,
+                )
+            )
+            > 0
+        )
 
     return False
 
@@ -129,7 +132,8 @@ def _dedupe_play_methods(methods):
     for method in methods:
         pay_req_tuple = (
             tuple(sorted(method.pay_requirements.items()))
-            if method.pay_requirements else None
+            if method.pay_requirements
+            else None
         )
         key = (
             method.method,
@@ -144,9 +148,7 @@ def _dedupe_play_methods(methods):
     return unique_methods
 
 
-def _iter_discounted_requirements(
-    requirements, discount, min_discount_used=0
-):
+def _iter_discounted_requirements(requirements, discount, min_discount_used=0):
     twig = requirements.get("twig", 0)
     resin = requirements.get("resin", 0)
     pebble = requirements.get("pebble", 0)
@@ -168,10 +170,7 @@ def _iter_discounted_requirements(
 
                 for berry_reduce in range(min(berry, rem_after_pebble) + 1):
                     total_reduced = (
-                        twig_reduce
-                        + resin_reduce
-                        + pebble_reduce
-                        + berry_reduce
+                        twig_reduce + resin_reduce + pebble_reduce + berry_reduce
                     )
                     if total_reduced < min_discount:
                         continue
@@ -205,23 +204,19 @@ def _get_kerker_methods(player, card):
         return []
 
     kerker = next(
-        (city_card for city_card in player.city
-         if city_card.name == "Kerker"),
+        (city_card for city_card in player.city if city_card.name == "Kerker"),
         None,
     )
     if kerker is None:
         return []
 
-    has_boswachter = any(
-        city_card.name == "Boswachter" for city_card in player.city
-    )
+    has_boswachter = any(city_card.name == "Boswachter" for city_card in player.city)
     capacity = 2 if has_boswachter else 1
     if len(kerker.stored_cards) >= capacity:
         return []
 
     prisoners = [
-        city_card for city_card in player.city
-        if isinstance(city_card, Critter)
+        city_card for city_card in player.city if isinstance(city_card, Critter)
     ]
     methods = []
 
@@ -322,9 +317,7 @@ def _get_methods_for_card(
                         resources_after_discard.get(resource, 0) + amount
                     )
 
-                if _has_resources(
-                    resources_after_discard, card.costs
-                ):
+                if _has_resources(resources_after_discard, card.costs):
                     methods.append(
                         PlayMethod(
                             method="city_discard_then_pay",
@@ -353,7 +346,7 @@ def get_possible_card_plays(
     player = game_state["current_player"]
     meadow = game_state["meadow"]
     all_cards = player.hand + meadow.cards
-    possible_card_plays = []
+    possible_card_plays: list[PlayCardOption] = []
 
     # Maximum city size
     if player.cards_get_open_spaces("city") == 0:
@@ -379,9 +372,7 @@ def get_possible_card_plays(
 
         final_methods = _dedupe_play_methods(methods)
         if len(final_methods) > 0:
-            possible_card_plays.append(
-                PlayCardOption(card=card, methods=final_methods)
-            )
+            possible_card_plays.append(PlayCardOption(card=card, methods=final_methods))
 
     return possible_card_plays
 
@@ -423,11 +414,9 @@ def get_possible_locations(game_state):
         if loc.location_type == "destination_card":
             owner = getattr(loc, "owner", None)
             in_own_city = owner == player
-            accessible_open = owner is not None and (
-                                         owner != player and loc.is_open)
+            accessible_open = owner is not None and (owner != player and loc.is_open)
 
-            if loc.get_open_spaces() > 0 and (
-                                            in_own_city or accessible_open):
+            if loc.get_open_spaces() > 0 and (in_own_city or accessible_open):
                 possible_locations.append(loc)
 
         # Haven locations
@@ -447,7 +436,7 @@ def get_possible_locations(game_state):
         if loc.location_type == "event" and loc.get_open_spaces() > 0:
             possible_locations.append(loc)
 
-    # To do: forest locations
+    # TODO: forest locations
 
     return possible_locations
 
@@ -514,7 +503,7 @@ def get_critters_constructions_city(game_state, critter_and_construction):
     critter = critter_and_construction[0]
     construction = critter_and_construction[1]
 
-    options = []
+    options: list[Any] = []
     if critter and not construction:
         options = [c for c in player.city if isinstance(c, Critter)]
     elif construction and not critter:

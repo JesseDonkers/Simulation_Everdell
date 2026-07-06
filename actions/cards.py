@@ -10,7 +10,7 @@ __all__ = [
     "action_give_discard_refill_hand",
     "action_play_card",
     "action_play_meadow_card_with_discount",
-    "action_remove_card_from_city",    
+    "action_remove_card_from_city",
     "action_play_cards_from_deck_or_discardpile",
     "action_refresh_meadow_draw_cards",
     "action_reactivate_green_card",
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 class action_discard_cards_from_hand(Action):
     def __init__(self, nr_cards):
-        self.nr_cards = nr_cards
+        self.nr_cards: int = nr_cards
 
     def execute_action(self, player: "Player", game_state=None):
         discardpile: "DiscardPile" = game_state["discardpile"]
@@ -50,6 +50,7 @@ class action_discard_stored_cards(Action):
     player's city by moving them to the discard pile and clearing the stored
     cards list.
     """
+
     def __init__(self, card_name):
         self.card_name = card_name
 
@@ -110,7 +111,7 @@ class action_play_card(Action):
 
     def execute_action(self, player: "Player", game_state=None):
         from engine.selectors import get_possible_card_plays
-        
+
         meadow: "Meadow" = game_state["meadow"]
         deck = game_state["deck"]
         discardpile = game_state["discardpile"]
@@ -133,9 +134,7 @@ class action_play_card(Action):
 
         selected_method = methods[0]
         if len(methods) > 1:
-            selected_method = player.decide(
-                game_state, "card_play_method", methods
-            )
+            selected_method = player.decide(game_state, "card_play_method", methods)
 
         in_hand = card in player.hand
         in_meadow = card in meadow.cards
@@ -161,9 +160,7 @@ class action_play_card(Action):
         if pay_required:
             card_costs = selected_method.pay_requirements
             if card_costs is None:
-                raise ValueError(
-                    "Selected paid play method has no pay_requirements"
-                )
+                raise ValueError("Selected paid play method has no pay_requirements")
             for resource, amount in card_costs.items():
                 player.resources_remove(resource, amount)
 
@@ -172,9 +169,7 @@ class action_play_card(Action):
         if card.action_on_play:
             card.action_on_play.execute(game_state)
 
-    def _execute_selected_method(
-        self, player: "Player", game_state, selected_method
-    ):
+    def _execute_selected_method(self, player: "Player", game_state, selected_method):
         if selected_method.method == "pay_resources":
             return self._method_pay_resources()
         if selected_method.method == "related_free":
@@ -184,9 +179,7 @@ class action_play_card(Action):
                 player, game_state, selected_method
             )
         if selected_method.method == "kerker_discount":
-            return self._method_kerker_discount(
-                player, game_state, selected_method
-            )
+            return self._method_kerker_discount(player, game_state, selected_method)
         if selected_method.method == "free_no_pay":
             return self._method_free_no_pay()
 
@@ -206,18 +199,14 @@ class action_play_card(Action):
         self, player: "Player", game_state, selected_method
     ):
         if len(selected_method.consumed_cards) == 0:
-            raise ValueError(
-                "city_discard_then_pay requires one consumed city card"
-            )
+            raise ValueError("city_discard_then_pay requires one consumed city card")
         discard_card = selected_method.consumed_cards[0]
         for resource, amount in discard_card.costs.items():
             player.resources_add(resource, amount)
         discard_card.action_on_discard.execute(game_state)
         return True
 
-    def _method_kerker_discount(
-        self, player: "Player", game_state, selected_method
-    ):
+    def _method_kerker_discount(self, player: "Player", game_state, selected_method):
         if selected_method.source_card is None:
             raise ValueError("kerker_discount requires a source_card")
         if len(selected_method.consumed_cards) != 1:
@@ -281,9 +270,7 @@ class action_play_meadow_card_with_discount(action_play_card):
         possible_cards = [entry.card for entry in possible_card_plays]
 
         if len(possible_cards) == 0:
-            raise ValueError(
-                "No meadow cards can be played with the Herberg discount"
-            )
+            raise ValueError("No meadow cards can be played with the Herberg discount")
 
         card = player.decide(game_state, "card_new", possible_cards)
         card_play_data = next(
@@ -293,9 +280,7 @@ class action_play_meadow_card_with_discount(action_play_card):
 
         selected_method = methods[0]
         if len(methods) > 1:
-            selected_method = player.decide(
-                game_state, "card_play_method", methods
-            )
+            selected_method = player.decide(game_state, "card_play_method", methods)
 
         # Always remove from meadow; Herberg only plays meadow cards
         meadow.draw_cards([card], deck, discardpile)
@@ -307,9 +292,7 @@ class action_play_meadow_card_with_discount(action_play_card):
         if pay_required:
             card_costs = selected_method.pay_requirements
             if card_costs is None:
-                raise ValueError(
-                    "Selected paid play method has no pay_requirements"
-                )
+                raise ValueError("Selected paid play method has no pay_requirements")
             for resource, amount in card_costs.items():
                 player.resources_remove(resource, amount)
 
@@ -323,16 +306,12 @@ class action_remove_card_from_city(Action):
         self.card_name = card_name
         self.add_to_discard = add_to_discard
 
-    def execute_action(
-        self, player: "Player", game_state=None, add_to_discard=None
-    ):
+    def execute_action(self, player: "Player", game_state=None, add_to_discard=None):
         card = next(c for c in player.city if c.name == self.card_name)
         player.cards_remove([card], "city")
 
         effective_add_to_discard = (
-            self.add_to_discard
-            if add_to_discard is None
-            else add_to_discard
+            self.add_to_discard if add_to_discard is None else add_to_discard
         )
         if effective_add_to_discard:
             discard_pile: "DiscardPile" = game_state["discardpile"]
@@ -405,7 +384,8 @@ class action_give_discard_refill_hand(Action):
         players = game_state["players"]
         nr_to_give = self.nr_give
         eligible_targets = [
-            p for p in players
+            p
+            for p in players
             if p != player
             and not p.finished
             and p.cards_get_open_spaces("hand") >= nr_to_give
@@ -423,16 +403,15 @@ class action_give_discard_refill_hand(Action):
             cards_to_give.append(card)
             selectable.remove(card)
 
-        target = player.decide(
-            game_state, "player_to_receive_cards", eligible_targets
-        )
+        target = player.decide(game_state, "player_to_receive_cards", eligible_targets)
 
         player.cards_remove(cards_to_give, "hand")
         target.cards_add(cards_to_give, "hand")
 
         # Discard a number of cards by choice from hand
         nr_discard = player.decide(
-                        game_state, "nr_cards_discard_hand", len(player.hand))
+            game_state, "nr_cards_discard_hand", len(player.hand)
+        )
         cards_to_discard = []
         selectable = player.hand.copy()
         for _ in range(nr_discard):
@@ -453,47 +432,44 @@ class action_give_discard_refill_hand(Action):
 class action_reactivate_green_card(Action):
     """
     Reactivate a green card by executing its action_on_reactivate.
-    
+
     Args:
         from_own_city (bool): If True, choose from player's own city.
                              If False, choose from other players' cities.
     """
+
     def __init__(self, from_own_city=True):
         self.from_own_city = from_own_city
 
     def execute_action(self, player: "Player", game_state=None):
         if self.from_own_city:
             # Reactivate a green card from own city
-            green_cards = [
-                card for card in player.city if card.color == "green"]
+            green_cards = [card for card in player.city if card.color == "green"]
         else:
             # Reactivate a green card from other players' cities
             green_cards = []
             for other_player in game_state["players"]:
                 if other_player != player:
-                    green_cards.extend([card 
-                                        for card 
-                                        in other_player.city 
-                                        if card.color == "green"]
+                    green_cards.extend(
+                        [card for card in other_player.city if card.color == "green"]
                     )
 
-        # Exclude cards whose action_on_reactivate is 
+        # Exclude cards whose action_on_reactivate is
         # action_reactivate_green_card only if it would cause recursion
         # (i.e., if there are no other green cards with different actions)
-        non_recursive_cards = [card 
-                               for card 
-                               in green_cards 
-                               if not isinstance(card.action_on_reactivate, 
-                                                 action_reactivate_green_card)]
+        non_recursive_cards = [
+            card
+            for card in green_cards
+            if not isinstance(card.action_on_reactivate, action_reactivate_green_card)
+        ]
         if len(non_recursive_cards) == 0:
-            # All green cards would cause recursion, 
+            # All green cards would cause recursion,
             # so exclude them all to prevent infinite loop
             green_cards = []
         # Else, allow all
 
         if len(green_cards) > 0:
-            card = player.decide(
-                            game_state, "card_reactivate_green", green_cards)
+            card = player.decide(game_state, "card_reactivate_green", green_cards)
             if not card.action_on_reactivate:
                 raise ValueError(f"{card.name} has no action_on_reactivate")
             card.action_on_reactivate.execute(game_state)

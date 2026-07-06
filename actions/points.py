@@ -72,9 +72,7 @@ class action_points_for_given_resources(Action):
             self.max_nr_resources = max_nr_resources
             self.points_per_resource = points_per_resource
         else:
-            raise ValueError(
-                "Invalid arguments for action_points_for_given_resources"
-            )
+            raise ValueError("Invalid arguments for action_points_for_given_resources")
 
     def _get_available_resources(self, player: "Player"):
         return {
@@ -84,9 +82,7 @@ class action_points_for_given_resources(Action):
 
     def execute_action(self, player: "Player", game_state=None):
         players = game_state["players"]
-        eligible_receivers = [
-            p for p in players if p != player and not p.finished
-        ]
+        eligible_receivers = [p for p in players if p != player and not p.finished]
         if len(eligible_receivers) == 0:
             return
 
@@ -135,7 +131,7 @@ class action_points_for_given_resources(Action):
             requested_resources = player.decide(
                 game_state, "resource_give_away", (nr_give_away, available)
             )
-            
+
             for resource_type in requested_resources:
                 player.resources_remove(resource_type, 1)
                 player.points["token"] += self.points_per_resource
@@ -156,9 +152,7 @@ class action_points_for_payed_resources(Action):
     def execute_action(self, player: "Player", game_state=None):
         available = player.resources.get(self.resource_type, 0)
         max_allowed = min(self.max_nr_resources, available)
-        requested = player.decide(
-            game_state, "nr_resources_for_points", max_allowed
-        )
+        requested = player.decide(game_state, "nr_resources_for_points", max_allowed)
         nr_give_away = max(0, min(requested, max_allowed))
 
         for _ in range(nr_give_away):
@@ -190,6 +184,11 @@ class actions_points_for_resources_event_location(Action):
             None,
         )
 
+        if target_location is None:
+            raise ValueError(
+                f"Event location '{self.location_name}' not found in player's events"
+            )
+
         total_resources = sum(
             target_location.resources.get(resource_type, 0)
             for resource_type in self.resources
@@ -216,15 +215,14 @@ class actions_points_for_cards_in_city(Action):
 class action_points_for_discarding_cards(Action):
     def __init__(self, max_nr, points_per_card):
         self.max_nr = max_nr
-        self.points_per_card = points_per_card    
+        self.points_per_card = points_per_card
 
     def execute_action(self, player: "Player", game_state=None):
         discardpile: "DiscardPile" = game_state["discardpile"]
 
         # Player decides how many cards to discard
         max_allowed = min(self.max_nr, len(player.hand))
-        nr_discard = player.decide(
-            game_state, "nr_cards_discard_hand", max_allowed)
+        nr_discard = player.decide(game_state, "nr_cards_discard_hand", max_allowed)
 
         # Player picks each card to discard
         selectable = player.hand.copy()
@@ -238,5 +236,4 @@ class action_points_for_discarding_cards(Action):
         discardpile.add_to_discardpile(cards_to_discard)
 
         # Gain point per card
-        player.points_add("token", 
-                          len(cards_to_discard) * self.points_per_card)
+        player.points_add("token", len(cards_to_discard) * self.points_per_card)

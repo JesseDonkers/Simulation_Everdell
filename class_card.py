@@ -5,13 +5,20 @@ from class_action import *
 
 
 class Card:
-    def __init__(self, name, color, costs,
-                 cardsindeck, unique, points,
-                 action_on_play=None,
-                 action_on_reactivate=None,
-                 action_on_discard=None,
-                 action_on_finish=None,
-                 requirements=None):
+    def __init__(
+        self,
+        name,
+        color,
+        costs,
+        cardsindeck,
+        unique,
+        points,
+        action_on_play=None,
+        action_on_reactivate=None,
+        action_on_discard=None,
+        action_on_finish=None,
+        requirements=None,
+    ):
         self.name = name
         self.color = color
         self.costs = costs
@@ -24,46 +31,75 @@ class Card:
         self.action_on_finish = action_on_finish
         self.requirements = requirements  # Optional play preconditions
         self.stored_cards = []  # For cards attached to this card (e.g. Kerker)
-        
+
     def __str__(self):
         return str(self.name)
 
+
 class Critter(Card):
-    def __init__(self, name, color, costs,
-                 cardsindeck, unique, points,
-                 action_on_play=None,
-                 action_on_reactivate=None,
-                 action_on_discard=None,
-                 action_on_finish=None,
-                 requirements=None):
-        super().__init__(name, color, costs,
-                         cardsindeck, unique, points,
-                         action_on_play=action_on_play,
-                         action_on_reactivate=action_on_reactivate,
-                         action_on_discard=action_on_discard,
-                         action_on_finish=action_on_finish,
-                         requirements=requirements)
+    def __init__(
+        self,
+        name,
+        color,
+        costs,
+        cardsindeck,
+        unique,
+        points,
+        action_on_play=None,
+        action_on_reactivate=None,
+        action_on_discard=None,
+        action_on_finish=None,
+        requirements=None,
+    ):
+        super().__init__(
+            name,
+            color,
+            costs,
+            cardsindeck,
+            unique,
+            points,
+            action_on_play=action_on_play,
+            action_on_reactivate=action_on_reactivate,
+            action_on_discard=action_on_discard,
+            action_on_finish=action_on_finish,
+            requirements=requirements,
+        )
+
 
 class Construction(Card):
-    def __init__(self, name, color, costs,
-                 cardsindeck, unique, points, relatedcritters,
-                 action_on_play=None,
-                 action_on_reactivate=None,
-                 action_on_discard=None,
-                 action_on_finish=None,
-                 requirements=None):
-        super().__init__(name, color, costs,
-                         cardsindeck, unique, points,
-                         action_on_play=action_on_play,
-                         action_on_reactivate=action_on_reactivate,
-                         action_on_discard=action_on_discard,
-                         action_on_finish=action_on_finish,
-                         requirements=requirements)
+    def __init__(
+        self,
+        name,
+        color,
+        costs,
+        cardsindeck,
+        unique,
+        points,
+        relatedcritters,
+        action_on_play=None,
+        action_on_reactivate=None,
+        action_on_discard=None,
+        action_on_finish=None,
+        requirements=None,
+    ):
+        super().__init__(
+            name,
+            color,
+            costs,
+            cardsindeck,
+            unique,
+            points,
+            action_on_play=action_on_play,
+            action_on_reactivate=action_on_reactivate,
+            action_on_discard=action_on_discard,
+            action_on_finish=action_on_finish,
+            requirements=requirements,
+        )
         self.relatedcritters = relatedcritters
         self.relatedoccupied = False
 
 
-cards_unique = []
+cards_unique: list[Card] = []
 
 
 # ============================================
@@ -78,7 +114,8 @@ architect = Critter(
     unique=True,
     points=2,
     action_on_finish=actions_points_for_resources_hand(["resin", "pebble"], 1),
-    action_on_discard=action_remove_card_from_city("Architect"))
+    action_on_discard=action_remove_card_from_city("Architect"),
+)
 
 begrafenisondernemer = Critter(
     name="Begrafenisondernemer",
@@ -87,17 +124,26 @@ begrafenisondernemer = Critter(
     cardsindeck=2,
     unique=True,
     points=1,
-
-    action_on_play=CompositeAction([
-        action_refresh_meadow_draw_cards(3),
-        action_add_destination_if_card_present(
-            "Begraafplaats 2", "destination_card", 1,
-            action_play_cards_from_deck_or_discardpile(4), 
-            check_card_name="Begraafplaats", permanent_workers=True)]),
-
-    action_on_discard=CompositeAction([
-        action_remove_destination("Begraafplaats 2"),
-        action_remove_card_from_city("Begrafenisondernemer")]))
+    action_on_play=CompositeAction(
+        [
+            action_refresh_meadow_draw_cards(3),
+            action_add_destination_if_card_present(
+                "Begraafplaats 2",
+                "destination_card",
+                1,
+                action_play_cards_from_deck_or_discardpile(4),
+                check_card_name="Begraafplaats",
+                permanent_workers=True,
+            ),
+        ]
+    ),
+    action_on_discard=CompositeAction(
+        [
+            action_remove_destination("Begraafplaats 2"),
+            action_remove_card_from_city("Begrafenisondernemer"),
+        ]
+    ),
+)
 
 boswachter = Critter(
     name="Boswachter",
@@ -108,7 +154,8 @@ boswachter = Critter(
     points=1,
     action_on_play=action_replace_worker(),
     action_on_discard=action_remove_card_from_city("Boswachter"),
-    requirements={"kind": "has_placed_worker"})
+    requirements={"kind": "has_placed_worker"},
+)
 
 dokter = Critter(
     name="Dokter",
@@ -119,13 +166,14 @@ dokter = Critter(
     points=4,
     action_on_play=action_points_for_payed_resources(3, "berry", 1),
     action_on_reactivate=action_points_for_payed_resources(3, "berry", 1),
-    action_on_discard=action_remove_card_from_city("Dokter"))
+    action_on_discard=action_remove_card_from_city("Dokter"),
+)
 
-# To do: dwaas
+# TODO: dwaas
 
-# To do: herbergier
+# TODO: herbergier
 
-# To do: herder
+# TODO: herder
 
 historicus = Critter(
     name="Historicus",
@@ -135,7 +183,8 @@ historicus = Critter(
     unique=True,
     points=1,
     action_on_play=action_cards_from_deck_to_hand(1),
-    action_on_discard=action_remove_card_from_city("Historicus"))
+    action_on_discard=action_remove_card_from_city("Historicus"),
+)
 
 houtsnijder = Critter(
     name="Houtsnijder",
@@ -146,7 +195,8 @@ houtsnijder = Critter(
     points=2,
     action_on_play=action_points_for_payed_resources(3, "twig", 1),
     action_on_reactivate=action_points_for_payed_resources(3, "twig", 1),
-    action_on_discard=action_remove_card_from_city("Houtsnijder"))
+    action_on_discard=action_remove_card_from_city("Houtsnijder"),
+)
 
 kikkerkapitein = Critter(
     name="Kikkerkapitein",
@@ -155,15 +205,14 @@ kikkerkapitein = Critter(
     cardsindeck=3,
     unique=False,
     points=1,
-    action_on_play=action_resource_per_other_card(
-                                                    "Boerderij", "twig", 2),
-    action_on_reactivate=action_resource_per_other_card(
-                                                    "Boerderij", "twig", 2),
-    action_on_discard=action_remove_card_from_city("Kikkerkapitein"))
+    action_on_play=action_resource_per_other_card("Boerderij", "twig", 2),
+    action_on_reactivate=action_resource_per_other_card("Boerderij", "twig", 2),
+    action_on_discard=action_remove_card_from_city("Kikkerkapitein"),
+)
 
-# To do: leraar
+# TODO: leraar
 
-# To do: koning
+# TODO: koning
 
 koningin = Critter(
     name="Koningin",
@@ -183,12 +232,16 @@ koningin = Critter(
         },
     ),
     action_on_discard=CompositeAction(
-        [action_remove_destination("Koningin"),
-         action_remove_card_from_city("Koningin")]))
+        [
+            action_remove_destination("Koningin"),
+            action_remove_card_from_city("Koningin"),
+        ]
+    ),
+)
 
-# To do: man
+# TODO: man
 
-# To do: marskramer
+# TODO: marskramer
 
 mijnwerkermol = Critter(
     name="Mijnwerkermol",
@@ -199,7 +252,8 @@ mijnwerkermol = Critter(
     points=1,
     action_on_play=action_reactivate_green_card(from_own_city=False),
     action_on_reactivate=action_reactivate_green_card(from_own_city=False),
-    action_on_discard=action_remove_card_from_city("Mijnwerkermol"))
+    action_on_discard=action_remove_card_from_city("Mijnwerkermol"),
+)
 
 monnik = Critter(
     name="Monnik",
@@ -208,28 +262,40 @@ monnik = Critter(
     cardsindeck=2,
     unique=True,
     points=0,
-
-    action_on_play=CompositeAction([
-        action_points_for_given_resources(
-            max_nr_resources=2, resource_type="berry", points_per_resource=2),
-        action_add_destination_if_card_present(
-            "Klooster 2", "destination_card", 1,
-            action_points_for_given_resources(nr_resources=2, points=4),
-            check_card_name="Klooster",
-            permanent_workers=True,
-            requirements={"kind": "has_resource_type",
-                          "resource": "berry", "amount": 1})]),
-
+    action_on_play=CompositeAction(
+        [
+            action_points_for_given_resources(
+                max_nr_resources=2, resource_type="berry", points_per_resource=2
+            ),
+            action_add_destination_if_card_present(
+                "Klooster 2",
+                "destination_card",
+                1,
+                action_points_for_given_resources(nr_resources=2, points=4),
+                check_card_name="Klooster",
+                permanent_workers=True,
+                requirements={
+                    "kind": "has_resource_type",
+                    "resource": "berry",
+                    "amount": 1,
+                },
+            ),
+        ]
+    ),
     action_on_reactivate=action_points_for_given_resources(
-        max_nr_resources=2, resource_type="berry", points_per_resource=2),
-
+        max_nr_resources=2, resource_type="berry", points_per_resource=2
+    ),
     action_on_discard=CompositeAction(
-        [action_remove_destination("Klooster 2"),
-         action_remove_card_from_city("Monnik")]))
+        [
+            action_remove_destination("Klooster 2"),
+            action_remove_card_from_city("Monnik"),
+        ]
+    ),
+)
 
-# To do: postduif
+# TODO: postduif
 
-# To do: rechter
+# TODO: rechter
 
 schoonmaker = Critter(
     name="Schoonmaker",
@@ -240,9 +306,10 @@ schoonmaker = Critter(
     points=2,
     action_on_play=action_reactivate_green_card(from_own_city=True),
     action_on_reactivate=action_reactivate_green_card(from_own_city=True),
-    action_on_discard=action_remove_card_from_city("Schoonmaker"))
+    action_on_discard=action_remove_card_from_city("Schoonmaker"),
+)
 
-# To do: vrouw
+# TODO: vrouw
 
 winkelier = Critter(
     name="Winkelier",
@@ -251,9 +318,10 @@ winkelier = Critter(
     cardsindeck=3,
     unique=True,
     points=1,
-    # To do: when a critter is played
+    # TODO: when a critter is played
     action_on_play=action_resource_general("berry", 1),
-    action_on_discard=action_remove_card_from_city("Winkelier"))
+    action_on_discard=action_remove_card_from_city("Winkelier"),
+)
 
 zanger = Critter(
     name="Zanger",
@@ -263,9 +331,10 @@ zanger = Critter(
     unique=True,
     points=0,
     action_on_play=action_points_for_discarding_cards(5, 1),
-    action_on_discard=action_remove_card_from_city("Zanger"))
+    action_on_discard=action_remove_card_from_city("Zanger"),
+)
 
-# To do: zwerver
+# TODO: zwerver
 
 
 cards_unique.append(architect)
@@ -295,32 +364,37 @@ begraafplaats = Construction(
     unique=True,
     points=0,
     relatedcritters=["Begrafenisondernemer"],
-
-    action_on_play=CompositeAction([
-        action_add_destination_card_as_location(
-            "Begraafplaats 1",
-            "destination_card",
-            1,
-            action_play_cards_from_deck_or_discardpile(4),
-            permanent_workers=True,
-            requirements={"kind": "has_city_space"},
-        ),
-        action_add_destination_if_card_present(
-            "Begraafplaats 2",
-            "destination_card",
-            1,
-            action_play_cards_from_deck_or_discardpile(4),
-            check_card_name="Begrafenisondernemer",
-            permanent_workers=True,
-            requirements={"kind": "has_city_space"},
-        )]),
-
-    action_on_discard=CompositeAction([
+    action_on_play=CompositeAction(
+        [
+            action_add_destination_card_as_location(
+                "Begraafplaats 1",
+                "destination_card",
+                1,
+                action_play_cards_from_deck_or_discardpile(4),
+                permanent_workers=True,
+                requirements={"kind": "has_city_space"},
+            ),
+            action_add_destination_if_card_present(
+                "Begraafplaats 2",
+                "destination_card",
+                1,
+                action_play_cards_from_deck_or_discardpile(4),
+                check_card_name="Begrafenisondernemer",
+                permanent_workers=True,
+                requirements={"kind": "has_city_space"},
+            ),
+        ]
+    ),
+    action_on_discard=CompositeAction(
+        [
             action_remove_destination("Begraafplaats 1"),
             action_remove_destination("Begraafplaats 2"),
-            action_remove_card_from_city("Begraafplaats")]))
+            action_remove_card_from_city("Begraafplaats"),
+        ]
+    ),
+)
 
-    # To do: add requirement for placing worker: space in city
+# TODO: add requirement for placing worker: space in city
 
 boerderij = Construction(
     name="Boerderij",
@@ -332,9 +406,10 @@ boerderij = Construction(
     relatedcritters=["Man", "Vrouw"],
     action_on_play=action_resource_general("berry", 1),
     action_on_reactivate=action_resource_general("berry", 1),
-    action_on_discard=action_remove_card_from_city("Boerderij"))
+    action_on_discard=action_remove_card_from_city("Boerderij"),
+)
 
-# To do: evertree
+# TODO: evertree
 
 gerechtsgebouw = Construction(
     name="Gerechtsgebouw",
@@ -344,9 +419,9 @@ gerechtsgebouw = Construction(
     unique=True,
     points=2,
     relatedcritters=["Rechter"],
-    action_on_play=action_resources_by_choice(
-        ["twig", "resin", "pebble"], 1),
-    action_on_discard=action_remove_card_from_city("Gerechtsgebouw"))
+    action_on_play=action_resources_by_choice(["twig", "resin", "pebble"], 1),
+    action_on_discard=action_remove_card_from_city("Gerechtsgebouw"),
+)
 
 harsraffinaderij = Construction(
     name="Harsraffinaderij",
@@ -358,7 +433,8 @@ harsraffinaderij = Construction(
     relatedcritters=["Schoonmaker"],
     action_on_play=action_resource_general("resin", 1),
     action_on_reactivate=action_resource_general("resin", 1),
-    action_on_discard=action_remove_card_from_city("Harsraffinaderij"))
+    action_on_discard=action_remove_card_from_city("Harsraffinaderij"),
+)
 
 herberg = Construction(
     name="Herberg",
@@ -369,15 +445,19 @@ herberg = Construction(
     points=2,
     relatedcritters=["Herbergier"],
     action_on_play=action_add_destination_card_as_location(
-        "Herberg", "destination_card", 1,
+        "Herberg",
+        "destination_card",
+        1,
         action_play_meadow_card_with_discount(3),
         is_open=True,
-        requirements={"kind": "has_playable_meadow_card", "discount": 3}),
-    action_on_discard=CompositeAction([
-        action_remove_destination("Herberg"),
-        action_remove_card_from_city("Herberg")]))
+        requirements={"kind": "has_playable_meadow_card", "discount": 3},
+    ),
+    action_on_discard=CompositeAction(
+        [action_remove_destination("Herberg"), action_remove_card_from_city("Herberg")]
+    ),
+)
 
-# To do: kapel
+# TODO: kapel
 
 kasteel = Construction(
     name="Kasteel",
@@ -386,10 +466,10 @@ kasteel = Construction(
     cardsindeck=2,
     unique=True,
     points=4,
-    relatedcritters=["Koning"],    
-    action_on_finish=actions_points_for_cards_in_city(
-                                                    "Construction", False, 1),
-    action_on_discard=action_remove_card_from_city("Kasteel"))
+    relatedcritters=["Koning"],
+    action_on_finish=actions_points_for_cards_in_city("Construction", False, 1),
+    action_on_discard=action_remove_card_from_city("Kasteel"),
+)
 
 kerker = Construction(
     name="Kerker",
@@ -399,10 +479,10 @@ kerker = Construction(
     unique=True,
     points=0,
     relatedcritters=["Boswachter"],
-    action_on_discard=CompositeAction([
-        action_discard_stored_cards("Kerker"),
-        action_remove_card_from_city("Kerker")
-    ]))
+    action_on_discard=CompositeAction(
+        [action_discard_stored_cards("Kerker"), action_remove_card_from_city("Kerker")]
+    ),
+)
 
 kermis = Construction(
     name="Kermis",
@@ -414,9 +494,10 @@ kermis = Construction(
     relatedcritters=["Dwaas"],
     action_on_play=action_cards_from_deck_to_hand(2),
     action_on_reactivate=action_cards_from_deck_to_hand(2),
-    action_on_discard=action_remove_card_from_city("Kermis"))
+    action_on_discard=action_remove_card_from_city("Kermis"),
+)
 
-# To do: klokkentoren
+# TODO: klokkentoren
 
 klooster = Construction(
     name="Klooster",
@@ -426,25 +507,37 @@ klooster = Construction(
     unique=True,
     points=1,
     relatedcritters=["Monnik"],
-    action_on_play=CompositeAction([
-        action_add_destination_card_as_location(
-            "Klooster 1", "destination_card", 1, 
-            action_points_for_given_resources(nr_resources=2, points=4),
-            permanent_workers=True,
-            requirements={"kind": "has_any_resource"}),
-        action_add_destination_if_card_present(
-            "Klooster 2", "destination_card", 1,
-            action_points_for_given_resources(nr_resources=2, points=4),
-            check_card_name="Monnik",
-            permanent_workers=True,
-            requirements={"kind": "has_any_resource"})]),
+    action_on_play=CompositeAction(
+        [
+            action_add_destination_card_as_location(
+                "Klooster 1",
+                "destination_card",
+                1,
+                action_points_for_given_resources(nr_resources=2, points=4),
+                permanent_workers=True,
+                requirements={"kind": "has_any_resource"},
+            ),
+            action_add_destination_if_card_present(
+                "Klooster 2",
+                "destination_card",
+                1,
+                action_points_for_given_resources(nr_resources=2, points=4),
+                check_card_name="Monnik",
+                permanent_workers=True,
+                requirements={"kind": "has_any_resource"},
+            ),
+        ]
+    ),
+    action_on_discard=CompositeAction(
+        [
+            action_remove_destination("Klooster 1"),
+            action_remove_destination("Klooster 2"),
+            action_remove_card_from_city("Klooster"),
+        ]
+    ),
+)
 
-    action_on_discard=CompositeAction([
-        action_remove_destination("Klooster 1"),
-        action_remove_destination("Klooster 2"),
-        action_remove_card_from_city("Klooster")]))
-
-# To do: kraan
+# TODO: kraan
 
 mijn = Construction(
     name="Mijn",
@@ -456,9 +549,10 @@ mijn = Construction(
     relatedcritters=["Mijnwerkermol"],
     action_on_play=action_resource_general("pebble", 1),
     action_on_reactivate=action_resource_general("pebble", 1),
-    action_on_discard=action_remove_card_from_city("Mijn"))
+    action_on_discard=action_remove_card_from_city("Mijn"),
+)
 
-# To do: pakhuis
+# TODO: pakhuis
 
 paleis = Construction(
     name="Paleis",
@@ -467,9 +561,10 @@ paleis = Construction(
     cardsindeck=2,
     unique=True,
     points=4,
-    relatedcritters=["Koningin"],    
+    relatedcritters=["Koningin"],
     action_on_finish=actions_points_for_cards_in_city("Construction", True, 1),
-    action_on_discard=action_remove_card_from_city("Paleis"))
+    action_on_discard=action_remove_card_from_city("Paleis"),
+)
 
 postkantoor = Construction(
     name="Postkantoor",
@@ -480,18 +575,25 @@ postkantoor = Construction(
     points=2,
     relatedcritters=["Postduif"],
     action_on_play=action_add_destination_card_as_location(
-        "Postkantoor", "destination_card", 1,
+        "Postkantoor",
+        "destination_card",
+        1,
         action_give_discard_refill_hand(2),
         is_open=True,
         requirements=[
             {"kind": "has_hand_cards", "amount": 2},
             {"kind": "other_player_has_hand_space", "amount": 2},
-        ]),
-    action_on_discard=CompositeAction([
-        action_remove_destination("Postkantoor"),
-        action_remove_card_from_city("Postkantoor")]))
+        ],
+    ),
+    action_on_discard=CompositeAction(
+        [
+            action_remove_destination("Postkantoor"),
+            action_remove_card_from_city("Postkantoor"),
+        ]
+    ),
+)
 
-# To do: ruines
+# TODO: ruines
 
 school = Construction(
     name="School",
@@ -502,7 +604,8 @@ school = Construction(
     points=2,
     relatedcritters=["Leraar"],
     action_on_finish=actions_points_for_cards_in_city("Critter", False, 1),
-    action_on_discard=action_remove_card_from_city("School"))
+    action_on_discard=action_remove_card_from_city("School"),
+)
 
 takkenboot = Construction(
     name="Takkenboot",
@@ -514,7 +617,8 @@ takkenboot = Construction(
     relatedcritters=["Kikkerkapitein"],
     action_on_play=action_resource_general("twig", 2),
     action_on_reactivate=action_resource_general("twig", 2),
-    action_on_discard=action_remove_card_from_city("Takkenboot"))
+    action_on_discard=action_remove_card_from_city("Takkenboot"),
+)
 
 theater = Construction(
     name="Theater",
@@ -525,7 +629,8 @@ theater = Construction(
     points=3,
     relatedcritters=["Zanger"],
     action_on_finish=actions_points_for_cards_in_city("Critter", True, 1),
-    action_on_discard=action_remove_card_from_city("Theater"))
+    action_on_discard=action_remove_card_from_city("Theater"),
+)
 
 uitkijkpost = Construction(
     name="Uitkijkpost",
@@ -536,15 +641,20 @@ uitkijkpost = Construction(
     points=2,
     relatedcritters=["Zwerver"],
     action_on_play=action_add_destination_card_as_location(
-        "Uitkijkpost", "destination_card", 1, 
-        action_location_copy_action(["basic", "forest"])),
-
-        # To do: check if requirement is necessary?
-        # Copying basic locations is no problem, but forest locations?
-
-    action_on_discard=CompositeAction([
-        action_remove_destination("Uitkijkpost"),
-        action_remove_card_from_city("Uitkijkpost")]))
+        "Uitkijkpost",
+        "destination_card",
+        1,
+        action_location_copy_action(["basic", "forest"]),
+    ),
+    # TODO: check if requirement is necessary?
+    # Copying basic locations is no problem, but forest locations?
+    action_on_discard=CompositeAction(
+        [
+            action_remove_destination("Uitkijkpost"),
+            action_remove_card_from_city("Uitkijkpost"),
+        ]
+    ),
+)
 
 universiteit = Construction(
     name="Universiteit",
@@ -558,16 +668,22 @@ universiteit = Construction(
         "Universiteit",
         "destination_card",
         1,
-        CompositeAction([
-            action_resources_building_costs_discard(True, True),
-            action_resources_by_choice(
-                ["twig", "resin", "pebble", "berry"], 1),
-            action_points_general("token", 1)]),
+        CompositeAction(
+            [
+                action_resources_building_costs_discard(True, True),
+                action_resources_by_choice(["twig", "resin", "pebble", "berry"], 1),
+                action_points_general("token", 1),
+            ]
+        ),
         requirements={"kind": "has_city_cards", "amount": 1},
     ),
-    action_on_discard=CompositeAction([
-        action_remove_destination("Universiteit"),
-        action_remove_card_from_city("Universiteit")]))
+    action_on_discard=CompositeAction(
+        [
+            action_remove_destination("Universiteit"),
+            action_remove_card_from_city("Universiteit"),
+        ]
+    ),
+)
 
 winkel = Construction(
     name="Winkel",
@@ -577,11 +693,20 @@ winkel = Construction(
     unique=False,
     points=1,
     relatedcritters=["Winkelier"],
-    action_on_play=CompositeAction([action_resource_general("berry", 1), 
-    action_resource_if_other_card("Boerderij", "berry", 1)]),
-    action_on_reactivate=CompositeAction([action_resource_general("berry", 1), 
-    action_resource_if_other_card("Boerderij", "berry", 1)]),
-    action_on_discard=action_remove_card_from_city("Winkel"))
+    action_on_play=CompositeAction(
+        [
+            action_resource_general("berry", 1),
+            action_resource_if_other_card("Boerderij", "berry", 1),
+        ]
+    ),
+    action_on_reactivate=CompositeAction(
+        [
+            action_resource_general("berry", 1),
+            action_resource_if_other_card("Boerderij", "berry", 1),
+        ]
+    ),
+    action_on_discard=action_remove_card_from_city("Winkel"),
+)
 
 
 cards_unique.append(begraafplaats)

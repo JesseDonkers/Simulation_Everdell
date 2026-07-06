@@ -1,7 +1,7 @@
 class Meadow:
     def __init__(self):
         self.cards = []
-        
+
     def __str__(self):
         return str(self.cards)
 

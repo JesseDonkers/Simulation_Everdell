@@ -69,9 +69,7 @@ class action_resources_building_costs_discard(Action):
 
     def execute_action(self, player: "Player", game_state=None):
         critter_construction = [self.critter, self.construction]
-        options = get_critters_constructions_city(
-            game_state, critter_construction
-        )
+        options = get_critters_constructions_city(game_state, critter_construction)
         card = player.decide(game_state, "card_discard", options)
         resources = card.costs
         for resource, amount in resources.items():
@@ -89,7 +87,8 @@ class action_resources_for_cards(Action):
 
         # Player decides how many cards to discard (0 to len(hand))
         nr_discard = player.decide(
-                    game_state, "nr_cards_discard_hand", len(player.hand))
+            game_state, "nr_cards_discard_hand", len(player.hand)
+        )
         nr_discard = (nr_discard // 2) * 2  # Round down to nearest even number
 
         # Player picks each card to discard

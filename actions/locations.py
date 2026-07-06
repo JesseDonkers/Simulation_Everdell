@@ -131,9 +131,7 @@ class action_add_destination_if_card_present(Action):
         locations = game_state["locations"]
 
         # Check if the specified card is in the player's city
-        card_in_city = any(
-            card.name == self.check_card_name for card in player.city
-        )
+        card_in_city = any(card.name == self.check_card_name for card in player.city)
 
         if card_in_city:
             dest_card = Location(
@@ -162,12 +160,8 @@ class action_remove_destination(Action):
         locations = game_state["locations"]
         targets = [loc for loc in locations if loc.name == self.location_name]
 
-        temp_loc = next(
-            l for l in locations if l.location_type == "temporary"
-        )
-        perm_loc = next(
-            l for l in locations if l.location_type == "permanent"
-        )
+        temp_loc = next(l for l in locations if l.location_type == "temporary")
+        perm_loc = next(l for l in locations if l.location_type == "permanent")
 
         for loc in targets:
             # Choose where to move workers depending on the source location
@@ -195,9 +189,7 @@ class action_location_copy_action(Action):
         locations_of_type = [
             l for l in locations if l.location_type in self.possible_types
         ]
-        loc = player.decide(
-            game_state, "location_place_worker", locations_of_type
-        )
+        loc = player.decide(game_state, "location_place_worker", locations_of_type)
         loc.action_on_place_worker.execute(game_state)
 
 
@@ -209,34 +201,30 @@ class action_replace_worker(Action):
             loc
             for loc in game_state["locations"]
             if loc.get_player_workers(player) > 0
-            and not getattr(loc, "permanent_workers", False)]
+            and not getattr(loc, "permanent_workers", False)
+        ]
 
         if len(removable_locations) == 0:
             raise ValueError("No placed worker can be removed")
 
         loc_from = player.decide(
-            game_state,
-            "location_take_worker",
-            removable_locations)
-        
+            game_state, "location_take_worker", removable_locations
+        )
+
         loc_from.remove_worker(player)
 
         possible_target_locations = [
-            loc
-            for loc in get_possible_locations(game_state)
-            if loc != loc_from        ]
+            loc for loc in get_possible_locations(game_state) if loc != loc_from
+        ]
 
         if len(possible_target_locations) == 0:
             raise ValueError("No possible location to replace worker")
 
         loc_to = player.decide(
-            game_state,
-            "location_place_worker",
-            possible_target_locations)
-        
-        _resolve_worker_placement(
-            player, loc_to, game_state, remove_from_supply=False
+            game_state, "location_place_worker", possible_target_locations
         )
+
+        _resolve_worker_placement(player, loc_to, game_state, remove_from_supply=False)
 
 
 class action_retake_worker(Action):
@@ -245,15 +233,15 @@ class action_retake_worker(Action):
             loc
             for loc in game_state["locations"]
             if loc.get_player_workers(player) > 0
-            and not getattr(loc, "permanent_workers", False)]
+            and not getattr(loc, "permanent_workers", False)
+        ]
 
         if len(removable_locations) == 0:
             raise ValueError("No placed worker can be removed")
 
         loc_from = player.decide(
-            game_state,
-            "location_take_worker",
-            removable_locations)
-        
+            game_state, "location_take_worker", removable_locations
+        )
+
         loc_from.remove_worker(player)
         player.workers_add(1)
