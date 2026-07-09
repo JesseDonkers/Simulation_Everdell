@@ -112,7 +112,11 @@ class action_draw_on_card_type(Action):
 
 
 class action_resource_on_card_type(Action):
-    """Gain resources when a specified kind of card is played elsewhere."""
+    """Gain resources when a specified kind of card is played elsewhere.
+
+    `resource` may be a single resource string or a list/tuple of resources
+    to choose from when the trigger happens.
+    """
 
     def __init__(self, resource, amount, trigger_kind="critter"):
         self.resource = resource
@@ -126,13 +130,27 @@ class action_resource_on_card_type(Action):
             )
         from class_card import Critter, Construction
 
+        trigger_matches = False
         if self.trigger_kind == "critter" and isinstance(played_card, Critter):
-            player.resources_add(self.resource, self.amount)
+            trigger_matches = True
         elif self.trigger_kind == "construction" and isinstance(
             played_card, Construction
         ):
-            player.resources_add(self.resource, self.amount)
-        elif self.trigger_kind == "any":
+            trigger_matches = True
+
+        if not trigger_matches:
+            return
+
+        self._grant_resources(player, game_state)
+
+    def _grant_resources(self, player: "Player", game_state=None):
+        if isinstance(self.resource, (list, tuple)):
+            from actions.resources import action_resources_by_choice
+
+            action_resources_by_choice(self.resource, self.amount).execute_action(
+                player, game_state
+            )
+        else:
             player.resources_add(self.resource, self.amount)
 
 

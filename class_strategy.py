@@ -53,9 +53,8 @@ class Strategy_random(Strategy):
     def choose_location_take_worker(self, game_state, possible_locations):
         return random.choice(possible_locations)
 
-    def choose_resource_new(self, game_state, _):
-        resources = ["twig", "resin", "pebble", "berry"]
-        return random.choice(resources)
+    def choose_resource_new(self, game_state, possible_resources):
+        return random.choice(possible_resources)
 
     def choose_resource_give_away(self, game_state, parameters):
         nr_to_pick, available = parameters

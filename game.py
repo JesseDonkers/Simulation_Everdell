@@ -24,7 +24,7 @@ from functions_testing import clear_test_results, game_state_as_df_to_text
 # VARIABLES & PARAMETERS
 # ============================================
 
-MODE = "simulation"  # "scenario" or "simulation"
+MODE = "scenario"  # "scenario" or "simulation"
 
 NR_SIMULATION_RUNS = 100  # Number of times to run the scenario or simulation
 NR_PLAYERS = 2  # Number of players in the game (2-4)
@@ -141,33 +141,90 @@ def run_full_game(game_state, max_turns=MAX_TURNS_PER_GAME):
 def run_scenario(game_state):
     player: "Player" = game_state["current_player"]
 
-    player.resources_add("twig", 2)
-    player.resources_add("resin", 1)
-    player.resources_add("berry", 4)
+    class ScenarioStrategy(Strategy_random):
+        def __init__(self):
+            super().__init__()
+            self.preferred_cards = ["Boerderij", "Houtsnijder"]
 
-    for _ in range(2):
-        possible_cards = get_possible_cards(game_state, 99, True)
-        if len(possible_cards) == 0:
-            break
-        action_play_card().execute(game_state)
+        def choose_card_new(self, game_state, possible_cards):
+            for preferred in self.preferred_cards:
+                for card in possible_cards:
+                    if card.name == preferred:
+                        return card
+            return possible_cards[0]
 
-    has_herberg = any(c.name == "Herberg" for c in player.city)
-    has_zanger = any(c.name == "Zanger" for c in player.city)
-    if has_herberg and has_zanger:
-        print("Herberg and Zanger in city")
+        def choose_card_hand_or_meadow(self, game_state, _):
+            return "hand"
 
-        game_state_as_df_to_text(game_state, "Game_state")
+        def choose_card_play_method(self, game_state, possible_methods):
+            return possible_methods[0]
 
-        action_place_worker().execute(game_state)
+        def choose_resource_new(self, game_state, possible_resources):
+            if "twig" in possible_resources:
+                return "twig"
+            return possible_resources[0]
 
-        heza_claimed = any(loc.name == "Heza" for loc in player.events)
-        if heza_claimed:
-            print("Worker placed on Heza")
+    def find_card_in_zones(card_name):
+        for card in player.hand + player.city:
+            if card.name == card_name:
+                return card
+        for card in game_state["meadow"].cards:
+            if card.name == card_name:
+                return card
+        for card in list(game_state["deck"].cards):
+            if card.name == card_name:
+                return card
+        for card in game_state["discardpile"].cards:
+            if card.name == card_name:
+                return card
+        raise ValueError(f"Card not found in any zone: {card_name}")
 
-            finish_current_player(game_state)
-            game_state_as_df_to_text(game_state, "Game_state")
+    def move_card_to_zone(card_name, zone):
+        card = find_card_in_zones(card_name)
+        if card in player.hand:
+            player.cards_remove([card], "hand")
+        elif card in player.city:
+            player.cards_remove([card], "city")
+        elif card in game_state["meadow"].cards:
+            game_state["meadow"].cards.remove(card)
+        elif card in game_state["deck"].cards:
+            game_state["deck"].cards.remove(card)
+        elif card in game_state["discardpile"].cards:
+            game_state["discardpile"].cards.remove(card)
+        else:
+            raise ValueError(f"Unable to move card: {card_name}")
 
-            return True
+        if zone == "hand":
+            player.cards_add([card], "hand")
+        elif zone == "city":
+            player.cards_add([card], "city")
+        else:
+            raise ValueError(f"Unknown destination zone: {zone}")
+
+    # Build a deterministic test state for Gerechtsgebouw and Winkelier.
+    player.hand.clear()
+    player.city.clear()
+    player.resources = {"twig": 2, "resin": 1, "pebble": 0, "berry": 2}
+    player.workers = 2
+    player.finished = False
+    player.strategy = ScenarioStrategy()
+
+    move_card_to_zone("Gerechtsgebouw", "city")
+    move_card_to_zone("Winkelier", "city")
+    move_card_to_zone("Boerderij", "hand")
+    move_card_to_zone("Houtsnijder", "hand")
+
+    game_state_as_df_to_text(game_state, "Game_state_start")
+
+    # Play a construction to trigger Gerechtsgebouw
+    action_play_card().execute(game_state)
+    game_state_as_df_to_text(game_state, "Game_state_after_construction_play")
+
+    # Play a critter to trigger Winkelier
+    action_play_card().execute(game_state)
+    game_state_as_df_to_text(game_state, "Game_state_after_critter_play")
+
+    return True
 
 
 def run_scenario_mode():

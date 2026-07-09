@@ -424,7 +424,9 @@ gerechtsgebouw = Construction(
     unique=True,
     points=2,
     relatedcritters=["Rechter"],
-    # TODO: when playing a construction
+    action_when_card_played=action_resource_on_card_type(
+        ["twig", "resin", "pebble"], 1, "construction"
+    ),
     action_on_discard=action_remove_card_from_city("Gerechtsgebouw"),
 )
 
