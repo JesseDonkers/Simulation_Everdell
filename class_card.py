@@ -17,6 +17,7 @@ class Card:
         action_on_reactivate=None,
         action_on_discard=None,
         action_on_finish=None,
+        action_when_card_played=None,
         requirements=None,
     ):
         self.name = name
@@ -29,6 +30,7 @@ class Card:
         self.action_on_reactivate = action_on_reactivate
         self.action_on_discard = action_on_discard
         self.action_on_finish = action_on_finish
+        self.action_when_card_played = action_when_card_played
         self.requirements = requirements  # Optional play preconditions
         self.stored_cards = []  # For cards attached to this card (e.g. Kerker)
 
@@ -49,6 +51,7 @@ class Critter(Card):
         action_on_reactivate=None,
         action_on_discard=None,
         action_on_finish=None,
+        action_when_card_played=None,
         requirements=None,
     ):
         super().__init__(
@@ -62,6 +65,7 @@ class Critter(Card):
             action_on_reactivate=action_on_reactivate,
             action_on_discard=action_on_discard,
             action_on_finish=action_on_finish,
+            action_when_card_played=action_when_card_played,
             requirements=requirements,
         )
 
@@ -80,6 +84,7 @@ class Construction(Card):
         action_on_reactivate=None,
         action_on_discard=None,
         action_on_finish=None,
+        action_when_card_played=None,
         requirements=None,
     ):
         super().__init__(
@@ -93,6 +98,7 @@ class Construction(Card):
             action_on_reactivate=action_on_reactivate,
             action_on_discard=action_on_discard,
             action_on_finish=action_on_finish,
+            action_when_card_played=action_when_card_played,
             requirements=requirements,
         )
         self.relatedcritters = relatedcritters
@@ -182,7 +188,7 @@ historicus = Critter(
     cardsindeck=3,
     unique=True,
     points=1,
-    action_on_play=action_cards_from_deck_to_hand(1),
+    action_when_card_played=action_draw_on_card_type(1, ("critter", "construction")),
     action_on_discard=action_remove_card_from_city("Historicus"),
 )
 
@@ -318,8 +324,7 @@ winkelier = Critter(
     cardsindeck=3,
     unique=True,
     points=1,
-    # TODO: when a critter is played
-    action_on_play=action_resource_general("berry", 1),
+    action_when_card_played=action_resource_on_card_type("berry", 1, "critter"),
     action_on_discard=action_remove_card_from_city("Winkelier"),
 )
 
@@ -419,7 +424,7 @@ gerechtsgebouw = Construction(
     unique=True,
     points=2,
     relatedcritters=["Rechter"],
-    action_on_play=action_resources_by_choice(["twig", "resin", "pebble"], 1),
+    # TODO: when playing a construction
     action_on_discard=action_remove_card_from_city("Gerechtsgebouw"),
 )
 

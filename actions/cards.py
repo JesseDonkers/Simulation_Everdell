@@ -7,6 +7,8 @@ __all__ = [
     "action_discard_stored_cards",
     "action_cards_from_deck_to_hand",
     "action_cards_from_meadow_to_hand",
+    "action_draw_on_card_type",
+    "action_resource_on_card_type",
     "action_give_discard_refill_hand",
     "action_play_card",
     "action_play_meadow_card_with_discount",
@@ -75,6 +77,63 @@ class action_cards_from_deck_to_hand(Action):
         nr_draw = min(self.nrCards, spaces_hand)
         listofcards = deck.draw_cards(nr_draw, discardpile)
         player.cards_add(listofcards, "hand")
+
+
+class action_draw_on_card_type(Action):
+    """Draw cards when a specified kind of card is played elsewhere.
+
+    trigger_kinds: iterable containing any of "critter" and "construction".
+    """
+
+    def __init__(self, nrCards, trigger_kinds=("critter", "construction")):
+        self.nrCards = nrCards
+        self.trigger_kinds = tuple(trigger_kinds)
+
+    def execute_action(self, player: "Player", game_state=None, played_card=None):
+        if played_card is None:
+            raise ValueError(
+                "action_draw_on_card_type requires a 'played_card' argument when executed"
+            )
+        # Import here to avoid circular imports at module load time
+        from class_card import Critter, Construction
+
+        should_trigger = False
+        if "critter" in self.trigger_kinds and isinstance(played_card, Critter):
+            should_trigger = True
+        if "construction" in self.trigger_kinds and isinstance(
+            played_card, Construction
+        ):
+            should_trigger = True
+        if not should_trigger:
+            return
+
+        # Reuse existing draw action
+        action_cards_from_deck_to_hand(self.nrCards).execute_action(player, game_state)
+
+
+class action_resource_on_card_type(Action):
+    """Gain resources when a specified kind of card is played elsewhere."""
+
+    def __init__(self, resource, amount, trigger_kind="critter"):
+        self.resource = resource
+        self.amount = amount
+        self.trigger_kind = trigger_kind
+
+    def execute_action(self, player: "Player", game_state=None, played_card=None):
+        if played_card is None:
+            raise ValueError(
+                "action_resource_on_card_type requires a 'played_card' argument when executed"
+            )
+        from class_card import Critter, Construction
+
+        if self.trigger_kind == "critter" and isinstance(played_card, Critter):
+            player.resources_add(self.resource, self.amount)
+        elif self.trigger_kind == "construction" and isinstance(
+            played_card, Construction
+        ):
+            player.resources_add(self.resource, self.amount)
+        elif self.trigger_kind == "any":
+            player.resources_add(self.resource, self.amount)
 
 
 class action_cards_from_meadow_to_hand(Action):
@@ -169,6 +228,18 @@ class action_play_card(Action):
         if card.action_on_play:
             card.action_on_play.execute(game_state)
 
+        # Trigger reactive effects on other cards in the player's city
+        for city_card in list(player.city):
+            if city_card is card:
+                continue
+            if getattr(city_card, "action_when_card_played", None):
+                self._execute_on_card_play_action(
+                    player,
+                    game_state,
+                    city_card.action_when_card_played,
+                    played_card=card,
+                )
+
     def _execute_selected_method(self, player: "Player", game_state, selected_method):
         if selected_method.method == "pay_resources":
             return self._method_pay_resources()
@@ -239,6 +310,28 @@ class action_play_card(Action):
 
         action.execute_action(player, game_state)
 
+    def _execute_on_card_play_action(
+        self, player: "Player", game_state, action, played_card
+    ):
+        """Execute an action triggered when another card is played.
+
+        This helper tries to call the action with a `played_card` keyword when
+        the action supports it. If not, it falls back to calling without it.
+        CompositeAction is handled recursively.
+        """
+        if isinstance(action, CompositeAction):
+            for sub_action in action.actions:
+                self._execute_on_card_play_action(
+                    player, game_state, sub_action, played_card
+                )
+            return
+
+        try:
+            action.execute_action(player, game_state, played_card=played_card)
+        except TypeError:
+            # Action does not accept a played_card parameter; call normally
+            action.execute_action(player, game_state)
+
     def _method_free_no_pay(self):
         return False
 
@@ -299,6 +392,18 @@ class action_play_meadow_card_with_discount(action_play_card):
         player.cards_add([card], "city")
         if card.action_on_play:
             card.action_on_play.execute(game_state)
+
+        # Trigger reactive effects on other cards in the player's city
+        for city_card in list(player.city):
+            if city_card is card:
+                continue
+            if getattr(city_card, "action_when_card_played", None):
+                self._execute_on_card_play_action(
+                    player,
+                    game_state,
+                    city_card.action_when_card_played,
+                    played_card=card,
+                )
 
 
 class action_remove_card_from_city(Action):
