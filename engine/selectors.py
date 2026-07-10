@@ -87,6 +87,12 @@ def _location_requirement_met(player, loc, requirement, game_state):
     if kind == "has_city_space":
         return player.cards_get_open_spaces("city") > 0
 
+    if kind == "other_player_has_city_space":
+        return any(
+            p != player and not p.finished and p.cards_get_open_spaces("city") > 0
+            for p in game_state["players"]
+        )
+
     if kind == "has_playable_meadow_card":
         discount = requirement.get("discount", 3)
         return (
@@ -110,7 +116,7 @@ def _location_requirement_met(player, loc, requirement, game_state):
     return False
 
 
-def _location_requirements_met(player, loc, game_state):
+def _requirements_met(player, loc, game_state):
     requirements = getattr(loc, "requirements", None)
 
     if requirements is None:
@@ -248,6 +254,7 @@ def _get_methods_for_card(
     allow_city_discard_then_pay=False,
     allow_kerker=True,
     allow_related_free=True,
+    game_state=None,
 ):
     """
     Build the list of PlayMethod options for a single card.
@@ -260,6 +267,16 @@ def _get_methods_for_card(
     from class_card import Construction, Critter
 
     methods = []
+
+    # Normal cards require a free space in the active player's city.
+    # Dwaas is special: it can be placed into an opponent's city, so
+    # the active player does not need an open city slot to play it.
+    if card.name != "Dwaas" and player.cards_get_open_spaces("city") == 0:
+        return []
+
+    is_dwaas = card.name == "Dwaas"
+    if is_dwaas and game_state is None:
+        return []
 
     if not pay:
         methods.append(
@@ -348,16 +365,12 @@ def get_possible_card_plays(
     all_cards = player.hand + meadow.cards
     possible_card_plays: list[PlayCardOption] = []
 
-    # Maximum city size
-    if player.cards_get_open_spaces("city") == 0:
-        return possible_card_plays
-
     for card in all_cards:
         if card.points > max_points:
             continue
         if card.unique and any(c.name == card.name for c in player.city):
             continue
-        if not _location_requirements_met(player, card, game_state):
+        if not _requirements_met(player, card, game_state):
             continue
 
         methods = _get_methods_for_card(
@@ -368,6 +381,7 @@ def get_possible_card_plays(
             allow_city_discard_then_pay=allow_city_discard_then_pay,
             allow_kerker=True,
             allow_related_free=True,
+            game_state=game_state,
         )
 
         final_methods = _dedupe_play_methods(methods)
@@ -403,7 +417,7 @@ def get_possible_locations(game_state):
     possible_locations = []
 
     for loc in locations:
-        if not _location_requirements_met(player, loc, game_state):
+        if not _requirements_met(player, loc, game_state):
             continue
 
         # Basic locations
@@ -476,7 +490,7 @@ def get_possible_meadow_card_plays_with_discount(game_state, discount=3):
     for card in meadow.cards:
         if card.unique and any(c.name == card.name for c in player.city):
             continue
-        if not _location_requirements_met(player, card, game_state):
+        if not _requirements_met(player, card, game_state):
             continue
 
         methods = _get_methods_for_card(
@@ -487,6 +501,7 @@ def get_possible_meadow_card_plays_with_discount(game_state, discount=3):
             allow_city_discard_then_pay=False,
             allow_kerker=False,
             allow_related_free=False,
+            game_state=game_state,
         )
 
         final_methods = _dedupe_play_methods(methods)

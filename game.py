@@ -144,7 +144,7 @@ def run_scenario(game_state):
     class ScenarioStrategy(Strategy_random):
         def __init__(self):
             super().__init__()
-            self.preferred_cards = ["Boerderij", "Houtsnijder"]
+            self.preferred_cards = ["Dwaas"]
 
         def choose_card_new(self, game_state, possible_cards):
             for preferred in self.preferred_cards:
@@ -152,17 +152,6 @@ def run_scenario(game_state):
                     if card.name == preferred:
                         return card
             return possible_cards[0]
-
-        def choose_card_hand_or_meadow(self, game_state, _):
-            return "hand"
-
-        def choose_card_play_method(self, game_state, possible_methods):
-            return possible_methods[0]
-
-        def choose_resource_new(self, game_state, possible_resources):
-            if "twig" in possible_resources:
-                return "twig"
-            return possible_resources[0]
 
     def find_card_in_zones(card_name):
         for card in player.hand + player.city:
@@ -204,25 +193,19 @@ def run_scenario(game_state):
     # Build a deterministic test state for Gerechtsgebouw and Winkelier.
     player.hand.clear()
     player.city.clear()
-    player.resources = {"twig": 2, "resin": 1, "pebble": 0, "berry": 2}
+    player.resources = {"twig": 0, "resin": 0, "pebble": 0, "berry": 0}
     player.workers = 2
     player.finished = False
     player.strategy = ScenarioStrategy()
 
-    move_card_to_zone("Gerechtsgebouw", "city")
-    move_card_to_zone("Winkelier", "city")
-    move_card_to_zone("Boerderij", "hand")
-    move_card_to_zone("Houtsnijder", "hand")
+    move_card_to_zone("Kermis", "city")
+    game_state_as_df_to_text(game_state, "Game_state")
 
-    game_state_as_df_to_text(game_state, "Game_state_start")
-
-    # Play a construction to trigger Gerechtsgebouw
     action_play_card().execute(game_state)
-    game_state_as_df_to_text(game_state, "Game_state_after_construction_play")
+    game_state_as_df_to_text(game_state, "Game_state")
 
-    # Play a critter to trigger Winkelier
-    action_play_card().execute(game_state)
-    game_state_as_df_to_text(game_state, "Game_state_after_critter_play")
+    # action_play_card().execute(game_state)
+    # game_state_as_df_to_text(game_state, "Game_state")
 
     return True
 

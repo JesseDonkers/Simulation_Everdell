@@ -175,7 +175,17 @@ dokter = Critter(
     action_on_discard=action_remove_card_from_city("Dokter"),
 )
 
-# TODO: dwaas
+dwaas = Critter(
+    name="Dwaas",
+    color="tan",
+    costs=dict(twig=0, resin=0, pebble=0, berry=3),
+    cardsindeck=2,
+    unique=True,
+    points=-2,
+    action_on_play=None,
+    action_on_discard=action_remove_card_from_city("Dwaas"),
+    requirements={"kind": "other_player_has_city_space"},
+)
 
 # TODO: herbergier
 
@@ -346,6 +356,7 @@ cards_unique.append(architect)
 cards_unique.append(begrafenisondernemer)
 cards_unique.append(boswachter)
 cards_unique.append(dokter)
+cards_unique.append(dwaas)
 cards_unique.append(historicus)
 cards_unique.append(houtsnijder)
 cards_unique.append(kikkerkapitein)
@@ -397,9 +408,9 @@ begraafplaats = Construction(
             action_remove_card_from_city("Begraafplaats"),
         ]
     ),
+    requirements={"kind": "has_city_space"},
 )
 
-# TODO: add requirement for placing worker: space in city
 
 boerderij = Construction(
     name="Boerderij",

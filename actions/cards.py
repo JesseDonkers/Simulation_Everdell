@@ -227,6 +227,8 @@ class action_play_card(Action):
         else:
             meadow.draw_cards([card], deck, discardpile)
 
+        target_player = self._get_target_player(player, game_state, card)
+
         pay_required = self._execute_selected_method(
             player,
             game_state,
@@ -241,12 +243,13 @@ class action_play_card(Action):
             for resource, amount in card_costs.items():
                 player.resources_remove(resource, amount)
 
-        # Card is added to the player's city and action_on_play is executed
-        player.cards_add([card], "city")
+        # Card is added to the target city and action_on_play is executed
+        target_player.cards_add([card], "city")
         if card.action_on_play:
             card.action_on_play.execute(game_state)
 
         # Trigger reactive effects on other cards in the player's city
+        # TODO: check if this should be triggered when placed in another player's city (Dwaas)
         for city_card in list(player.city):
             if city_card is card:
                 continue
@@ -273,6 +276,21 @@ class action_play_card(Action):
             return self._method_free_no_pay()
 
         raise ValueError(f"Unknown card play method: {selected_method.method}")
+
+    def _get_target_player(self, player: "Player", game_state, card):
+        if card.name != "Dwaas":
+            return player
+
+        eligible_targets = [
+            p
+            for p in game_state["players"]
+            if p != player and not p.finished and p.cards_get_open_spaces("city") > 0
+        ]
+        if len(eligible_targets) == 0:
+            raise ValueError("No opponent has city space for Dwaas")
+
+        # TODO: make a distinction between receive cards on hand or city, and add a new decision type for that
+        return player.decide(game_state, "player_to_receive_cards", eligible_targets)
 
     def _method_pay_resources(self):
         return True
