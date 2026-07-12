@@ -70,5 +70,8 @@ class Strategy_random(Strategy):
     def choose_player_to_receive_resources(self, game_state, possible_players):
         return random.choice(possible_players)
 
-    def choose_player_to_receive_cards(self, game_state, possible_players):
+    def choose_player_to_receive_cards_hand(self, game_state, possible_players):
+        return random.choice(possible_players)
+
+    def choose_player_to_receive_cards_city(self, game_state, possible_players):
         return random.choice(possible_players)

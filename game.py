@@ -144,7 +144,7 @@ def run_scenario(game_state):
     class ScenarioStrategy(Strategy_random):
         def __init__(self):
             super().__init__()
-            self.preferred_cards = ["Dwaas"]
+            self.preferred_cards = ["Leraar"]
 
         def choose_card_new(self, game_state, possible_cards):
             for preferred in self.preferred_cards:
@@ -193,20 +193,23 @@ def run_scenario(game_state):
     # Build a deterministic test state for Gerechtsgebouw and Winkelier.
     player.hand.clear()
     player.city.clear()
-    player.resources = {"twig": 0, "resin": 0, "pebble": 0, "berry": 0}
+    player.resources = {"twig": 0, "resin": 0, "pebble": 0, "berry": 2}
     player.workers = 2
     player.finished = False
     player.strategy = ScenarioStrategy()
 
-    move_card_to_zone("Kermis", "city")
+    # move_card_to_zone("Kermis", "city")
+
     game_state_as_df_to_text(game_state, "Game_state")
 
     action_play_card().execute(game_state)
-    game_state_as_df_to_text(game_state, "Game_state")
 
     # action_play_card().execute(game_state)
     # game_state_as_df_to_text(game_state, "Game_state")
 
+    game_state_as_df_to_text(game_state, "Game_state")
+
+    print("Scenario completed successfully.")
     return True
 
 

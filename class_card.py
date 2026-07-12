@@ -226,7 +226,17 @@ kikkerkapitein = Critter(
     action_on_discard=action_remove_card_from_city("Kikkerkapitein"),
 )
 
-# TODO: leraar
+leraar = Critter(
+    name="Leraar",
+    color="green",
+    costs=dict(twig=0, resin=0, pebble=0, berry=2),
+    cardsindeck=3,
+    unique=False,
+    points=2,
+    action_on_play=action_cards_keep_and_give(1, 1),
+    action_on_reactivate=action_cards_keep_and_give(1, 1),
+    action_on_discard=action_remove_card_from_city("Leraar"),
+)
 
 # TODO: koning
 
@@ -361,6 +371,7 @@ cards_unique.append(historicus)
 cards_unique.append(houtsnijder)
 cards_unique.append(kikkerkapitein)
 cards_unique.append(koningin)
+cards_unique.append(leraar)
 cards_unique.append(mijnwerkermol)
 cards_unique.append(monnik)
 cards_unique.append(schoonmaker)

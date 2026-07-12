@@ -8,6 +8,7 @@ __all__ = [
     "action_cards_from_deck_to_hand",
     "action_cards_from_meadow_to_hand",
     "action_draw_on_card_type",
+    "action_cards_keep_and_give",
     "action_resource_on_card_type",
     "action_give_discard_refill_hand",
     "action_play_card",
@@ -109,6 +110,68 @@ class action_draw_on_card_type(Action):
 
         # Reuse existing draw action
         action_cards_from_deck_to_hand(self.nrCards).execute_action(player, game_state)
+
+
+class action_cards_keep_and_give(Action):
+    def __init__(self, nrCards_keep, nrCards_give):
+        self.nrCards_keep = nrCards_keep
+        self.nrCards_give = nrCards_give
+
+    def execute_action(self, player: "Player", game_state=None):
+        deck: "Deck" = game_state["deck"]
+        discardpile: "DiscardPile" = game_state["discardpile"]
+        players = game_state["players"]
+
+        if self.nrCards_keep < 0 or self.nrCards_give < 0:
+            raise ValueError("Card amounts to keep/give cannot be negative")
+
+        eligible_targets = [
+            p
+            for p in players
+            if p != player
+            and not p.finished
+            and p.cards_get_open_spaces("hand") >= self.nrCards_give
+        ]
+
+        if self.nrCards_give > 0 and len(eligible_targets) > 0:
+            other_player: "Player" = player.decide(
+                game_state, "player_to_receive_cards_hand", eligible_targets
+            )
+
+        spaces_hand = player.cards_get_open_spaces("hand")
+        spaces_hand_other_player = (
+            other_player.cards_get_open_spaces("hand") if other_player else 0
+        )
+        max_keep_possible = min(self.nrCards_keep, spaces_hand)
+        max_give_possible = min(self.nrCards_give, spaces_hand_other_player)
+
+        nr_draw = min(
+            self.nrCards_keep + self.nrCards_give,
+            max_keep_possible + max_give_possible,
+        )
+        if nr_draw == 0:
+            return
+
+        listofcards = deck.draw_cards(nr_draw, discardpile)
+        cards_to_keep = []
+        cards_to_give = []
+
+        nr_keep = min(max_keep_possible, nr_draw)
+        for _ in range(nr_keep):
+            card_keep = player.decide(game_state, "card_new", listofcards)
+            cards_to_keep.append(card_keep)
+            listofcards.remove(card_keep)
+
+        nr_give = min(max_give_possible, nr_draw - nr_keep)
+        for _ in range(nr_give):
+            card_give = player.decide(game_state, "card_discard", listofcards)
+            cards_to_give.append(card_give)
+            listofcards.remove(card_give)
+
+        if len(cards_to_keep) > 0:
+            player.cards_add(cards_to_keep, "hand")
+        if len(cards_to_give) > 0:
+            other_player.cards_add(cards_to_give, "hand")
 
 
 class action_resource_on_card_type(Action):
@@ -249,17 +312,17 @@ class action_play_card(Action):
             card.action_on_play.execute(game_state)
 
         # Trigger reactive effects on other cards in the player's city
-        # TODO: check if this should be triggered when placed in another player's city (Dwaas)
-        for city_card in list(player.city):
-            if city_card is card:
-                continue
-            if getattr(city_card, "action_when_card_played", None):
-                self._execute_on_card_play_action(
-                    player,
-                    game_state,
-                    city_card.action_when_card_played,
-                    played_card=card,
-                )
+        if target_player is player:
+            for city_card in list(player.city):
+                if city_card is card:
+                    continue
+                if getattr(city_card, "action_when_card_played", None):
+                    self._execute_on_card_play_action(
+                        player,
+                        game_state,
+                        city_card.action_when_card_played,
+                        played_card=card,
+                    )
 
     def _execute_selected_method(self, player: "Player", game_state, selected_method):
         if selected_method.method == "pay_resources":
@@ -289,8 +352,9 @@ class action_play_card(Action):
         if len(eligible_targets) == 0:
             raise ValueError("No opponent has city space for Dwaas")
 
-        # TODO: make a distinction between receive cards on hand or city, and add a new decision type for that
-        return player.decide(game_state, "player_to_receive_cards", eligible_targets)
+        return player.decide(
+            game_state, "player_to_receive_cards_city", eligible_targets
+        )
 
     def _method_pay_resources(self):
         return True
@@ -544,7 +608,9 @@ class action_give_discard_refill_hand(Action):
             cards_to_give.append(card)
             selectable.remove(card)
 
-        target = player.decide(game_state, "player_to_receive_cards", eligible_targets)
+        target = player.decide(
+            game_state, "player_to_receive_cards_hand", eligible_targets
+        )
 
         player.cards_remove(cards_to_give, "hand")
         target.cards_add(cards_to_give, "hand")
