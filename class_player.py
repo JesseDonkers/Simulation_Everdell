@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Any
 
 
@@ -54,6 +55,39 @@ class Player:
         target.extend(listofcards)
         return target
 
+    def _city_spaces_occupied_for_cards(self, cards):
+        total = 0
+        grouped_cards = defaultdict(list)
+
+        for card in cards:
+            cost = max(0, int(getattr(card, "city_space_cost", 1)))
+            group = getattr(card, "city_space_group", None)
+
+            if group is None:
+                total += cost
+            else:
+                if not isinstance(group, list):
+                    raise ValueError(
+                        f"Card '{card.name}' has city_space_group with unsupported type {type(group).__name__}; expected list"
+                    )
+
+                members = tuple(sorted(str(name) for name in group))
+                grouped_cards[members].append(card)
+
+        for members, group_cards in grouped_cards.items():
+            counts = [
+                sum(1 for c in group_cards if c.name == member) for member in members
+            ]
+            total += max(counts) if len(counts) > 0 else 0
+
+        return total
+
+    def city_spaces_occupied(self):
+        return self._city_spaces_occupied_for_cards(self.city)
+
+    def card_fits_in_city(self, card):
+        return self._city_spaces_occupied_for_cards(self.city + [card]) <= 15
+
     # Function to remove cards from the player"s hand or city
     def cards_remove(self, listofcards, handorcity):
         target = self.hand if handorcity == "hand" else self.city
@@ -67,7 +101,7 @@ class Player:
         if handorcity == "hand":
             return 8 - len(target)  # Max hand size is 8
         else:
-            return 15 - len(target)  # Max city size is 15
+            return 15 - self.city_spaces_occupied()  # Max city size is 15
 
     # Function to add workers
     def workers_add(self, amount):

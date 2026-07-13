@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 from actions.base import Action
 from actions.cards import action_cards_from_meadow_to_hand
+from actions.resources import action_resources_by_choice
 
 __all__ = ["action_advance_season"]
 
@@ -12,6 +13,20 @@ if TYPE_CHECKING:
 
 
 class action_advance_season(Action):
+    def _grant_man_vrouw_production_resources(self, player: "Player", game_state=None):
+        if not any(card.name == "Boerderij" for card in player.city):
+            return
+
+        count_man = sum(1 for card in player.city if card.name == "Man")
+        count_vrouw = sum(1 for card in player.city if card.name == "Vrouw")
+        nr_pairs = min(count_man, count_vrouw)
+        if nr_pairs == 0:
+            return
+
+        action_resources_by_choice(
+            ["twig", "resin", "pebble", "berry"], nr_pairs
+        ).execute_action(player, game_state)
+
     def execute_action(self, player: "Player", game_state=None):
         seasons = ["winter", "spring", "summer", "autumn"]
         current_season = player.season
@@ -21,8 +36,9 @@ class action_advance_season(Action):
             player.workers_add(1)
             card: "Card"
             for card in player.city:
-                if card.color == "green":
+                if card.color == "green" and card.action_on_reactivate:
                     card.action_on_reactivate.execute(game_state)
+            self._grant_man_vrouw_production_resources(player, game_state)
 
         elif current_season == "spring":
             player.workers_add(1)
@@ -34,6 +50,7 @@ class action_advance_season(Action):
                 if card.color == "green" and card.action_on_reactivate:
                     # On season change, execute action_on_reactivate
                     card.action_on_reactivate.execute(game_state)
+            self._grant_man_vrouw_production_resources(player, game_state)
 
         location: "Location"
         for location in game_state["locations"]:

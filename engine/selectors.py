@@ -268,10 +268,10 @@ def _get_methods_for_card(
 
     methods = []
 
-    # Normal cards require a free space in the active player's city.
+    # Most cards are played into the active player's city and must fit.
     # Dwaas is special: it can be placed into an opponent's city, so
-    # the active player does not need an open city slot to play it.
-    if card.name != "Dwaas" and player.cards_get_open_spaces("city") == 0:
+    # the active player does not need room for it.
+    if card.name != "Dwaas" and not player.card_fits_in_city(card):
         return []
 
     is_dwaas = card.name == "Dwaas"
@@ -482,9 +482,6 @@ def get_possible_meadow_card_plays_with_discount(game_state, discount=3):
     """
     player = game_state["current_player"]
     meadow = game_state["meadow"]
-
-    if player.cards_get_open_spaces("city") == 0:
-        return []
 
     result = []
     for card in meadow.cards:

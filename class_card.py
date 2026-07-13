@@ -19,6 +19,8 @@ class Card:
         action_on_finish=None,
         action_when_card_played=None,
         requirements=None,
+        city_space_cost=1,
+        city_space_group=None,
     ):
         self.name = name
         self.color = color
@@ -33,6 +35,8 @@ class Card:
         self.action_when_card_played = action_when_card_played
         self.requirements = requirements  # Optional play preconditions
         self.stored_cards = []  # For cards attached to this card (e.g. Kerker)
+        self.city_space_cost = city_space_cost
+        self.city_space_group = city_space_group
 
     def __str__(self):
         return str(self.name)
@@ -53,6 +57,8 @@ class Critter(Card):
         action_on_finish=None,
         action_when_card_played=None,
         requirements=None,
+        city_space_cost=1,
+        city_space_group=None,
     ):
         super().__init__(
             name,
@@ -67,6 +73,8 @@ class Critter(Card):
             action_on_finish=action_on_finish,
             action_when_card_played=action_when_card_played,
             requirements=requirements,
+            city_space_cost=city_space_cost,
+            city_space_group=city_space_group,
         )
 
 
@@ -86,6 +94,8 @@ class Construction(Card):
         action_on_finish=None,
         action_when_card_played=None,
         requirements=None,
+        city_space_cost=1,
+        city_space_group=None,
     ):
         super().__init__(
             name,
@@ -100,6 +110,8 @@ class Construction(Card):
             action_on_finish=action_on_finish,
             action_when_card_played=action_when_card_played,
             requirements=requirements,
+            city_space_cost=city_space_cost,
+            city_space_group=city_space_group,
         )
         self.relatedcritters = relatedcritters
         self.relatedoccupied = False
@@ -265,7 +277,20 @@ koningin = Critter(
     ),
 )
 
-# TODO: man
+man = Critter(
+    name="Man",
+    color="green",
+    costs=dict(twig=0, resin=0, pebble=0, berry=3),
+    cardsindeck=4,
+    unique=False,
+    points=2,
+    action_on_play=action_resource_if_paired_with_other_card(
+        "Man", "Vrouw", "Boerderij", ["twig", "resin", "pebble", "berry"], 1
+    ),
+    action_on_reactivate=None,  # Action is handled in season.py
+    action_on_discard=action_remove_card_from_city("Man"),
+    city_space_group=["Man", "Vrouw"],
+)
 
 # TODO: marskramer
 
@@ -335,7 +360,17 @@ schoonmaker = Critter(
     action_on_discard=action_remove_card_from_city("Schoonmaker"),
 )
 
-# TODO: vrouw
+vrouw = Critter(
+    name="Vrouw",
+    color="purple",
+    costs=dict(twig=0, resin=0, pebble=0, berry=2),
+    cardsindeck=4,
+    unique=False,
+    points=2,
+    action_on_finish=None,  # Action is handled in turn.py when game finishes
+    action_on_discard=action_remove_card_from_city("Vrouw"),
+    city_space_group=["Man", "Vrouw"],
+)
 
 winkelier = Critter(
     name="Winkelier",
@@ -359,7 +394,17 @@ zanger = Critter(
     action_on_discard=action_remove_card_from_city("Zanger"),
 )
 
-# TODO: zwerver
+zwerver = Critter(
+    name="Zwerver",
+    color="tan",
+    costs=dict(twig=0, resin=0, pebble=0, berry=2),
+    cardsindeck=3,
+    unique=False,
+    points=1,
+    city_space_cost=0,
+    action_on_play=action_cards_from_deck_to_hand(3),
+    action_on_discard=action_remove_card_from_city("Zwerver"),
+)
 
 
 cards_unique.append(architect)
@@ -372,11 +417,14 @@ cards_unique.append(houtsnijder)
 cards_unique.append(kikkerkapitein)
 cards_unique.append(koningin)
 cards_unique.append(leraar)
+cards_unique.append(man)
 cards_unique.append(mijnwerkermol)
 cards_unique.append(monnik)
 cards_unique.append(schoonmaker)
+cards_unique.append(vrouw)
 cards_unique.append(winkelier)
 cards_unique.append(zanger)
+cards_unique.append(zwerver)
 
 
 # ============================================

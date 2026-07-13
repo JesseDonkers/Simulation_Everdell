@@ -327,12 +327,20 @@ def game_state_as_df_to_text(game_state, output_file=None):
     text_output.append(turn_options_text)
     text_output.append("")
     text_output.append("PLAYERS:")
+
+    # Build explicit rows so tabulate preserves row labels and satisfies mypy.
+    player_headers = ["", *[str(col) for col in players_df.columns]]
+    player_rows = [
+        [str(idx), *row]
+        for idx, row in zip(players_df.index.tolist(), players_df.values.tolist())
+    ]
+
     text_output.append(
         tabulate(
-            players_df.values.tolist(),
-            headers=list(players_df.columns),
+            player_rows,
+            headers=player_headers,
             tablefmt="grid",
-            showindex=True,
+            showindex=False,
         )
     )
 

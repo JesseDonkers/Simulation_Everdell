@@ -7,6 +7,7 @@ __all__ = [
     "action_resources_for_cards",
     "action_resource_general",
     "action_resource_if_other_card",
+    "action_resource_if_paired_with_other_card",
     "action_resource_per_other_card",
     "action_resources_building_costs_discard",
     "action_resources_by_choice",
@@ -49,6 +50,39 @@ class action_resource_if_other_card(Action):
     def execute_action(self, player: "Player", game_state=None):
         if any(card.name == self.cardname for card in player.city):
             player.resources[self.resource_type] += self.amount
+
+
+class action_resource_if_paired_with_other_card(Action):
+    def __init__(
+        self,
+        own_card_name,
+        paired_card_name,
+        required_card_name,
+        resources,
+        amount=1,
+    ):
+        self.own_card_name = own_card_name
+        self.paired_card_name = paired_card_name
+        self.required_card_name = required_card_name
+        self.resources = resources
+        self.amount = amount
+
+    def execute_action(self, player: "Player", game_state=None):
+        if not any(card.name == self.required_card_name for card in player.city):
+            return
+
+        count_own = sum(1 for card in player.city if card.name == self.own_card_name)
+        count_paired = sum(
+            1 for card in player.city if card.name == self.paired_card_name
+        )
+        # On-play this action is executed after the card is added to city.
+        # The just-played card is paired iff paired cards are at least as many.
+        if count_paired < count_own:
+            return
+
+        action_resources_by_choice(self.resources, self.amount).execute_action(
+            player, game_state
+        )
 
 
 class action_resources_by_choice(Action):

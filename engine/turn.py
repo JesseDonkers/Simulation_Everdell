@@ -36,8 +36,13 @@ def finish_current_player(game_state):
         player.points_add("card", card.points)
 
         # Prosperity points
-        if card.color == "purple":
+        if card.color == "purple" and card.action_on_finish is not None:
             card.action_on_finish.execute(game_state)
+
+    # Vrouw scores 3 points per Man/Vrouw pair at game end.
+    count_man = sum(1 for card in player.city if card.name == "Man")
+    count_vrouw = sum(1 for card in player.city if card.name == "Vrouw")
+    player.points_add("prosperity", 3 * min(count_man, count_vrouw))
 
     # Journey points
     for location in game_state["locations"]:
