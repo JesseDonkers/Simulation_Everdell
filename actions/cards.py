@@ -14,6 +14,7 @@ __all__ = [
     "action_play_card",
     "action_play_meadow_card_with_discount",
     "action_remove_card_from_city",
+    "action_play_revealed_deck_card_for_free",
     "action_play_cards_from_deck_or_discardpile",
     "action_refresh_meadow_draw_cards",
     "action_reactivate_green_card",
@@ -249,7 +250,12 @@ class action_play_card(Action):
         self.pay = pay
         self.allow_city_discard_then_pay = allow_city_discard_then_pay
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(
+        self,
+        player: "Player",
+        game_state=None,
+        candidate_cards=None,
+    ):
         from engine.selectors import get_possible_card_plays
 
         meadow: "Meadow" = game_state["meadow"]
@@ -261,6 +267,11 @@ class action_play_card(Action):
             self.pay,
             allow_city_discard_then_pay=self.allow_city_discard_then_pay,
         )
+        if candidate_cards is not None:
+            allowed = set(candidate_cards)
+            possible_card_plays = [
+                entry for entry in possible_card_plays if entry.card in allowed
+            ]
         possible_cards = [entry.card for entry in possible_card_plays]
 
         if len(possible_cards) == 0:
@@ -291,6 +302,7 @@ class action_play_card(Action):
             meadow.draw_cards([card], deck, discardpile)
 
         target_player = self._get_target_player(player, game_state, card)
+        existing_city_cards = list(player.city)
 
         pay_required = self._execute_selected_method(
             player,
@@ -313,9 +325,7 @@ class action_play_card(Action):
 
         # Trigger reactive effects on other cards in the player's city
         if target_player is player:
-            for city_card in list(player.city):
-                if city_card is card:
-                    continue
+            for city_card in existing_city_cards:
                 if getattr(city_card, "action_when_card_played", None):
                     self._execute_on_card_play_action(
                         player,
@@ -450,7 +460,12 @@ class action_play_meadow_card_with_discount(action_play_card):
         super().__init__()
         self.discount = discount
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(
+        self,
+        player: "Player",
+        game_state=None,
+        candidate_cards=None,
+    ):
         from engine.selectors import get_possible_meadow_card_plays_with_discount
 
         meadow: "Meadow" = game_state["meadow"]
@@ -477,6 +492,7 @@ class action_play_meadow_card_with_discount(action_play_card):
 
         # Always remove from meadow; Herberg only plays meadow cards
         meadow.draw_cards([card], deck, discardpile)
+        existing_city_cards = list(player.city)
 
         pay_required = self._execute_selected_method(
             player, game_state, selected_method
@@ -494,9 +510,7 @@ class action_play_meadow_card_with_discount(action_play_card):
             card.action_on_play.execute(game_state)
 
         # Trigger reactive effects on other cards in the player's city
-        for city_card in list(player.city):
-            if city_card is card:
-                continue
+        for city_card in existing_city_cards:
             if getattr(city_card, "action_when_card_played", None):
                 self._execute_on_card_play_action(
                     player,
@@ -546,6 +560,49 @@ class action_refresh_meadow_draw_cards(Action):
         card = player.decide(game_state, "card_new", meadow.cards)
         meadow.draw_cards([card], deck, discardpile)
         player.cards_add([card], "hand")
+
+
+class action_play_revealed_deck_card_for_free(Action):
+    """Reveal cards from deck, play one up to max points for free, discard the rest."""
+
+    def __init__(self, nr_see, max_points):
+        self.nr_see = nr_see
+        self.max_points = max_points
+
+    def execute_action(self, player: "Player", game_state=None):
+        from engine.selectors import get_possible_card_plays
+
+        deck: "Deck" = game_state["deck"]
+        discardpile: "DiscardPile" = game_state["discardpile"]
+
+        revealed_cards = deck.draw_cards(self.nr_see, discardpile)
+
+        # Temporarily add revealed cards to hand so normal play checks can be reused.
+        player.cards_add(revealed_cards, "hand")
+        helper = action_play_card(self.max_points, False)
+
+        possible_card_plays = get_possible_card_plays(
+            game_state,
+            self.max_points,
+            False,
+            allow_city_discard_then_pay=False,
+        )
+        playable_revealed_cards = [
+            entry.card for entry in possible_card_plays if entry.card in revealed_cards
+        ]
+
+        if len(playable_revealed_cards) > 0:
+            helper.execute_action(
+                player,
+                game_state,
+                candidate_cards=playable_revealed_cards,
+            )
+
+        # Discard all remaining revealed cards that were not played.
+        leftovers = [card for card in revealed_cards if card in player.hand]
+        if len(leftovers) > 0:
+            player.cards_remove(leftovers, "hand")
+            discardpile.add_to_discardpile(leftovers)
 
 
 class action_play_cards_from_deck_or_discardpile(Action):

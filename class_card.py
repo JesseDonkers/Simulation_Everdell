@@ -344,7 +344,17 @@ monnik = Critter(
     ),
 )
 
-# TODO: postduif
+postduif = Critter(
+    name="Postduif",
+    color="tan",
+    costs=dict(twig=0, resin=0, pebble=0, berry=2),
+    cardsindeck=3,
+    unique=False,
+    points=0,
+    action_on_play=action_play_revealed_deck_card_for_free(2, 3),
+    action_on_discard=action_remove_card_from_city("Postduif"),
+    requirements={"kind": "has_city_space"},
+)
 
 # TODO: rechter
 
@@ -420,6 +430,7 @@ cards_unique.append(leraar)
 cards_unique.append(man)
 cards_unique.append(mijnwerkermol)
 cards_unique.append(monnik)
+cards_unique.append(postduif)
 cards_unique.append(schoonmaker)
 cards_unique.append(vrouw)
 cards_unique.append(winkelier)
