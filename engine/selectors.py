@@ -447,7 +447,7 @@ def get_possible_locations(game_state):
                 possible_locations.append(loc)
 
         # Event locations (unclaimed only; claimed events are in player.events)
-        if loc.location_type == "event" and loc.get_open_spaces() > 0:
+        if loc.location_type in {"basic_event", "special_event"} and loc.get_open_spaces() > 0:
             possible_locations.append(loc)
 
     # TODO: forest locations

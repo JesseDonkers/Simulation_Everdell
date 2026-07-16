@@ -6,10 +6,11 @@ __all__ = [
     "action_points_for_given_resources",
     "action_points_for_payed_resources",
     "action_points_general",
-    "actions_points_for_cards_in_city",
-    "actions_points_for_resources_event_location",
-    "actions_points_for_resources_hand",
+    "action_points_for_cards_in_city",
+    "action_points_for_resources_event_location",
+    "action_points_for_resources_hand",
     "action_points_for_discarding_cards",
+    "action_points_for_events",
 ]
 
 if TYPE_CHECKING:
@@ -160,7 +161,7 @@ class action_points_for_payed_resources(Action):
             player.points["token"] += self.points_per_resource
 
 
-class actions_points_for_resources_hand(Action):
+class action_points_for_resources_hand(Action):
     def __init__(self, resources, point_per_resource):
         self.resources = resources
         self.point_per_resource = point_per_resource
@@ -172,7 +173,7 @@ class actions_points_for_resources_hand(Action):
                 player.points_add("prosperity", self.point_per_resource)
 
 
-class actions_points_for_resources_event_location(Action):
+class action_points_for_resources_event_location(Action):
     def __init__(self, resources, point_per_resource, location_name=None):
         self.resources = resources
         self.point_per_resource = point_per_resource
@@ -197,7 +198,7 @@ class actions_points_for_resources_event_location(Action):
         player.points_add("event", total_resources * self.point_per_resource)
 
 
-class actions_points_for_cards_in_city(Action):
+class action_points_for_cards_in_city(Action):
     def __init__(self, critter_or_construction, unique, points_per_card):
         self.critter_or_construction = critter_or_construction
         self.unique = unique
@@ -237,3 +238,24 @@ class action_points_for_discarding_cards(Action):
 
         # Gain point per card
         player.points_add("token", len(cards_to_discard) * self.points_per_card)
+
+
+class action_points_for_events(Action):
+    def __init__(self, points_per_basic_event, points_for_special_event):
+        self.points_per_basic_event = points_per_basic_event
+        self.points_for_special_event = points_for_special_event
+
+    def execute_action(self, player: "Player", game_state=None):
+        basic_events = sum(
+            1 for event in player.events if event.location_type == "basic_event"
+        )
+        special_events = sum(
+            1 for event in player.events if event.location_type == "special_event"
+        )
+
+        total_points = (
+            basic_events * self.points_per_basic_event
+            + special_events * self.points_for_special_event
+        )
+        if total_points > 0:
+            player.points_add("prosperity", total_points)

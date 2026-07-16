@@ -81,8 +81,6 @@ def game_state_as_df_to_text(game_state, output_file=None):
 
         return ", ".join([f"{p.index}:{count}" for p, count in loc.workers.items()])
 
-    basic_event_names = {"Monument", "Tour", "Festival", "Expedition"}
-
     def _sorted_locations(group_locations):
         return sorted(group_locations, key=lambda loc: loc.name)
 
@@ -125,7 +123,7 @@ def game_state_as_df_to_text(game_state, output_file=None):
             [
                 loc
                 for loc in locations
-                if loc.location_type == "event" and loc.name in basic_event_names
+                if loc.location_type == "basic_event"
             ]
         )
     )
@@ -134,7 +132,7 @@ def game_state_as_df_to_text(game_state, output_file=None):
             [
                 loc
                 for loc in locations
-                if loc.location_type == "event" and loc.name not in basic_event_names
+                if loc.location_type == "special_event"
             ]
         )
     )

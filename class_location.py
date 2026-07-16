@@ -180,7 +180,7 @@ berries = None  # TODO
 # ============================================
 monument = Location(
     "Monument",
-    "event",
+    "basic_event",
     1,
     None,
     action_on_finish=class_action.action_points_general("event", 3),
@@ -188,7 +188,7 @@ monument = Location(
 )
 tour = Location(
     "Tour",
-    "event",
+    "basic_event",
     1,
     None,
     action_on_finish=class_action.action_points_general("event", 3),
@@ -196,7 +196,7 @@ tour = Location(
 )
 festival = Location(
     "Festival",
-    "event",
+    "basic_event",
     1,
     None,
     action_on_finish=class_action.action_points_general("event", 3),
@@ -204,7 +204,7 @@ festival = Location(
 )
 expedition = Location(
     "Expedition",
-    "event",
+    "basic_event",
     1,
     None,
     action_on_finish=class_action.action_points_general("event", 3),
@@ -224,10 +224,10 @@ hiru = None  # TODO
 
 heza = Location(
     "Heza",
-    "event",
+    "special_event",
     1,
     class_action.action_resources_to_location("Heza", ["berry"], 3),
-    action_on_finish=class_action.actions_points_for_resources_event_location(
+    action_on_finish=class_action.action_points_for_resources_event_location(
         ["berry"], 2, location_name="Heza"
     ),
     requirements=[
@@ -238,7 +238,7 @@ heza = Location(
 
 sckl = Location(
     "Sckl",
-    "event",
+    "special_event",
     1,
     class_action.action_retake_worker(),
     action_on_finish=class_action.action_points_general("event", 4),
@@ -258,7 +258,7 @@ mawi = None  # TODO
 
 wipo = Location(
     "Wipo",
-    "event",
+    "special_event",
     1,
     class_action.action_points_for_given_resources(
         max_nr_resources=3, points_per_resource=2
@@ -274,10 +274,10 @@ beki = None  # TODO
 
 uimi = Location(
     "Uimi",
-    "event",
+    "special_event",
     1,
     class_action.action_resources_to_location("Uimi", ["twig"], 3),
-    action_on_finish=class_action.actions_points_for_resources_event_location(
+    action_on_finish=class_action.action_points_for_resources_event_location(
         ["twig"], 2, location_name="Uimi"
     ),
     requirements=[

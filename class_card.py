@@ -131,7 +131,7 @@ architect = Critter(
     cardsindeck=2,
     unique=True,
     points=2,
-    action_on_finish=actions_points_for_resources_hand(["resin", "pebble"], 1),
+    action_on_finish=action_points_for_resources_hand(["resin", "pebble"], 1),
     action_on_discard=action_remove_card_from_city("Architect"),
 )
 
@@ -250,7 +250,16 @@ leraar = Critter(
     action_on_discard=action_remove_card_from_city("Leraar"),
 )
 
-# TODO: koning
+koning = Critter(
+    name="Koning",
+    color="purple",
+    costs=dict(twig=0, resin=0, pebble=0, berry=6),
+    cardsindeck=2,
+    unique=True,
+    points=4,
+    action_on_finish=action_points_for_events(1, 2),
+    action_on_discard=action_remove_card_from_city("Koning"),
+)
 
 koningin = Critter(
     name="Koningin",
@@ -435,6 +444,7 @@ cards_unique.append(dwaas)
 cards_unique.append(historicus)
 cards_unique.append(houtsnijder)
 cards_unique.append(kikkerkapitein)
+cards_unique.append(koning)
 cards_unique.append(koningin)
 cards_unique.append(leraar)
 cards_unique.append(man)
@@ -566,7 +576,7 @@ kasteel = Construction(
     unique=True,
     points=4,
     relatedcritters=["Koning"],
-    action_on_finish=actions_points_for_cards_in_city("Construction", False, 1),
+    action_on_finish=action_points_for_cards_in_city("Construction", False, 1),
     action_on_discard=action_remove_card_from_city("Kasteel"),
 )
 
@@ -661,7 +671,7 @@ paleis = Construction(
     unique=True,
     points=4,
     relatedcritters=["Koningin"],
-    action_on_finish=actions_points_for_cards_in_city("Construction", True, 1),
+    action_on_finish=action_points_for_cards_in_city("Construction", True, 1),
     action_on_discard=action_remove_card_from_city("Paleis"),
 )
 
@@ -702,7 +712,7 @@ school = Construction(
     unique=True,
     points=2,
     relatedcritters=["Leraar"],
-    action_on_finish=actions_points_for_cards_in_city("Critter", False, 1),
+    action_on_finish=action_points_for_cards_in_city("Critter", False, 1),
     action_on_discard=action_remove_card_from_city("School"),
 )
 
@@ -727,7 +737,7 @@ theater = Construction(
     unique=True,
     points=3,
     relatedcritters=["Zanger"],
-    action_on_finish=actions_points_for_cards_in_city("Critter", True, 1),
+    action_on_finish=action_points_for_cards_in_city("Critter", True, 1),
     action_on_discard=action_remove_card_from_city("Theater"),
 )
 

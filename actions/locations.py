@@ -37,7 +37,7 @@ def _resolve_worker_placement(
             owner.points_add("token", 1)
 
     # Event locations: move to player's events
-    if location.location_type == "event":
+    if location.location_type in {"basic_event", "special_event"}:
         game_state["locations"].remove(location)
         player.events.append(location)
 
