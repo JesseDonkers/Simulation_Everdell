@@ -292,7 +292,17 @@ man = Critter(
     city_space_group=["Man", "Vrouw"],
 )
 
-# TODO: marskramer
+marskramer = Critter(
+    name="Marskramer",
+    color="green",
+    costs=dict(twig=0, resin=0, pebble=0, berry=2),
+    cardsindeck=3,
+    unique=False,
+    points=1,
+    action_on_play=action_resources_swap(2),
+    action_on_reactivate=action_resources_swap(2),
+    action_on_discard=action_remove_card_from_city("Marskramer"),
+)
 
 mijnwerkermol = Critter(
     name="Mijnwerkermol",
@@ -428,6 +438,7 @@ cards_unique.append(kikkerkapitein)
 cards_unique.append(koningin)
 cards_unique.append(leraar)
 cards_unique.append(man)
+cards_unique.append(marskramer)
 cards_unique.append(mijnwerkermol)
 cards_unique.append(monnik)
 cards_unique.append(postduif)

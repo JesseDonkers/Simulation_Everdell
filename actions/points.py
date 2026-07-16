@@ -109,7 +109,7 @@ class action_points_for_given_resources(Action):
             available = player.resources.get(self.resource_type, 0)
             max_allowed = min(self.max_nr_resources, available)
             requested = player.decide(
-                game_state, "nr_resources_to_give_away", max_allowed
+                game_state, "nr_resources_for_points", max_allowed
             )
             nr_give_away = max(0, min(requested, max_allowed))
 
@@ -122,7 +122,7 @@ class action_points_for_given_resources(Action):
             available = self._get_available_resources(player)
             max_allowed = min(self.max_nr_resources, sum(available.values()))
             requested = player.decide(
-                game_state, "nr_resources_to_give_away", max_allowed
+                game_state, "nr_resources_for_points", max_allowed
             )
             nr_give_away = max(0, min(requested, max_allowed))
             if nr_give_away == 0:

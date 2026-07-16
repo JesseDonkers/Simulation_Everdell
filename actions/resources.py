@@ -11,6 +11,7 @@ __all__ = [
     "action_resource_per_other_card",
     "action_resources_building_costs_discard",
     "action_resources_by_choice",
+    "action_resources_swap",
     "action_resources_to_location",
 ]
 
@@ -94,6 +95,34 @@ class action_resources_by_choice(Action):
         for _ in range(self.nr_resources):
             choice = player.decide(game_state, "resource_new", self.resources)
             player.resources_add(choice, 1)
+
+
+class action_resources_swap(Action):
+    def __init__(self, nr_resources):
+        self.nr_resources = nr_resources
+
+    def execute_action(self, player: "Player", game_state=None):
+        available = {
+            resource: amount
+            for resource, amount in player.resources.items()
+            if amount > 0
+        }
+        max_allowed = min(self.nr_resources, sum(available.values()))
+        nr_swaps = player.decide(game_state, "nr_resources_swap", max_allowed)
+
+        for _ in range(nr_swaps):
+            selectable_resources = [
+                resource for resource, amount in available.items() if amount > 0
+            ]
+            choice_discard = player.decide(
+                game_state, "resource_discard", selectable_resources
+            )
+            player.resources_remove(choice_discard, 1)
+            available[choice_discard] -= 1
+
+            resource_options = ["twig", "resin", "pebble", "berry"]
+            choice_add = player.decide(game_state, "resource_new", resource_options)
+            player.resources_add(choice_add, 1)
 
 
 class action_resources_building_costs_discard(Action):

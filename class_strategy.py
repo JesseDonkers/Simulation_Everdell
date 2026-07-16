@@ -56,12 +56,15 @@ class Strategy_random(Strategy):
     def choose_resource_new(self, game_state, possible_resources):
         return random.choice(possible_resources)
 
+    def choose_resource_discard(self, game_state, possible_resources):
+        return random.choice(list(possible_resources))
+
     def choose_resource_give_away(self, game_state, parameters):
         nr_to_pick, available = parameters
         pool = [r for r, count in available.items() for _ in range(count)]
         return random.sample(pool, nr_to_pick)
 
-    def choose_nr_resources_to_give_away(self, game_state, max_nr_resources):
+    def choose_nr_resources_swap(self, game_state, max_nr_resources):
         return random.randint(0, max_nr_resources)
 
     def choose_nr_resources_for_points(self, game_state, max_nr_resources):
