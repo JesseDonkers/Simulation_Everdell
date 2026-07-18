@@ -516,7 +516,42 @@ boerderij = Construction(
     action_on_discard=action_remove_card_from_city("Boerderij"),
 )
 
-# TODO: evertree
+evertree = Construction(
+    name="Evertree",
+    color="purple",
+    costs=dict(twig=3, resin=3, pebble=3, berry=0),
+    cardsindeck=2,
+    unique=True,
+    points=5,
+    relatedcritters=[
+        "Architect",
+        "Begrafenisondernemer",
+        "Boswachter",
+        "Dokter",
+        "Dwaas",
+        "Herbergier",
+        "Herder",
+        "Historicus",
+        "Houtsnijder",
+        "Kikkerkapitein",
+        "Koning",
+        "Koningin",
+        "Leraar",
+        "Man",
+        "Marskramer",
+        "Mijnwerkermol",
+        "Monnik",
+        "Postduif",
+        "Rechter",
+        "Schoonmaker",
+        "Vrouw",
+        "Winkelier",
+        "Zanger",
+        "Zwerver",
+    ],
+    action_on_finish=action_points_for_color_in_city("purple", 1),
+    action_on_discard=action_remove_card_from_city("Evertree"),
+)
 
 gerechtsgebouw = Construction(
     name="Gerechtsgebouw",
@@ -820,6 +855,7 @@ winkel = Construction(
 
 cards_unique.append(begraafplaats)
 cards_unique.append(boerderij)
+cards_unique.append(evertree)
 cards_unique.append(gerechtsgebouw)
 cards_unique.append(harsraffinaderij)
 cards_unique.append(herberg)

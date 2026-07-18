@@ -141,12 +141,12 @@ def run_full_game(game_state, max_turns=MAX_TURNS_PER_GAME):
 def run_scenario(game_state):
     player: "Player" = game_state["current_player"]
 
-    # TODO: Test postduif
+    # TODO: Test Evertree
 
     class ScenarioStrategy(Strategy_random):
         def __init__(self):
             super().__init__()
-            self.preferred_cards = ["Koning"]
+            self.preferred_cards = ["Evertree"]
 
         def choose_card_new(self, game_state, possible_cards):
             for preferred in self.preferred_cards:
@@ -194,12 +194,12 @@ def run_scenario(game_state):
 
     # Build a deterministic test state for Gerechtsgebouw and Winkelier.
     player.city.clear()
-    player.resources = {"twig": 0, "resin": 0, "pebble": 0, "berry": 6}
+    player.resources = {"twig": 3, "resin": 3, "pebble": 3, "berry": 0}
     player.workers = 2
     player.finished = False
     player.strategy = ScenarioStrategy()
 
-    # move_card_to_zone("Winkelier", "city")
+    move_card_to_zone("Koning", "city")
 
     game_state_as_df_to_text(game_state, "Game_state")
 
@@ -208,8 +208,8 @@ def run_scenario(game_state):
 
     game_state_as_df_to_text(game_state, "Game_state")
 
-    if any(card.name == "Koning" for card in player.city):
-        print("Koning is in the city.")
+    if any(card.name == "Evertree" for card in player.city):
+        print("Evertree is in the city.")
     print("Scenario completed successfully.")
     return True
 

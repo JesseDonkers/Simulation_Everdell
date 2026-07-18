@@ -7,6 +7,7 @@ __all__ = [
     "action_points_for_payed_resources",
     "action_points_general",
     "action_points_for_cards_in_city",
+    "action_points_for_color_in_city",
     "action_points_for_resources_event_location",
     "action_points_for_resources_hand",
     "action_points_for_discarding_cards",
@@ -211,6 +212,18 @@ class action_points_for_cards_in_city(Action):
                 and type(card).__name__ == self.critter_or_construction
             ):
                 player.points_add("prosperity", self.points_per_card)
+
+
+class action_points_for_color_in_city(Action):
+    def __init__(self, color, points_per_card):
+        self.color = color
+        self.points_per_card = points_per_card
+
+    def execute_action(self, player: "Player", game_state=None):
+        count = sum(1 for card in player.city if card.color == self.color)
+        total_points = count * self.points_per_card
+        if total_points > 0:
+            player.points_add("prosperity", total_points)
 
 
 class action_points_for_discarding_cards(Action):
