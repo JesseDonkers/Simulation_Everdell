@@ -218,7 +218,7 @@ def _get_kerker_methods(player, card):
 
     has_boswachter = any(city_card.name == "Boswachter" for city_card in player.city)
     capacity = 2 if has_boswachter else 1
-    if len(kerker.stored_cards) >= capacity:
+    if len(kerker.card_storage["cards"]) >= capacity:
         return []
 
     prisoners = [
@@ -447,7 +447,10 @@ def get_possible_locations(game_state):
                 possible_locations.append(loc)
 
         # Event locations (unclaimed only; claimed events are in player.events)
-        if loc.location_type in {"basic_event", "special_event"} and loc.get_open_spaces() > 0:
+        if (
+            loc.location_type in {"basic_event", "special_event"}
+            and loc.get_open_spaces() > 0
+        ):
             possible_locations.append(loc)
 
     # TODO: forest locations

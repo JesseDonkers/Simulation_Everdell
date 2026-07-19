@@ -1,6 +1,5 @@
 import copy
-
-from actions import cards
+import uuid
 from class_action import *
 
 
@@ -34,9 +33,14 @@ class Card:
         self.action_on_finish = action_on_finish
         self.action_when_card_played = action_when_card_played
         self.requirements = requirements  # Optional play preconditions
-        self.stored_cards = []  # For cards attached to this card (e.g. Kerker)
+        # Shared storage for effects that keep cards/resources on a card.
+        self.card_storage = {
+            "cards": [],
+            "resources": dict(twig=0, resin=0, pebble=0, berry=0),
+        }
         self.city_space_cost = city_space_cost
         self.city_space_group = city_space_group
+        self.card_id = str(uuid.uuid4())
 
     def __str__(self):
         return str(self.name)
@@ -696,7 +700,37 @@ mijn = Construction(
     action_on_discard=action_remove_card_from_city("Mijn"),
 )
 
-# TODO: pakhuis
+pakhuis = Construction(
+    name="Pakhuis",
+    color="green",
+    costs=dict(twig=1, resin=1, pebble=1, berry=0),
+    cardsindeck=3,
+    unique=False,
+    points=2,
+    relatedcritters=["Houtsnijder"],
+    action_on_play=CompositeAction(
+        [
+            action_resources_to_card_storage_choice(
+                "Pakhuis", {"twig": 3, "resin": 2, "pebble": 1, "berry": 2}
+            ),
+            action_add_destination_card_as_location(
+                "Pakhuis",
+                "destination_card",
+                1,
+                action_take_all_resources_from_card_storage("Pakhuis"),
+            ),
+        ]
+    ),
+    action_on_reactivate=action_resources_to_card_storage_choice(
+        "Pakhuis", {"twig": 3, "resin": 2, "pebble": 1, "berry": 2}
+    ),
+    action_on_discard=CompositeAction(
+        [
+            action_remove_destination("Pakhuis"),
+            action_remove_card_from_city("Pakhuis"),
+        ]
+    ),
+)
 
 paleis = Construction(
     name="Paleis",
@@ -864,6 +898,7 @@ cards_unique.append(kerker)
 cards_unique.append(kermis)
 cards_unique.append(klooster)
 cards_unique.append(mijn)
+cards_unique.append(pakhuis)
 cards_unique.append(paleis)
 cards_unique.append(postkantoor)
 cards_unique.append(school)
@@ -881,4 +916,6 @@ cards_unique.append(winkel)
 init_cards = []
 for c in cards_unique:
     for _ in range(c.cardsindeck):
-        init_cards.append(copy.deepcopy(c))
+        card_copy = copy.deepcopy(c)
+        card_copy.card_id = str(uuid.uuid4())
+        init_cards.append(card_copy)
