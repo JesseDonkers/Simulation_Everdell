@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from actions.base import Action
+from actions.base import Action, ActionContext
 from actions.cards import action_cards_from_meadow_to_hand
 from actions.resources import action_resources_by_choice
 
@@ -13,7 +13,8 @@ if TYPE_CHECKING:
 
 
 class action_advance_season(Action):
-    def _grant_man_vrouw_production_resources(self, player: "Player", game_state=None):
+    def _grant_man_vrouw_production_resources(self, context: ActionContext):
+        player: "Player" = context.player
         if not any(card.name == "Boerderij" for card in player.city):
             return
 
@@ -25,9 +26,11 @@ class action_advance_season(Action):
 
         action_resources_by_choice(
             ["twig", "resin", "pebble", "berry"], nr_pairs
-        ).execute_action(player, game_state)
+        ).execute(context=context)
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         seasons = ["winter", "spring", "summer", "autumn"]
         current_season = player.season
         current_index = seasons.index(player.season)
@@ -37,20 +40,34 @@ class action_advance_season(Action):
             card: "Card"
             for card in player.city:
                 if card.color == "green" and card.action_on_reactivate:
-                    card.action_on_reactivate.execute(game_state)
-            self._grant_man_vrouw_production_resources(player, game_state)
+                    card.action_on_reactivate.execute(
+                        context=ActionContext(
+                            player=context.player,
+                            game_state=context.game_state,
+                            host_card=card,
+                            options=dict(context.options),
+                        )
+                    )
+            self._grant_man_vrouw_production_resources(context)
 
         elif current_season == "spring":
             player.workers_add(1)
-            action_cards_from_meadow_to_hand(2).execute(game_state)
+            action_cards_from_meadow_to_hand(2).execute(context=context)
 
         elif current_season == "summer":
             player.workers_add(2)
             for card in player.city:
                 if card.color == "green" and card.action_on_reactivate:
                     # On season change, execute action_on_reactivate
-                    card.action_on_reactivate.execute(game_state)
-            self._grant_man_vrouw_production_resources(player, game_state)
+                    card.action_on_reactivate.execute(
+                        context=ActionContext(
+                            player=context.player,
+                            game_state=context.game_state,
+                            host_card=card,
+                            options=dict(context.options),
+                        )
+                    )
+            self._grant_man_vrouw_production_resources(context)
 
         location: "Location"
         for location in game_state["locations"]:

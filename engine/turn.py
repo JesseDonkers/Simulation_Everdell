@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING
 
+from actions.base import ActionContext
+
 if TYPE_CHECKING:
     from class_player import Player
 
@@ -37,7 +39,13 @@ def finish_current_player(game_state):
 
         # Prosperity points
         if card.color == "purple" and card.action_on_finish is not None:
-            card.action_on_finish.execute(game_state)
+            card.action_on_finish.execute(
+                context=ActionContext(
+                    player=player,
+                    game_state=game_state,
+                    host_card=card,
+                )
+            )
 
     # Vrouw scores 3 points per Man/Vrouw pair at game end.
     count_man = sum(1 for card in player.city if card.name == "Man")
@@ -54,4 +62,10 @@ def finish_current_player(game_state):
     # Event points
     for event in player.events:
         if event.action_on_finish is not None:
-            event.action_on_finish.execute(game_state)
+            event.action_on_finish.execute(
+                context=ActionContext(
+                    player=player,
+                    game_state=game_state,
+                    event_location=event,
+                )
+            )

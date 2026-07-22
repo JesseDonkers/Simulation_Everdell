@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
-from actions.base import Action
+from actions.base import Action, ActionContext
+from actions.common import resolve_city_card_target
 from engine.selectors import get_critters_constructions_city
 
 __all__ = [
@@ -12,6 +13,8 @@ __all__ = [
     "action_resources_building_costs_discard",
     "action_resources_by_choice",
     "action_resources_swap",
+    "action_resources_to_card_storage_choice",
+    "action_take_all_resources_from_card_storage",
     "action_resources_to_location",
 ]
 
@@ -26,7 +29,8 @@ class action_resource_general(Action):
         self.resource_type = resource_type
         self.amount = amount
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
         player.resources[self.resource_type] += self.amount
 
 
@@ -36,7 +40,8 @@ class action_resource_per_other_card(Action):
         self.resource_type = resource_type
         self.amount = amount
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
         for c in player.city:
             if c.name == self.cardname:
                 player.resources[self.resource_type] += self.amount
@@ -48,7 +53,8 @@ class action_resource_if_other_card(Action):
         self.resource_type = resource_type
         self.amount = amount
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
         if any(card.name == self.cardname for card in player.city):
             player.resources[self.resource_type] += self.amount
 
@@ -68,7 +74,8 @@ class action_resource_if_paired_with_other_card(Action):
         self.resources = resources
         self.amount = amount
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
         if not any(card.name == self.required_card_name for card in player.city):
             return
 
@@ -81,9 +88,7 @@ class action_resource_if_paired_with_other_card(Action):
         if count_paired < count_own:
             return
 
-        action_resources_by_choice(self.resources, self.amount).execute_action(
-            player, game_state
-        )
+        action_resources_by_choice(self.resources, self.amount).execute(context=context)
 
 
 class action_resources_by_choice(Action):
@@ -91,7 +96,9 @@ class action_resources_by_choice(Action):
         self.resources = resources
         self.nr_resources = nr_resources
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         for _ in range(self.nr_resources):
             choice = player.decide(game_state, "resource_new", self.resources)
             player.resources_add(choice, 1)
@@ -101,7 +108,9 @@ class action_resources_swap(Action):
     def __init__(self, nr_resources):
         self.nr_resources = nr_resources
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         available = {
             resource: amount
             for resource, amount in player.resources.items()
@@ -130,7 +139,9 @@ class action_resources_building_costs_discard(Action):
         self.critter = critter
         self.construction = construction
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         critter_construction = [self.critter, self.construction]
         options = get_critters_constructions_city(game_state, critter_construction)
         card = player.decide(game_state, "card_discard", options)
@@ -138,14 +149,23 @@ class action_resources_building_costs_discard(Action):
         for resource, amount in resources.items():
             player.resources_add(resource, amount)
 
-        card.action_on_discard.execute(game_state)
+        if card.action_on_discard is not None:
+            card.action_on_discard.execute(
+                context=ActionContext(
+                    player=player,
+                    game_state=game_state,
+                    host_card=card,
+                )
+            )
 
 
 class action_resources_for_cards(Action):
     """Discard any number of cards from hand;
     gain 1 resource of choice per 2 discarded cards."""
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         discardpile: "DiscardPile" = game_state["discardpile"]
 
         # Player decides how many cards to discard (0 to len(hand))
@@ -178,11 +198,16 @@ class action_resources_to_location(Action):
         self.resources = resources
         self.max_nr_resources = max_nr_resources
 
-    def execute_action(self, player: "Player", game_state=None):
-        target_location = next(
-            (loc for loc in player.events if loc.name == self.location_name),
-            None,
-        )
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
+        event_location = context.event_location
+        target_location = event_location
+        if target_location is None:
+            target_location = next(
+                (loc for loc in player.events if loc.name == self.location_name),
+                None,
+            )
         if target_location is None:
             raise ValueError(
                 f"Location '{self.location_name}' not found in player events"
@@ -209,3 +234,60 @@ class action_resources_to_location(Action):
             player.resources_remove(resource_type, amount)
             target_location.resources_add(resource_type, amount)
             remaining -= amount
+
+
+class action_resources_to_card_storage_choice(Action):
+    def __init__(self, card_name, resources):
+        self.card_name = card_name
+        if not isinstance(resources, dict):
+            raise TypeError(
+                "action_resources_to_card_storage_choice expects a dict of "
+                "resource -> amount"
+            )
+        self.resource_amounts = dict(resources)
+
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
+        context_card = context.host_card
+        context_card_id = getattr(context_card, "card_id", None)
+        target_card = resolve_city_card_target(
+            player,
+            self,
+            card=context_card,
+            card_id=context_card_id,
+            card_name=self.card_name,
+        )
+
+        if len(self.resource_amounts) == 0:
+            return
+
+        storage = target_card.card_storage["resources"]
+        options = list(self.resource_amounts.keys())
+        choice = player.decide(game_state, "resource_new", options)
+        amount = self.resource_amounts.get(choice, 0)
+        storage[choice] = storage.get(choice, 0) + amount
+
+
+class action_take_all_resources_from_card_storage(Action):
+    def __init__(self, card_name):
+        self.card_name = card_name
+
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        context_card = context.host_card
+        context_card_id = getattr(context_card, "card_id", None)
+        target_card = resolve_city_card_target(
+            player,
+            self,
+            card=context_card,
+            card_id=context_card_id,
+            card_name=self.card_name,
+        )
+
+        storage = target_card.card_storage["resources"]
+        for resource, amount in list(storage.items()):
+            if amount <= 0:
+                continue
+            player.resources_add(resource, amount)
+            storage[resource] = 0

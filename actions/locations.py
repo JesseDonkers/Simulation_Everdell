@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any
 
-from actions.base import Action
+from actions.base import Action, ActionContext
 from engine.selectors import get_possible_locations
 
 __all__ = [
@@ -19,11 +19,12 @@ if TYPE_CHECKING:
 
 
 def _resolve_worker_placement(
-    player: "Player",
+    context: ActionContext,
     location: "Location",
-    game_state=None,
     remove_from_supply=True,
 ):
+    player: "Player" = context.player
+    game_state = context.game_state
     location.add_worker(player)
 
     if remove_from_supply:
@@ -42,11 +43,23 @@ def _resolve_worker_placement(
         player.events.append(location)
 
     if location.action_on_place_worker:
-        location.action_on_place_worker.execute(game_state)
+        location.action_on_place_worker.execute(
+            context=ActionContext(
+                player=context.player,
+                game_state=context.game_state,
+                host_card=context.host_card,
+                played_card=context.played_card,
+                trigger_location=location,
+                event_location=context.event_location,
+                options=dict(context.options),
+            )
+        )
 
 
 class action_place_worker(Action):
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        game_state = context.game_state
+        player: "Player" = context.player
         preferred_location: "Location"
         possib_loc = get_possible_locations(game_state)
 
@@ -56,9 +69,7 @@ class action_place_worker(Action):
         preferred_location = player.decide(
             game_state, "location_place_worker", possib_loc
         )
-        _resolve_worker_placement(
-            player, preferred_location, game_state, remove_from_supply=True
-        )
+        _resolve_worker_placement(context, preferred_location, remove_from_supply=True)
 
 
 class action_add_destination_card_as_location(Action):
@@ -81,10 +92,13 @@ class action_add_destination_card_as_location(Action):
         self.permanent_workers = permanent_workers
         self.requirements = requirements
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
         from class_location import Location
 
+        player: "Player" = context.player
+        game_state = context.game_state
         locations = game_state["locations"]
+        source_card_id = getattr(context.host_card, "card_id", None)
         dest_card = Location(
             self.name,
             self.location_type,
@@ -94,6 +108,7 @@ class action_add_destination_card_as_location(Action):
             permanent_workers=self.permanent_workers,
             owner=player,
             requirements=self.requirements,
+            source_card_id=source_card_id,
         )
         locations.append(dest_card)
 
@@ -125,10 +140,13 @@ class action_add_destination_if_card_present(Action):
         self.permanent_workers = permanent_workers
         self.requirements = requirements
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
         from class_location import Location
 
+        player: "Player" = context.player
+        game_state = context.game_state
         locations = game_state["locations"]
+        source_card_id = getattr(context.host_card, "card_id", None)
 
         # Check if the specified card is in the player's city
         card_in_city = any(card.name == self.check_card_name for card in player.city)
@@ -143,6 +161,7 @@ class action_add_destination_if_card_present(Action):
                 permanent_workers=self.permanent_workers,
                 owner=player,
                 requirements=self.requirements,
+                source_card_id=source_card_id,
             )
             locations.append(dest_card)
 
@@ -156,9 +175,19 @@ class action_remove_destination(Action):
     def __init__(self, location_name):
         self.location_name = location_name
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        game_state = context.game_state
         locations = game_state["locations"]
-        targets = [loc for loc in locations if loc.name == self.location_name]
+        effective_card_id = getattr(context.host_card, "card_id", None)
+
+        if effective_card_id is not None:
+            targets = [
+                loc
+                for loc in locations
+                if getattr(loc, "source_card_id", None) == effective_card_id
+            ]
+        else:
+            targets = [loc for loc in locations if loc.name == self.location_name]
 
         temp_loc = next(l for l in locations if l.location_type == "temporary")
         perm_loc = next(l for l in locations if l.location_type == "permanent")
@@ -177,24 +206,41 @@ class action_remove_destination(Action):
                     safe_loc.add_worker(p)
 
         # Remove the specified location(s)
-        locations[:] = [l for l in locations if l.name != self.location_name]
+        if effective_card_id is not None:
+            locations[:] = [
+                l
+                for l in locations
+                if getattr(l, "source_card_id", None) != effective_card_id
+            ]
+        else:
+            locations[:] = [l for l in locations if l.name != self.location_name]
 
 
 class action_location_copy_action(Action):
     def __init__(self, possible_types):
         self.possible_types = possible_types
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         locations = game_state["locations"]
         locations_of_type = [
             l for l in locations if l.location_type in self.possible_types
         ]
         loc = player.decide(game_state, "location_place_worker", locations_of_type)
-        loc.action_on_place_worker.execute(game_state)
+        loc.action_on_place_worker.execute(
+            context=ActionContext(
+                player=player,
+                game_state=game_state,
+                trigger_location=loc,
+            )
+        )
 
 
 class action_replace_worker(Action):
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         # A worker can only be taken from locations where this player's worker
         # is present and the worker is allowed to be removed.
         removable_locations = [
@@ -224,11 +270,13 @@ class action_replace_worker(Action):
             game_state, "location_place_worker", possible_target_locations
         )
 
-        _resolve_worker_placement(player, loc_to, game_state, remove_from_supply=False)
+        _resolve_worker_placement(context, loc_to, remove_from_supply=False)
 
 
 class action_retake_worker(Action):
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         removable_locations = [
             loc
             for loc in game_state["locations"]

@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
-from actions.base import Action, CompositeAction
+from actions.base import Action, ActionContext
+from actions.common import resolve_city_card_target
 
 __all__ = [
     "action_discard_cards_from_hand",
@@ -31,7 +32,9 @@ class action_discard_cards_from_hand(Action):
     def __init__(self, nr_cards):
         self.nr_cards: int = nr_cards
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         discardpile: "DiscardPile" = game_state["discardpile"]
 
         if len(player.hand) < self.nr_cards:
@@ -51,28 +54,41 @@ class action_discard_cards_from_hand(Action):
 class action_discard_stored_cards(Action):
     """
     Handles discarding all stored cards from a specified card in the
-    player's city by moving them to the discard pile and clearing the stored
-    cards list.
+    player's city by moving them to the discard pile and clearing card storage.
     """
 
-    def __init__(self, card_name):
+    def __init__(self, card_name=None, card_id=None):
         self.card_name = card_name
+        self.card_id = card_id
 
-    def execute_action(self, player: "Player", game_state=None):
-        host_card = next(c for c in player.city if c.name == self.card_name)
-        if len(host_card.stored_cards) == 0:
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
+        context_card_id = getattr(context.host_card, "card_id", None)
+        effective_card_id = self.card_id if context_card_id is None else context_card_id
+        target_card = resolve_city_card_target(
+            player,
+            self,
+            card=context.host_card,
+            card_id=effective_card_id,
+            card_name=self.card_name,
+        )
+        stored_cards = target_card.card_storage["cards"]
+        if len(stored_cards) == 0:
             return
 
         discard_pile: "DiscardPile" = game_state["discardpile"]
-        discard_pile.add_to_discardpile(list(host_card.stored_cards))
-        host_card.stored_cards.clear()
+        discard_pile.add_to_discardpile(list(stored_cards))
+        stored_cards.clear()
 
 
 class action_cards_from_deck_to_hand(Action):
     def __init__(self, nrCards):
         self.nrCards = nrCards
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         deck: "Deck" = game_state["deck"]
         discardpile: "DiscardPile" = game_state["discardpile"]
         spaces_hand = player.cards_get_open_spaces("hand")
@@ -91,7 +107,10 @@ class action_draw_on_card_type(Action):
         self.nrCards = nrCards
         self.trigger_kinds = tuple(trigger_kinds)
 
-    def execute_action(self, player: "Player", game_state=None, played_card=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
+        played_card = context.played_card
         if played_card is None:
             raise ValueError(
                 "action_draw_on_card_type requires a 'played_card' argument when executed"
@@ -110,7 +129,7 @@ class action_draw_on_card_type(Action):
             return
 
         # Reuse existing draw action
-        action_cards_from_deck_to_hand(self.nrCards).execute_action(player, game_state)
+        action_cards_from_deck_to_hand(self.nrCards).execute(context=context)
 
 
 class action_cards_keep_and_give(Action):
@@ -118,7 +137,9 @@ class action_cards_keep_and_give(Action):
         self.nrCards_keep = nrCards_keep
         self.nrCards_give = nrCards_give
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         deck: "Deck" = game_state["deck"]
         discardpile: "DiscardPile" = game_state["discardpile"]
         players = game_state["players"]
@@ -187,7 +208,10 @@ class action_resource_on_card_type(Action):
         self.amount = amount
         self.trigger_kind = trigger_kind
 
-    def execute_action(self, player: "Player", game_state=None, played_card=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
+        played_card = context.played_card
         if played_card is None:
             raise ValueError(
                 "action_resource_on_card_type requires a 'played_card' argument when executed"
@@ -205,14 +229,15 @@ class action_resource_on_card_type(Action):
         if not trigger_matches:
             return
 
-        self._grant_resources(player, game_state)
+        self._grant_resources(context)
 
-    def _grant_resources(self, player: "Player", game_state=None):
+    def _grant_resources(self, context: ActionContext):
+        player: "Player" = context.player
         if isinstance(self.resource, (list, tuple)):
             from actions.resources import action_resources_by_choice
 
-            action_resources_by_choice(self.resource, self.amount).execute_action(
-                player, game_state
+            action_resources_by_choice(self.resource, self.amount).execute(
+                context=context
             )
         else:
             player.resources_add(self.resource, self.amount)
@@ -222,7 +247,9 @@ class action_cards_from_meadow_to_hand(Action):
     def __init__(self, nrCards):
         self.nrCards = nrCards
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         meadow: "Meadow" = game_state["meadow"]
         deck = game_state["deck"]
         discardpile = game_state["discardpile"]
@@ -250,12 +277,10 @@ class action_play_card(Action):
         self.pay = pay
         self.allow_city_discard_then_pay = allow_city_discard_then_pay
 
-    def execute_action(
-        self,
-        player: "Player",
-        game_state=None,
-        candidate_cards=None,
-    ):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
+        candidate_cards = context.options.get("candidate_cards")
         from engine.selectors import get_possible_card_plays
 
         meadow: "Meadow" = game_state["meadow"]
@@ -321,17 +346,24 @@ class action_play_card(Action):
         # Card is added to the target city and action_on_play is executed
         target_player.cards_add([card], "city")
         if card.action_on_play:
-            card.action_on_play.execute(game_state)
+            card.action_on_play.execute(
+                context=ActionContext(
+                    player=target_player,
+                    game_state=game_state,
+                    host_card=card,
+                )
+            )
 
         # Trigger reactive effects on other cards in the player's city
         if target_player is player:
             for city_card in existing_city_cards:
                 if getattr(city_card, "action_when_card_played", None):
-                    self._execute_on_card_play_action(
-                        player,
-                        game_state,
-                        city_card.action_when_card_played,
-                        played_card=card,
+                    city_card.action_when_card_played.execute(
+                        context=ActionContext(
+                            player=player,
+                            game_state=game_state,
+                            played_card=card,
+                        )
                     )
 
     def _execute_selected_method(self, player: "Player", game_state, selected_method):
@@ -384,7 +416,15 @@ class action_play_card(Action):
         discard_card = selected_method.consumed_cards[0]
         for resource, amount in discard_card.costs.items():
             player.resources_add(resource, amount)
-        discard_card.action_on_discard.execute(game_state)
+        if discard_card.action_on_discard:
+            discard_card.action_on_discard.execute(
+                context=ActionContext(
+                    player=player,
+                    game_state=game_state,
+                    host_card=discard_card,
+                    options={"add_to_discard": False},
+                )
+            )
         return True
 
     def _method_kerker_discount(self, player: "Player", game_state, selected_method):
@@ -399,48 +439,19 @@ class action_play_card(Action):
         # Imprisonment triggers discard side effects, but never sends
         # the card to discard pile.
         if prisoner.action_on_discard:
-            self._execute_leave_city_action(
-                player, game_state, prisoner.action_on_discard
+            prisoner.action_on_discard.execute(
+                context=ActionContext(
+                    player=player,
+                    game_state=game_state,
+                    host_card=prisoner,
+                    options={"add_to_discard": False},
+                )
             )
         elif prisoner in player.city:
             player.cards_remove([prisoner], "city")
 
-        kerker.stored_cards.append(prisoner)
+        kerker.card_storage["cards"].append(prisoner)
         return True
-
-    def _execute_leave_city_action(self, player: "Player", game_state, action):
-        if isinstance(action, CompositeAction):
-            for sub_action in action.actions:
-                self._execute_leave_city_action(player, game_state, sub_action)
-            return
-
-        if isinstance(action, action_remove_card_from_city):
-            action.execute_action(player, game_state, add_to_discard=False)
-            return
-
-        action.execute_action(player, game_state)
-
-    def _execute_on_card_play_action(
-        self, player: "Player", game_state, action, played_card
-    ):
-        """Execute an action triggered when another card is played.
-
-        This helper tries to call the action with a `played_card` keyword when
-        the action supports it. If not, it falls back to calling without it.
-        CompositeAction is handled recursively.
-        """
-        if isinstance(action, CompositeAction):
-            for sub_action in action.actions:
-                self._execute_on_card_play_action(
-                    player, game_state, sub_action, played_card
-                )
-            return
-
-        try:
-            action.execute_action(player, game_state, played_card=played_card)
-        except TypeError:
-            # Action does not accept a played_card parameter; call normally
-            action.execute_action(player, game_state)
 
     def _method_free_no_pay(self):
         return False
@@ -460,12 +471,9 @@ class action_play_meadow_card_with_discount(action_play_card):
         super().__init__()
         self.discount = discount
 
-    def execute_action(
-        self,
-        player: "Player",
-        game_state=None,
-        candidate_cards=None,
-    ):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         from engine.selectors import get_possible_meadow_card_plays_with_discount
 
         meadow: "Meadow" = game_state["meadow"]
@@ -507,41 +515,62 @@ class action_play_meadow_card_with_discount(action_play_card):
 
         player.cards_add([card], "city")
         if card.action_on_play:
-            card.action_on_play.execute(game_state)
+            card.action_on_play.execute(
+                context=ActionContext(
+                    player=player,
+                    game_state=game_state,
+                    host_card=card,
+                )
+            )
 
         # Trigger reactive effects on other cards in the player's city
         for city_card in existing_city_cards:
             if getattr(city_card, "action_when_card_played", None):
-                self._execute_on_card_play_action(
-                    player,
-                    game_state,
-                    city_card.action_when_card_played,
-                    played_card=card,
+                city_card.action_when_card_played.execute(
+                    context=ActionContext(
+                        player=player,
+                        game_state=game_state,
+                        played_card=card,
+                    )
                 )
 
 
 class action_remove_card_from_city(Action):
-    def __init__(self, card_name, add_to_discard=True):
+    def __init__(self, card_name=None, add_to_discard=True, card_id=None):
         self.card_name = card_name
         self.add_to_discard = add_to_discard
+        self.card_id = card_id
 
-    def execute_action(self, player: "Player", game_state=None, add_to_discard=None):
-        card = next(c for c in player.city if c.name == self.card_name)
-        player.cards_remove([card], "city")
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
+        context_card_id = getattr(context.host_card, "card_id", None)
+        effective_card_id = self.card_id if context_card_id is None else context_card_id
+        target_card = resolve_city_card_target(
+            player,
+            self,
+            card=context.host_card,
+            card_id=effective_card_id,
+            card_name=self.card_name,
+        )
+        player.cards_remove([target_card], "city")
 
+        add_to_discard = context.options.get("add_to_discard")
         effective_add_to_discard = (
             self.add_to_discard if add_to_discard is None else add_to_discard
         )
         if effective_add_to_discard:
             discard_pile: "DiscardPile" = game_state["discardpile"]
-            discard_pile.add_to_discardpile([card])
+            discard_pile.add_to_discardpile([target_card])
 
 
 class action_refresh_meadow_draw_cards(Action):
     def __init__(self, nr_refresh):
         self.nr_refresh = nr_refresh
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         meadow: "Meadow" = game_state["meadow"]
         deck = game_state["deck"]
         discardpile: "DiscardPile" = game_state["discardpile"]
@@ -569,7 +598,9 @@ class action_play_revealed_deck_card_for_free(Action):
         self.nr_see = nr_see
         self.max_points = max_points
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         from engine.selectors import get_possible_card_plays
 
         deck: "Deck" = game_state["deck"]
@@ -592,10 +623,12 @@ class action_play_revealed_deck_card_for_free(Action):
         ]
 
         if len(playable_revealed_cards) > 0:
-            helper.execute_action(
-                player,
-                game_state,
-                candidate_cards=playable_revealed_cards,
+            helper.execute(
+                context=ActionContext(
+                    player=player,
+                    game_state=game_state,
+                    options={"candidate_cards": playable_revealed_cards},
+                )
             )
 
         # Discard all remaining revealed cards that were not played.
@@ -609,7 +642,9 @@ class action_play_cards_from_deck_or_discardpile(Action):
     def __init__(self, nr_see):
         self.nr_see = nr_see
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         deck: "Deck" = game_state["deck"]
         discardpile: "DiscardPile" = game_state["discardpile"]
         deck_or_discardpile = player.decide(
@@ -638,7 +673,9 @@ class action_give_discard_refill_hand(Action):
     def __init__(self, nr_give):
         self.nr_give = nr_give
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         deck: "Deck" = game_state["deck"]
         discardpile: "DiscardPile" = game_state["discardpile"]
 
@@ -705,7 +742,9 @@ class action_reactivate_green_card(Action):
     def __init__(self, from_own_city=True):
         self.from_own_city = from_own_city
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         if self.from_own_city:
             # Reactivate a green card from own city
             green_cards = [card for card in player.city if card.color == "green"]
@@ -736,4 +775,10 @@ class action_reactivate_green_card(Action):
             card = player.decide(game_state, "card_reactivate_green", green_cards)
             if not card.action_on_reactivate:
                 raise ValueError(f"{card.name} has no action_on_reactivate")
-            card.action_on_reactivate.execute(game_state)
+            card.action_on_reactivate.execute(
+                context=ActionContext(
+                    player=player,
+                    game_state=game_state,
+                    host_card=card,
+                )
+            )

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from actions.base import Action
+from actions.base import Action, ActionContext
 
 __all__ = [
     "action_points_for_given_resources",
@@ -25,7 +25,8 @@ class action_points_general(Action):
         self.category = category
         self.points = points
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
         player.points[self.category] += self.points
 
 
@@ -82,7 +83,9 @@ class action_points_for_given_resources(Action):
             for resource_type in ("twig", "resin", "pebble", "berry")
         }
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         players = game_state["players"]
         eligible_receivers = [p for p in players if p != player and not p.finished]
         if len(eligible_receivers) == 0:
@@ -151,7 +154,9 @@ class action_points_for_payed_resources(Action):
         self.resource_type = resource_type
         self.points_per_resource = points_per_resource
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         available = player.resources.get(self.resource_type, 0)
         max_allowed = min(self.max_nr_resources, available)
         requested = player.decide(game_state, "nr_resources_for_points", max_allowed)
@@ -167,7 +172,8 @@ class action_points_for_resources_hand(Action):
         self.resources = resources
         self.point_per_resource = point_per_resource
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
         for r in self.resources:
             qty = player.resources.get(r, 0)
             for _ in range(qty):
@@ -180,11 +186,15 @@ class action_points_for_resources_event_location(Action):
         self.point_per_resource = point_per_resource
         self.location_name = location_name
 
-    def execute_action(self, player: "Player", game_state=None):
-        target_location = next(
-            (loc for loc in player.events if loc.name == self.location_name),
-            None,
-        )
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        event_location = context.event_location
+        target_location = event_location
+        if target_location is None:
+            target_location = next(
+                (loc for loc in player.events if loc.name == self.location_name),
+                None,
+            )
 
         if target_location is None:
             raise ValueError(
@@ -205,7 +215,8 @@ class action_points_for_cards_in_city(Action):
         self.unique = unique
         self.points_per_card = points_per_card
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
         for card in player.city:
             if (
                 card.unique is self.unique
@@ -219,7 +230,8 @@ class action_points_for_color_in_city(Action):
         self.color = color
         self.points_per_card = points_per_card
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
         count = sum(1 for card in player.city if card.color == self.color)
         total_points = count * self.points_per_card
         if total_points > 0:
@@ -231,7 +243,9 @@ class action_points_for_discarding_cards(Action):
         self.max_nr = max_nr
         self.points_per_card = points_per_card
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
         discardpile: "DiscardPile" = game_state["discardpile"]
 
         # Player decides how many cards to discard
@@ -258,7 +272,8 @@ class action_points_for_events(Action):
         self.points_per_basic_event = points_per_basic_event
         self.points_for_special_event = points_for_special_event
 
-    def execute_action(self, player: "Player", game_state=None):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
         basic_events = sum(
             1 for event in player.events if event.location_type == "basic_event"
         )

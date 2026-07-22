@@ -19,7 +19,8 @@ class Location:
         permanent_workers: bool = False,
         owner: "Player | None" = None,
         points: int = 0,
-        requirements: Any = None
+        requirements: Any = None,
+        source_card_id: str | None = None,
     ):
         self.name = name
         self.location_type = location_type  # For example basic, journey, haven
@@ -33,6 +34,7 @@ class Location:
         self.owner = owner  # Player that owns this destination location
         self.points = points
         self.requirements = requirements
+        self.source_card_id = source_card_id
 
     def __str__(self):
         return str(self.name)
