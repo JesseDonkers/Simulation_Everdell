@@ -36,6 +36,7 @@ def finish_current_player(game_state):
     # Card points
     for card in player.city:
         player.points_add("card", card.points)
+        player.points_add("token", card.card_storage.get("point_tokens", 0))
 
         # Prosperity points
         if card.color == "purple" and card.action_on_finish is not None:

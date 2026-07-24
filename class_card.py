@@ -37,6 +37,7 @@ class Card:
         self.card_storage = {
             "cards": [],
             "resources": dict(twig=0, resin=0, pebble=0, berry=0),
+            "point_tokens": 0,
         }
         self.city_space_cost = city_space_cost
         self.city_space_group = city_space_group
@@ -605,7 +606,24 @@ herberg = Construction(
     ),
 )
 
-# TODO: kapel
+kapel = Construction(
+    name="Kapel",
+    color="red",
+    costs=dict(twig=2, resin=1, pebble=1, berry=0),
+    cardsindeck=2,
+    unique=True,
+    points=2,
+    relatedcritters=["Herder"],
+    action_on_play=action_add_destination_card_as_location(
+        "Kapel",
+        "destination_card",
+        1,
+        action_point_on_location_take_cards("Kapel", 1, 2),
+    ),
+    action_on_discard=CompositeAction(
+        [action_remove_destination("Kapel"), action_remove_card_from_city("Kapel")]
+    ),
+)
 
 kasteel = Construction(
     name="Kasteel",
@@ -893,6 +911,7 @@ cards_unique.append(evertree)
 cards_unique.append(gerechtsgebouw)
 cards_unique.append(harsraffinaderij)
 cards_unique.append(herberg)
+cards_unique.append(kapel)
 cards_unique.append(kasteel)
 cards_unique.append(kerker)
 cards_unique.append(kermis)

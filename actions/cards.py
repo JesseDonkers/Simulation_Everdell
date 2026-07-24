@@ -19,6 +19,7 @@ __all__ = [
     "action_play_cards_from_deck_or_discardpile",
     "action_refresh_meadow_draw_cards",
     "action_reactivate_green_card",
+    "action_point_on_location_take_cards",
 ]
 
 if TYPE_CHECKING:
@@ -782,3 +783,32 @@ class action_reactivate_green_card(Action):
                     host_card=card,
                 )
             )
+
+
+class action_point_on_location_take_cards(Action):
+    def __init__(self, card_name, nr_points, nr_cards):
+        self.card_name = card_name
+        self.nr_points = nr_points
+        self.nr_cards = nr_cards
+
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
+        context_card_id = getattr(context.host_card, "card_id", None)
+        target_card = resolve_city_card_target(
+            player,
+            self,
+            card=context.host_card,
+            card_id=context_card_id,
+            card_name=self.card_name,
+        )
+
+        target_card.card_storage["point_tokens"] += self.nr_points
+        nr_point_tokens = target_card.card_storage["point_tokens"]
+
+        deck: "Deck" = game_state["deck"]
+        discardpile: "DiscardPile" = game_state["discardpile"]
+        spaces_hand = player.cards_get_open_spaces("hand")
+        nr_draw = min(self.nr_cards * nr_point_tokens, spaces_hand)
+        listofcards = deck.draw_cards(nr_draw, discardpile)
+        player.cards_add(listofcards, "hand")
