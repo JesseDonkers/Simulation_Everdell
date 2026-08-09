@@ -748,7 +748,16 @@ klooster = Construction(
     ),
 )
 
-# TODO: kraan
+kraan = Construction(
+    name="Kraan",
+    color="blue",
+    costs=dict(twig=0, resin=0, pebble=1, berry=0),
+    cardsindeck=3,
+    unique=True,
+    points=1,
+    relatedcritters=["Architect"],
+    action_on_discard=action_remove_card_from_city("Kraan"),
+)
 
 mijn = Construction(
     name="Mijn",
@@ -980,6 +989,7 @@ cards_unique.append(kasteel)
 cards_unique.append(kerker)
 cards_unique.append(kermis)
 cards_unique.append(klooster)
+cards_unique.append(kraan)
 cards_unique.append(mijn)
 cards_unique.append(pakhuis)
 cards_unique.append(paleis)

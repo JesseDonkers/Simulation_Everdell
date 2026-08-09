@@ -383,6 +383,8 @@ class action_play_card(Action):
             return self._method_related_free(selected_method)
         if selected_method.method == "kerker_discount":
             return self._method_kerker_discount(player, game_state, selected_method)
+        if selected_method.method == "kraan_discount":
+            return self._method_kraan_discount(player, game_state, selected_method)
         if selected_method.method == "free_no_pay":
             return self._method_free_no_pay()
 
@@ -438,6 +440,28 @@ class action_play_card(Action):
             player.cards_remove([prisoner], "city")
 
         kerker.card_storage["cards"].append(prisoner)
+        return True
+
+    def _method_kraan_discount(self, player: "Player", game_state, selected_method):
+        if selected_method.source_card is None:
+            raise ValueError("kraan_discount requires a source_card")
+
+        kraan = selected_method.source_card
+
+        # The Kraan is discarded from the city to the discard pile.
+        if kraan.action_on_discard:
+            kraan.action_on_discard.execute(
+                context=ActionContext(
+                    player=player,
+                    game_state=game_state,
+                    host_card=kraan,
+                    options={"add_to_discard": True},
+                )
+            )
+        elif kraan in player.city:
+            player.cards_remove([kraan], "city")
+            game_state["discardpile"].add_to_discardpile([kraan])
+
         return True
 
     def _method_free_no_pay(self):

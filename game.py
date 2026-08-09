@@ -146,7 +146,7 @@ def run_scenario(game_state):
     class ScenarioStrategy(Strategy_random):
         def __init__(self):
             super().__init__()
-            self.preferred_cards = ["Ruines"]
+            self.preferred_cards = ["Kraan"]
             self.preferred_locations = ["Kapel"]
 
         def choose_card_new(self, game_state, possible_cards):
@@ -202,26 +202,13 @@ def run_scenario(game_state):
 
     # Build a deterministic test state for Gerechtsgebouw and Winkelier.
     player.city.clear()
-    player.resources = {"twig": 0, "resin": 0, "pebble": 0, "berry": 0}
+    player.resources = {"twig": 2, "resin": 2, "pebble": 2, "berry": 0}
     player.workers = 2
     player.finished = False
     player.strategy = ScenarioStrategy()
 
-    move_card_to_zone("Universiteit", "city")
-    move_card_to_zone("Kerker", "city")
+    move_card_to_zone("Kraan", "city")
     move_card_to_zone("Boerderij", "city")
-    move_card_to_zone("Zanger", "city")
-    move_card_to_zone("Monnik", "city")
-    move_card_to_zone("Kapel", "city")
-    move_card_to_zone("Man", "city")
-    move_card_to_zone("Vrouw", "city")
-    move_card_to_zone("Marskramer", "city")
-    move_card_to_zone("Boswachter", "city")
-    move_card_to_zone("Pakhuis", "city")
-    move_card_to_zone("Koning", "city")
-    move_card_to_zone("Koningin", "city")
-    move_card_to_zone("Dokter", "city")
-    move_card_to_zone("Leraar", "city")
 
     game_state["meadow"].add_to_meadow(
         50, game_state["deck"], game_state["discardpile"]

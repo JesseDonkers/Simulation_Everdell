@@ -169,14 +169,23 @@ def _dedupe_play_methods(methods):
     return unique_methods
 
 
-def _iter_discounted_requirements(requirements, discount, min_discount_used=0):
+def _iter_discounted_requirements(requirements, discount):
+    """
+    Generate all distinct discounted cost distributions for a card, given a
+    fixed discount amount.
+
+    The discount is always applied at its maximum useful value — capped by
+    the card's total cost (min(discount, total_cost)) — never partially.
+    There is no strategic reason to use less than the full discount, since
+    the discount itself costs the player nothing. The only real choice is
+    *which* resource types absorb the reduction.
+    """
     twig = requirements.get("twig", 0)
     resin = requirements.get("resin", 0)
     pebble = requirements.get("pebble", 0)
     berry = requirements.get("berry", 0)
 
     max_discount = min(discount, twig + resin + pebble + berry)
-    min_discount = min(min_discount_used, max_discount)
     unique_costs = []
     seen = set()
 
@@ -193,11 +202,9 @@ def _iter_discounted_requirements(requirements, discount, min_discount_used=0):
                     total_reduced = (
                         twig_reduce + resin_reduce + pebble_reduce + berry_reduce
                     )
-                    if total_reduced < min_discount:
+                    if total_reduced != max_discount:
                         continue
 
-                    # Partial discount is allowed, so not all discount
-                    # must be used.
                     cost = {
                         "twig": twig - twig_reduce,
                         "resin": resin - resin_reduce,
@@ -216,6 +223,39 @@ def _iter_discounted_requirements(requirements, discount, min_discount_used=0):
                         unique_costs.append(cost)
 
     return unique_costs
+
+
+def _get_kraan_methods(player, card):
+    from class_card import Construction
+
+    if not isinstance(card, Construction):
+        return []
+
+    kraan = next(
+        (city_card for city_card in player.city if city_card.name == "Kraan"),
+        None,
+    )
+    if kraan is None:
+        return []
+
+    methods = []
+    for reduced_cost in _iter_discounted_requirements(card.costs, discount=3):
+        if _has_resources(player.resources, reduced_cost):
+            methods.append(
+                PlayMethod(
+                    method="kraan_discount",
+                    requires_city_discard=False,
+                    city_discard_optional=False,
+                    pay_requirements=reduced_cost,
+                    source_card=kraan,
+                    consumed_cards=(kraan,),
+                    creates_city_space_before_place=True,
+                    play_tags=(EXTERNAL_PLAY_ABILITY,),
+                    play_conflicts=(EXTERNAL_PLAY_ABILITY,),
+                )
+            )
+
+    return methods
 
 
 def _get_kerker_methods(player, card):
@@ -242,9 +282,7 @@ def _get_kerker_methods(player, card):
     methods = []
 
     for prisoner in prisoners:
-        for reduced_cost in _iter_discounted_requirements(
-            card.costs, discount=3, min_discount_used=1
-        ):
+        for reduced_cost in _iter_discounted_requirements(card.costs, discount=3):
             if _has_resources(player.resources, reduced_cost):
                 methods.append(
                     PlayMethod(
@@ -296,6 +334,7 @@ def _get_methods_for_card(
     pay=True,
     discount=0,
     allow_kerker=True,
+    allow_kraan=True,
     allow_related_free=True,
     game_state=None,
 ):
@@ -329,11 +368,9 @@ def _get_methods_for_card(
 
     if pay:
         # Resource-paid (with optional discount; discount=0 → full cost only)
-        min_discount_used = 1 if discount > 0 else 0
         for reduced_cost in _iter_discounted_requirements(
             card.costs,
             discount,
-            min_discount_used=min_discount_used,
         ):
             if _has_resources(player.resources, reduced_cost):
                 methods.append(
@@ -368,6 +405,9 @@ def _get_methods_for_card(
 
         if allow_kerker:
             methods.extend(_get_kerker_methods(player, card))
+
+        if allow_kraan:
+            methods.extend(_get_kraan_methods(player, card))
 
     if needs_own_city_space and not city_fit:
         on_play_frees_space = _card_can_create_space_before_place(
@@ -416,6 +456,7 @@ def get_possible_card_plays(
             pay=pay,
             discount=0,
             allow_kerker=True,
+            allow_kraan=True,
             allow_related_free=True,
             game_state=game_state,
         )
@@ -533,6 +574,7 @@ def get_possible_meadow_card_plays_with_discount(game_state, discount=3):
             pay=True,
             discount=discount,
             allow_kerker=False,
+            allow_kraan=False,
             allow_related_free=False,
             game_state=game_state,
         )
