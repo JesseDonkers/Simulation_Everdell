@@ -2,14 +2,16 @@ import copy
 import random
 from typing import Any
 
-from class_action import *
+from actions.cards import action_play_card
+from actions.locations import action_place_worker
+from actions.season import action_advance_season
 from class_card import init_cards
 from class_deck import Deck
 from class_discard_pile import DiscardPile
 from class_location import init_locations, special_events
 from class_meadow import Meadow
 from class_player import Player
-from class_strategy import *
+from class_strategy import Strategy_random
 from engine.selectors import get_possible_cards, get_possible_moves
 from engine.turn import advance_current_player, finish_current_player
 from functions_statistics import (
@@ -144,7 +146,7 @@ def run_scenario(game_state):
     class ScenarioStrategy(Strategy_random):
         def __init__(self):
             super().__init__()
-            self.preferred_cards = ["Kapel"]
+            self.preferred_cards = ["Ruines"]
             self.preferred_locations = ["Kapel"]
 
         def choose_card_new(self, game_state, possible_cards):
@@ -200,12 +202,26 @@ def run_scenario(game_state):
 
     # Build a deterministic test state for Gerechtsgebouw and Winkelier.
     player.city.clear()
-    player.resources = {"twig": 2, "resin": 1, "pebble": 1, "berry": 0}
+    player.resources = {"twig": 0, "resin": 0, "pebble": 0, "berry": 0}
     player.workers = 2
     player.finished = False
     player.strategy = ScenarioStrategy()
 
-    # move_card_to_zone("Koning", "city")
+    move_card_to_zone("Universiteit", "city")
+    move_card_to_zone("Kerker", "city")
+    move_card_to_zone("Boerderij", "city")
+    move_card_to_zone("Zanger", "city")
+    move_card_to_zone("Monnik", "city")
+    move_card_to_zone("Kapel", "city")
+    move_card_to_zone("Man", "city")
+    move_card_to_zone("Vrouw", "city")
+    move_card_to_zone("Marskramer", "city")
+    move_card_to_zone("Boswachter", "city")
+    move_card_to_zone("Pakhuis", "city")
+    move_card_to_zone("Koning", "city")
+    move_card_to_zone("Koningin", "city")
+    move_card_to_zone("Dokter", "city")
+    move_card_to_zone("Leraar", "city")
 
     game_state["meadow"].add_to_meadow(
         50, game_state["deck"], game_state["discardpile"]
@@ -214,10 +230,6 @@ def run_scenario(game_state):
     game_state_as_df_to_text(game_state, "Game_state")
 
     action_play_card().execute(game_state)
-
-    action_place_worker().execute(game_state)
-
-    finish_current_player(game_state)
 
     game_state_as_df_to_text(game_state, "Game_state")
 

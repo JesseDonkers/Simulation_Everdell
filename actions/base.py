@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Any, TYPE_CHECKING
 
+from shared.context_contracts import PlayCheckContext
+
 if TYPE_CHECKING:
     from class_player import Player
 
@@ -19,6 +21,15 @@ class ActionContext:
 
 
 class Action:
+    # Default timing for effects tied to card play.
+    play_timing = "post_place"
+    # Whether this action can create city space before the played card is placed.
+    creates_city_space_before_place = False
+    # Tags describing what this action contributes to a play plan.
+    play_tags: tuple[str, ...] = ()
+    # Tags that are incompatible with the action.
+    play_conflicts: tuple[str, ...] = ()
+
     def execute(
         self,
         game_state=None,
@@ -41,6 +52,9 @@ class Action:
 
     def execute_action(self, context: ActionContext):
         raise NotImplementedError
+
+    def can_create_city_space_before_place(self, context: PlayCheckContext) -> bool:
+        return self.creates_city_space_before_place
 
 
 class CompositeAction(Action):

@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from shared.context_contracts import SelectorPlayContext
+from shared.play_plan import EXTERNAL_PLAY_ABILITY, build_play_plan
+
 if TYPE_CHECKING:
     from class_card import Card
     from class_location import Location
@@ -25,6 +28,9 @@ class PlayMethod:
     pay_requirements: dict[str, int] | None = None
     source_card: Any = None
     consumed_cards: tuple[Any, ...] = ()
+    creates_city_space_before_place: bool = False
+    play_tags: tuple[str, ...] = ()
+    play_conflicts: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -53,6 +59,16 @@ def _location_requirement_met(player, loc, requirement, game_state):
         required_cards = requirement.get("cards", [])
         city_names = {card.name for card in player.city}
         return all(card_name in city_names for card_name in required_cards)
+
+    from class_card import Critter, Construction
+
+    if kind == "construction_or_critter_in_city":
+        required_type = requirement.get("construction_or_critter")
+        return (
+            any(isinstance(card, Critter) for card in player.city)
+            if required_type == "critter"
+            else any(isinstance(card, Construction) for card in player.city)
+        )
 
     if kind == "has_resource_type":
         resource = requirement.get("resource")
@@ -107,7 +123,6 @@ def _location_requirement_met(player, loc, requirement, game_state):
                     game_state,
                     max_points=max_points,
                     pay=True,
-                    allow_city_discard_then_pay=False,
                 )
             )
             > 0
@@ -239,10 +254,39 @@ def _get_kerker_methods(player, card):
                         pay_requirements=reduced_cost,
                         source_card=kerker,
                         consumed_cards=(prisoner,),
+                        creates_city_space_before_place=True,
+                        play_tags=(EXTERNAL_PLAY_ABILITY,),
+                        play_conflicts=(EXTERNAL_PLAY_ABILITY,),
                     )
                 )
 
     return methods
+
+
+def _card_can_create_space_before_place(player, card, game_state):
+    effect = getattr(card, "action_on_play", None)
+    if effect is None:
+        return False
+
+    child_actions = getattr(effect, "actions", None)
+    actions = child_actions if child_actions is not None else [effect]
+
+    for action in actions:
+        if getattr(action, "play_timing", "post_place") != "pre_place":
+            continue
+        if not getattr(action, "creates_city_space_before_place", False):
+            continue
+
+        if action.can_create_city_space_before_place(
+            SelectorPlayContext(
+                player=player,
+                game_state=game_state,
+                host_card=card,
+            )
+        ):
+            return True
+
+    return False
 
 
 def _get_methods_for_card(
@@ -251,7 +295,6 @@ def _get_methods_for_card(
     *,
     pay=True,
     discount=0,
-    allow_city_discard_then_pay=False,
     allow_kerker=True,
     allow_related_free=True,
     game_state=None,
@@ -267,12 +310,8 @@ def _get_methods_for_card(
     from class_card import Construction, Critter
 
     methods = []
-
-    # Most cards are played into the active player's city and must fit.
-    # Dwaas is special: it can be placed into an opponent's city, so
-    # the active player does not need room for it.
-    if card.name != "Dwaas" and not player.card_fits_in_city(card):
-        return []
+    needs_own_city_space = card.name != "Dwaas"
+    city_fit = True if not needs_own_city_space else player.card_fits_in_city(card)
 
     is_dwaas = card.name == "Dwaas"
     if is_dwaas and game_state is None:
@@ -303,6 +342,8 @@ def _get_methods_for_card(
                         requires_city_discard=False,
                         city_discard_optional=(discount == 0),
                         pay_requirements=reduced_cost,
+                        play_tags=(EXTERNAL_PLAY_ABILITY,) if discount > 0 else (),
+                        play_conflicts=(EXTERNAL_PLAY_ABILITY,) if discount > 0 else (),
                     )
                 )
 
@@ -321,44 +362,40 @@ def _get_methods_for_card(
                             city_discard_optional=False,
                             pay_requirements=None,
                             source_card=constr,
-                        )
-                    )
-
-        # Non-standard method: discard a city card to gain resources
-        # before paying. This is only available when explicitly enabled.
-        if allow_city_discard_then_pay:
-            for city_card in player.city:
-                resources_after_discard = dict(player.resources)
-                for resource, amount in city_card.costs.items():
-                    resources_after_discard[resource] = (
-                        resources_after_discard.get(resource, 0) + amount
-                    )
-
-                if _has_resources(resources_after_discard, card.costs):
-                    methods.append(
-                        PlayMethod(
-                            method="city_discard_then_pay",
-                            requires_city_discard=True,
-                            city_discard_optional=_has_resources(
-                                player.resources,
-                                card.costs,
-                            ),
-                            pay_requirements=dict(card.costs),
-                            consumed_cards=(city_card,),
+                            play_tags=(EXTERNAL_PLAY_ABILITY,),
                         )
                     )
 
         if allow_kerker:
             methods.extend(_get_kerker_methods(player, card))
 
-    return methods
+    if needs_own_city_space and not city_fit:
+        on_play_frees_space = _card_can_create_space_before_place(
+            player, card, game_state
+        )
+        if not on_play_frees_space:
+            methods = [
+                method
+                for method in methods
+                if getattr(method, "creates_city_space_before_place", False)
+            ]
+
+    # Keep only methods compatible with the played card's own on-play effects.
+    compatible_methods = []
+    for method in methods:
+        try:
+            build_play_plan(card, method)
+            compatible_methods.append(method)
+        except ValueError:
+            continue
+
+    return compatible_methods
 
 
 def get_possible_card_plays(
     game_state,
     max_points=99,
     pay=True,
-    allow_city_discard_then_pay=False,
 ):
     player = game_state["current_player"]
     meadow = game_state["meadow"]
@@ -378,7 +415,6 @@ def get_possible_card_plays(
             card,
             pay=pay,
             discount=0,
-            allow_city_discard_then_pay=allow_city_discard_then_pay,
             allow_kerker=True,
             allow_related_free=True,
             game_state=game_state,
@@ -395,13 +431,11 @@ def get_possible_cards(
     game_state,
     max_points=99,
     pay=True,
-    allow_city_discard_then_pay=False,
 ):
     possible_card_plays = get_possible_card_plays(
         game_state,
         max_points,
         pay,
-        allow_city_discard_then_pay=allow_city_discard_then_pay,
     )
     possible_cards = [entry.card for entry in possible_card_plays]
 
@@ -498,7 +532,6 @@ def get_possible_meadow_card_plays_with_discount(game_state, discount=3):
             card,
             pay=True,
             discount=discount,
-            allow_city_discard_then_pay=False,
             allow_kerker=False,
             allow_related_free=False,
             game_state=game_state,

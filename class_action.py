@@ -1,7 +1,7 @@
-"""Compatibility facade for action and helper imports.
+"""Compatibility facade for action imports.
 
-This module re-exports action classes and engine helper functions so existing
-imports like `from class_action import *` keep working.
+This module re-exports action classes so legacy imports like
+`from class_action import *` keep working.
 
 For easier navigation, action implementations are now split by domain:
 - actions/season.py
@@ -10,10 +10,11 @@ For easier navigation, action implementations are now split by domain:
 - actions/cards.py
 - actions/locations.py
 
-And game-flow/query helpers live in:
-- engine/selectors.py
-- engine/turn.py
 """
 
-from actions import *
-from engine import *
+from actions.base import *
+from actions.cards import *
+from actions.locations import *
+from actions.points import *
+from actions.resources import *
+from actions.season import *

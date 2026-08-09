@@ -1,12 +1,7 @@
-"""Engine helpers grouped by domain for easier discovery.
+"""Engine package.
 
-To add a new engine helper: write it in the appropriate domain file below
-and include it in that file's `__all__` list.
-
-Domain files:
-- selectors.py: move/card/location selection and eligibility helpers
-- turn.py     : turn progression and end-of-game helpers
+Keep this module import-light to avoid circular import chains.
+Import concrete symbols from submodules directly.
 """
 
-from engine.selectors import *
-from engine.turn import *
+__all__: list[str] = []

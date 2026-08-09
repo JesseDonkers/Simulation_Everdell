@@ -1,6 +1,18 @@
 from typing import TYPE_CHECKING, Any
 
-import class_action
+from actions.base import CompositeAction
+from actions.cards import action_cards_from_deck_to_hand, action_discard_cards_from_hand
+from actions.locations import action_retake_worker
+from actions.points import (
+    action_points_for_given_resources,
+    action_points_for_resources_event_location,
+    action_points_general,
+)
+from actions.resources import (
+    action_resource_general,
+    action_resources_for_cards,
+    action_resources_to_location,
+)
 
 if TYPE_CHECKING:
     from class_player import Player
@@ -94,27 +106,19 @@ init_locations.append(permanent)
 # BASIC
 # ============================================
 
-twigs = Location(
-    "Three_twigs", "basic", 1, class_action.action_resource_general("twig", 3)
-)
-resins = Location(
-    "Two_resins", "basic", 1, class_action.action_resource_general("resin", 2)
-)
-pebble = Location(
-    "One_pebble", "basic", 1, class_action.action_resource_general("pebble", 1)
-)
-berry = Location(
-    "One_berry", "basic", 99, class_action.action_resource_general("berry", 1)
-)
+twigs = Location("Three_twigs", "basic", 1, action_resource_general("twig", 3))
+resins = Location("Two_resins", "basic", 1, action_resource_general("resin", 2))
+pebble = Location("One_pebble", "basic", 1, action_resource_general("pebble", 1))
+berry = Location("One_berry", "basic", 99, action_resource_general("berry", 1))
 
 twigs_card = Location(
     "Twigs_point",
     "basic",
     99,
-    class_action.CompositeAction(
+    CompositeAction(
         [
-            class_action.action_resource_general("twig", 2),
-            class_action.action_cards_from_deck_to_hand(1),
+            action_resource_general("twig", 2),
+            action_cards_from_deck_to_hand(1),
         ]
     ),
 )
@@ -122,10 +126,10 @@ resin_card = Location(
     "Resins_point",
     "basic",
     99,
-    class_action.CompositeAction(
+    CompositeAction(
         [
-            class_action.action_resource_general("resin", 1),
-            class_action.action_cards_from_deck_to_hand(1),
+            action_resource_general("resin", 1),
+            action_cards_from_deck_to_hand(1),
         ]
     ),
 )
@@ -133,10 +137,10 @@ cards_point = Location(
     "Cards_point",
     "basic",
     99,
-    class_action.CompositeAction(
+    CompositeAction(
         [
-            class_action.action_points_general("token", 1),
-            class_action.action_cards_from_deck_to_hand(2),
+            action_points_general("token", 1),
+            action_cards_from_deck_to_hand(2),
         ]
     ),
 )
@@ -144,10 +148,10 @@ berry_card = Location(
     "Berry_card",
     "basic",
     1,
-    class_action.CompositeAction(
+    CompositeAction(
         [
-            class_action.action_resource_general("berry", 1),
-            class_action.action_cards_from_deck_to_hand(1),
+            action_resource_general("berry", 1),
+            action_cards_from_deck_to_hand(1),
         ]
     ),
 )
@@ -185,7 +189,7 @@ monument = Location(
     "basic_event",
     1,
     None,
-    action_on_finish=class_action.action_points_general("event", 3),
+    action_on_finish=action_points_general("event", 3),
     requirements={"kind": "min_color_cards", "color": "blue", "count": 3},
 )
 tour = Location(
@@ -193,7 +197,7 @@ tour = Location(
     "basic_event",
     1,
     None,
-    action_on_finish=class_action.action_points_general("event", 3),
+    action_on_finish=action_points_general("event", 3),
     requirements={"kind": "min_color_cards", "color": "red", "count": 3},
 )
 festival = Location(
@@ -201,7 +205,7 @@ festival = Location(
     "basic_event",
     1,
     None,
-    action_on_finish=class_action.action_points_general("event", 3),
+    action_on_finish=action_points_general("event", 3),
     requirements={"kind": "min_color_cards", "color": "green", "count": 4},
 )
 expedition = Location(
@@ -209,7 +213,7 @@ expedition = Location(
     "basic_event",
     1,
     None,
-    action_on_finish=class_action.action_points_general("event", 3),
+    action_on_finish=action_points_general("event", 3),
     requirements={"kind": "min_color_cards", "color": "tan", "count": 3},
 )
 
@@ -228,8 +232,8 @@ heza = Location(
     "Heza",
     "special_event",
     1,
-    class_action.action_resources_to_location("Heza", ["berry"], 3),
-    action_on_finish=class_action.action_points_for_resources_event_location(
+    action_resources_to_location("Heza", ["berry"], 3),
+    action_on_finish=action_points_for_resources_event_location(
         ["berry"], 2, location_name="Heza"
     ),
     requirements=[
@@ -242,8 +246,8 @@ sckl = Location(
     "Sckl",
     "special_event",
     1,
-    class_action.action_retake_worker(),
-    action_on_finish=class_action.action_points_general("event", 4),
+    action_retake_worker(),
+    action_on_finish=action_points_general("event", 4),
     requirements={
         "kind": "required_cards_in_city",
         "cards": ["Schoonmaker", "Klokkentoren"],
@@ -262,9 +266,7 @@ wipo = Location(
     "Wipo",
     "special_event",
     1,
-    class_action.action_points_for_given_resources(
-        max_nr_resources=3, points_per_resource=2
-    ),
+    action_points_for_given_resources(max_nr_resources=3, points_per_resource=2),
     requirements=[
         {"kind": "required_cards_in_city", "cards": ["Winkelier", "Postkantoor"]},
         {"kind": "has_any_resource"},
@@ -278,8 +280,8 @@ uimi = Location(
     "Uimi",
     "special_event",
     1,
-    class_action.action_resources_to_location("Uimi", ["twig"], 3),
-    action_on_finish=class_action.action_points_for_resources_event_location(
+    action_resources_to_location("Uimi", ["twig"], 3),
+    action_on_finish=action_points_for_resources_event_location(
         ["twig"], 2, location_name="Uimi"
     ),
     requirements=[
@@ -300,7 +302,7 @@ special_events.extend([heza, sckl, wipo, uimi])
 # HAVEN
 # ============================================
 
-haven = Location("Haven", "haven", 99, class_action.action_resources_for_cards())
+haven = Location("Haven", "haven", 99, action_resources_for_cards())
 init_locations.append(haven)
 
 # ============================================
@@ -311,7 +313,7 @@ journey_2 = Location(
     "Journey_2",
     "journey",
     99,
-    class_action.action_discard_cards_from_hand(2),
+    action_discard_cards_from_hand(2),
     permanent_workers=True,
     points=2,
 )
@@ -319,7 +321,7 @@ journey_3 = Location(
     "Journey_3",
     "journey",
     1,
-    class_action.action_discard_cards_from_hand(3),
+    action_discard_cards_from_hand(3),
     permanent_workers=True,
     points=3,
 )
@@ -327,7 +329,7 @@ journey_4 = Location(
     "Journey_4",
     "journey",
     1,
-    class_action.action_discard_cards_from_hand(4),
+    action_discard_cards_from_hand(4),
     permanent_workers=True,
     points=4,
 )
@@ -335,7 +337,7 @@ journey_5 = Location(
     "Journey_5",
     "journey",
     1,
-    class_action.action_discard_cards_from_hand(5),
+    action_discard_cards_from_hand(5),
     permanent_workers=True,
     points=5,
 )

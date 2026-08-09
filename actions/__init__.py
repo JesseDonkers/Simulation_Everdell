@@ -1,20 +1,9 @@
-"""Action modules grouped by domain for easier discovery.
+"""Action package.
 
-To add a new action: write the class in the appropriate domain file below.
-It will automatically be available everywhere via `from class_action import *`.
-
-Domain files:
-- base.py    : Action base class, CompositeAction
-- season.py  : season progression actions
-- points.py  : point/token/prosperity actions
-- resources.py: resource and discard-to-gain actions
-- cards.py   : card draw/play/refresh actions
-- locations.py: worker placement and destination location actions
+Keep this module import-light to avoid circular import chains.
+Import concrete symbols from submodules, for example:
+- from actions.cards import action_play_card
+- from actions.locations import action_place_worker
 """
 
-from actions.base import *
-from actions.cards import *
-from actions.locations import *
-from actions.points import *
-from actions.resources import *
-from actions.season import *
+__all__: list[str] = []

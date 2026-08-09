@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from actions.base import Action, ActionContext
 from actions.common import resolve_city_card_target
 from engine.selectors import get_critters_constructions_city
+from shared.context_contracts import PlayCheckContext
 
 __all__ = [
     "action_resources_for_cards",
@@ -135,9 +136,20 @@ class action_resources_swap(Action):
 
 
 class action_resources_building_costs_discard(Action):
+    play_timing = "pre_place"
+
     def __init__(self, critter=False, construction=False):
         self.critter = critter
         self.construction = construction
+        self.creates_city_space_before_place = critter or construction
+
+    def can_create_city_space_before_place(self, context: PlayCheckContext) -> bool:
+        if not self.creates_city_space_before_place:
+            return False
+        options = get_critters_constructions_city(
+            context.game_state, [self.critter, self.construction]
+        )
+        return len(options) > 0
 
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player

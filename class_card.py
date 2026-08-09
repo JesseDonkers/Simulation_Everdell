@@ -1,6 +1,51 @@
 import copy
 import uuid
-from class_action import *
+
+from actions.base import CompositeAction
+from actions.cards import (
+    action_cards_from_deck_to_hand,
+    action_cards_keep_and_give,
+    action_discard_stored_cards,
+    action_draw_on_card_type,
+    action_give_discard_refill_hand,
+    action_play_card,
+    action_play_cards_from_deck_or_discardpile,
+    action_play_meadow_card_with_discount,
+    action_play_revealed_deck_card_for_free,
+    action_point_on_location_take_cards,
+    action_reactivate_green_card,
+    action_refresh_meadow_draw_cards,
+    action_remove_card_from_city,
+    action_resource_on_card_type,
+)
+from actions.locations import (
+    action_add_destination_card_as_location,
+    action_add_destination_if_card_present,
+    action_location_copy_action,
+    action_remove_destination,
+    action_replace_worker,
+)
+from actions.points import (
+    action_points_for_cards_in_city,
+    action_points_for_color_in_city,
+    action_points_for_discarding_cards,
+    action_points_for_events,
+    action_points_for_given_resources,
+    action_points_for_payed_resources,
+    action_points_for_resources_hand,
+    action_points_general,
+)
+from actions.resources import (
+    action_resource_general,
+    action_resource_if_other_card,
+    action_resource_if_paired_with_other_card,
+    action_resource_per_other_card,
+    action_resources_building_costs_discard,
+    action_resources_by_choice,
+    action_resources_swap,
+    action_resources_to_card_storage_choice,
+    action_take_all_resources_from_card_storage,
+)
 
 
 class Card:
@@ -789,7 +834,26 @@ postkantoor = Construction(
     ),
 )
 
-# TODO: ruines
+ruines = Construction(
+    name="Ruines",
+    color="tan",
+    costs=dict(twig=0, resin=0, pebble=0, berry=0),
+    cardsindeck=3,
+    unique=False,
+    points=0,
+    relatedcritters=["Marskramer"],
+    action_on_play=CompositeAction(
+        [
+            action_resources_building_costs_discard(False, True),
+            action_cards_from_deck_to_hand(2),
+        ],
+    ),
+    action_on_discard=action_remove_card_from_city("Ruines"),
+    requirements={
+        "kind": "construction_or_critter_in_city",
+        "construction_or_critter": "construction",
+    },
+)
 
 school = Construction(
     name="School",
@@ -920,6 +984,7 @@ cards_unique.append(mijn)
 cards_unique.append(pakhuis)
 cards_unique.append(paleis)
 cards_unique.append(postkantoor)
+cards_unique.append(ruines)
 cards_unique.append(school)
 cards_unique.append(takkenboot)
 cards_unique.append(theater)

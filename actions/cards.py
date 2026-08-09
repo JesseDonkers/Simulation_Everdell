@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 from actions.base import Action, ActionContext
 from actions.common import resolve_city_card_target
+from shared.play_plan import build_play_plan
 
 __all__ = [
     "action_discard_cards_from_hand",
@@ -272,11 +273,9 @@ class action_play_card(Action):
         self,
         max_points=99,
         pay=True,
-        allow_city_discard_then_pay=False,
     ):
         self.max_points = max_points
         self.pay = pay
-        self.allow_city_discard_then_pay = allow_city_discard_then_pay
 
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
@@ -291,7 +290,6 @@ class action_play_card(Action):
             game_state,
             self.max_points,
             self.pay,
-            allow_city_discard_then_pay=self.allow_city_discard_then_pay,
         )
         if candidate_cards is not None:
             allowed = set(candidate_cards)
@@ -312,6 +310,8 @@ class action_play_card(Action):
         selected_method = methods[0]
         if len(methods) > 1:
             selected_method = player.decide(game_state, "card_play_method", methods)
+
+        play_plan = build_play_plan(card, selected_method)
 
         in_hand = card in player.hand
         in_meadow = card in meadow.cards
@@ -344,12 +344,21 @@ class action_play_card(Action):
             for resource, amount in card_costs.items():
                 player.resources_remove(resource, amount)
 
-        # Card is added to the target city and action_on_play is executed
-        target_player.cards_add([card], "city")
-        if card.action_on_play:
-            card.action_on_play.execute(
+        for action in play_plan.pre_place_actions:
+            action.execute(
                 context=ActionContext(
-                    player=target_player,
+                    player=player,
+                    game_state=game_state,
+                    host_card=card,
+                )
+            )
+
+        # Card is added to the target city.
+        target_player.cards_add([card], "city")
+        for action in play_plan.post_place_actions:
+            action.execute(
+                context=ActionContext(
+                    player=player,
                     game_state=game_state,
                     host_card=card,
                 )
@@ -372,10 +381,6 @@ class action_play_card(Action):
             return self._method_pay_resources()
         if selected_method.method == "related_free":
             return self._method_related_free(selected_method)
-        if selected_method.method == "city_discard_then_pay":
-            return self._method_city_discard_then_pay(
-                player, game_state, selected_method
-            )
         if selected_method.method == "kerker_discount":
             return self._method_kerker_discount(player, game_state, selected_method)
         if selected_method.method == "free_no_pay":
@@ -408,25 +413,6 @@ class action_play_card(Action):
             raise ValueError("related_free method requires a source_card")
         construction.relatedoccupied = True
         return False
-
-    def _method_city_discard_then_pay(
-        self, player: "Player", game_state, selected_method
-    ):
-        if len(selected_method.consumed_cards) == 0:
-            raise ValueError("city_discard_then_pay requires one consumed city card")
-        discard_card = selected_method.consumed_cards[0]
-        for resource, amount in discard_card.costs.items():
-            player.resources_add(resource, amount)
-        if discard_card.action_on_discard:
-            discard_card.action_on_discard.execute(
-                context=ActionContext(
-                    player=player,
-                    game_state=game_state,
-                    host_card=discard_card,
-                    options={"add_to_discard": False},
-                )
-            )
-        return True
 
     def _method_kerker_discount(self, player: "Player", game_state, selected_method):
         if selected_method.source_card is None:
@@ -499,6 +485,8 @@ class action_play_meadow_card_with_discount(action_play_card):
         if len(methods) > 1:
             selected_method = player.decide(game_state, "card_play_method", methods)
 
+        play_plan = build_play_plan(card, selected_method)
+
         # Always remove from meadow; Herberg only plays meadow cards
         meadow.draw_cards([card], deck, discardpile)
         existing_city_cards = list(player.city)
@@ -514,9 +502,18 @@ class action_play_meadow_card_with_discount(action_play_card):
             for resource, amount in card_costs.items():
                 player.resources_remove(resource, amount)
 
+        for action in play_plan.pre_place_actions:
+            action.execute(
+                context=ActionContext(
+                    player=player,
+                    game_state=game_state,
+                    host_card=card,
+                )
+            )
+
         player.cards_add([card], "city")
-        if card.action_on_play:
-            card.action_on_play.execute(
+        for action in play_plan.post_place_actions:
+            action.execute(
                 context=ActionContext(
                     player=player,
                     game_state=game_state,
@@ -617,7 +614,6 @@ class action_play_revealed_deck_card_for_free(Action):
             game_state,
             self.max_points,
             False,
-            allow_city_discard_then_pay=False,
         )
         playable_revealed_cards = [
             entry.card for entry in possible_card_plays if entry.card in revealed_cards
