@@ -156,6 +156,10 @@ class action_resources_building_costs_discard(Action):
         game_state = context.game_state
         critter_construction = [self.critter, self.construction]
         options = get_critters_constructions_city(game_state, critter_construction)
+        if len(options) == 0:
+            # Nothing left to discard (e.g. a discount payment already
+            # consumed the only eligible city card); nothing to gain.
+            return
         card = player.decide(game_state, "card_discard", options)
         resources = card.costs
         for resource, amount in resources.items():
@@ -269,6 +273,7 @@ class action_resources_to_card_storage_choice(Action):
             card=context_card,
             card_id=context_card_id,
             card_name=self.card_name,
+            game_state=game_state,
         )
 
         if len(self.resource_amounts) == 0:

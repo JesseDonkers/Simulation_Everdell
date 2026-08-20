@@ -26,9 +26,9 @@ from functions_testing import clear_test_results, game_state_as_df_to_text
 # VARIABLES & PARAMETERS
 # ============================================
 
-MODE = "scenario"  # "scenario" or "simulation"
+MODE = "simulation"  # "scenario" or "simulation"
 
-NR_SIMULATION_RUNS = 100  # Number of times to run the scenario or simulation
+NR_SIMULATION_RUNS = 1000  # Number of times to run the scenario or simulation
 NR_PLAYERS = 2  # Number of players in the game (2-4)
 STRATEGY_PER_PLAYER = [Strategy_random, Strategy_random]
 MAX_TURNS_PER_GAME = 10_000

@@ -12,12 +12,18 @@ def action_is_in_tree(action_root, target_action):
 
 
 def resolve_city_card_target(
-    player, action_obj, card=None, card_id=None, card_name=None
+    player, action_obj, card=None, card_id=None, card_name=None, game_state=None
 ):
     if card is not None:
-        if card not in player.city:
-            raise ValueError("Target card is not in player's city")
-        return card
+        if card in player.city:
+            return card
+        # Cross-player copy effects (e.g. Mijnwerkermol) host a card that
+        # lives in another player's city; accept it if it's still in play.
+        if game_state is not None and any(
+            card in other_player.city for other_player in game_state["players"]
+        ):
+            return card
+        raise ValueError("Target card is not in player's city")
 
     if card_id is not None:
         target_card = next(

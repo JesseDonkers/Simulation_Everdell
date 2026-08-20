@@ -42,12 +42,24 @@ def _resolve_worker_placement(
         game_state["locations"].remove(location)
         player.events.append(location)
 
+    host_card = context.host_card
+    if host_card is None and location.source_card_id is not None:
+        owner = getattr(location, "owner", None) or player
+        host_card = next(
+            (
+                city_card
+                for city_card in owner.city
+                if getattr(city_card, "card_id", None) == location.source_card_id
+            ),
+            None,
+        )
+
     if location.action_on_place_worker:
         location.action_on_place_worker.execute(
             context=ActionContext(
                 player=context.player,
                 game_state=context.game_state,
-                host_card=context.host_card,
+                host_card=host_card,
                 played_card=context.played_card,
                 trigger_location=location,
                 event_location=context.event_location,

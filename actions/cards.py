@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from actions.base import Action, ActionContext
 from actions.common import resolve_city_card_target
@@ -74,6 +74,7 @@ class action_discard_stored_cards(Action):
             card=context.host_card,
             card_id=effective_card_id,
             card_name=self.card_name,
+            game_state=game_state,
         )
         stored_cards = target_card.card_storage["cards"]
         if len(stored_cards) == 0:
@@ -157,8 +158,9 @@ class action_cards_keep_and_give(Action):
             and p.cards_get_open_spaces("hand") >= self.nrCards_give
         ]
 
+        other_player: Optional["Player"] = None
         if self.nrCards_give > 0 and len(eligible_targets) > 0:
-            other_player: "Player" = player.decide(
+            other_player = player.decide(
                 game_state, "player_to_receive_cards_hand", eligible_targets
             )
 
@@ -195,6 +197,7 @@ class action_cards_keep_and_give(Action):
         if len(cards_to_keep) > 0:
             player.cards_add(cards_to_keep, "hand")
         if len(cards_to_give) > 0:
+            assert other_player is not None
             other_player.cards_add(cards_to_give, "hand")
 
 
@@ -574,6 +577,7 @@ class action_remove_card_from_city(Action):
             card=context.host_card,
             card_id=effective_card_id,
             card_name=self.card_name,
+            game_state=game_state,
         )
         player.cards_remove([target_card], "city")
 
@@ -778,6 +782,11 @@ class action_reactivate_green_card(Action):
                         [card for card in other_player.city if card.color == "green"]
                     )
 
+        # Cards without a reactivate action (e.g. Man, handled elsewhere) can't be reactivated here
+        green_cards = [
+            card for card in green_cards if card.action_on_reactivate is not None
+        ]
+
         # Exclude cards whose action_on_reactivate is
         # action_reactivate_green_card only if it would cause recursion
         # (i.e., if there are no other green cards with different actions)
@@ -821,6 +830,7 @@ class action_point_on_location_take_cards(Action):
             card=context.host_card,
             card_id=context_card_id,
             card_name=self.card_name,
+            game_state=game_state,
         )
 
         target_card.card_storage["point_tokens"] += self.nr_points
