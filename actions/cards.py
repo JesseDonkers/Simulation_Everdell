@@ -388,6 +388,8 @@ class action_play_card(Action):
             return self._method_kerker_discount(player, game_state, selected_method)
         if selected_method.method == "kraan_discount":
             return self._method_kraan_discount(player, game_state, selected_method)
+        if selected_method.method == "herbergier_discount":
+            return self._method_herbergier_discount(player, game_state, selected_method)
         if selected_method.method == "free_no_pay":
             return self._method_free_no_pay()
 
@@ -464,6 +466,28 @@ class action_play_card(Action):
         elif kraan in player.city:
             player.cards_remove([kraan], "city")
             game_state["discardpile"].add_to_discardpile([kraan])
+
+        return True
+
+    def _method_herbergier_discount(self, player: "Player", game_state, selected_method):
+        if selected_method.source_card is None:
+            raise ValueError("herbergier_discount requires a source_card")
+
+        herbergier = selected_method.source_card
+
+        # The Innkeeper is discarded from the city to the discard pile.
+        if herbergier.action_on_discard:
+            herbergier.action_on_discard.execute(
+                context=ActionContext(
+                    player=player,
+                    game_state=game_state,
+                    host_card=herbergier,
+                    options={"add_to_discard": True},
+                )
+            )
+        elif herbergier in player.city:
+            player.cards_remove([herbergier], "city")
+            game_state["discardpile"].add_to_discardpile([herbergier])
 
         return True
 

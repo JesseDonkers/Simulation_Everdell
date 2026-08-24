@@ -251,7 +251,16 @@ dwaas = Critter(
     requirements={"kind": "other_player_has_city_space"},
 )
 
-# TODO: herbergier
+herbergier = Critter(
+    name="Herbergier",
+    color="blue",
+    costs=dict(twig=0, resin=0, pebble=0, berry=1),
+    cardsindeck=3,
+    unique=True,
+    points=1,
+    action_on_play=None,  # TODO
+    action_on_discard=action_remove_card_from_city("Herbergier"),
+)
 
 # TODO: herder
 
@@ -494,6 +503,7 @@ cards_unique.append(boswachter)
 cards_unique.append(dokter)
 cards_unique.append(dwaas)
 cards_unique.append(historicus)
+cards_unique.append(herbergier)
 cards_unique.append(houtsnijder)
 cards_unique.append(kikkerkapitein)
 cards_unique.append(koning)

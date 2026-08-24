@@ -258,6 +258,41 @@ def _get_kraan_methods(player, card):
     return methods
 
 
+def _get_herbergier_methods(player, card):
+    from class_card import Critter
+
+    if not isinstance(card, Critter):
+        return []
+
+    herbergier = next(
+        (city_card for city_card in player.city if city_card.name == "Herbergier"),
+        None,
+    )
+    if herbergier is None:
+        return []
+
+    discount = min(3, card.costs.get("berry", 0))
+    reduced_cost = dict(card.costs)
+    reduced_cost["berry"] -= discount
+
+    if not _has_resources(player.resources, reduced_cost):
+        return []
+
+    return [
+        PlayMethod(
+            method="herbergier_discount",
+            requires_city_discard=False,
+            city_discard_optional=False,
+            pay_requirements=reduced_cost,
+            source_card=herbergier,
+            consumed_cards=(herbergier,),
+            creates_city_space_before_place=True,
+            play_tags=(EXTERNAL_PLAY_ABILITY,),
+            play_conflicts=(EXTERNAL_PLAY_ABILITY,),
+        )
+    ]
+
+
 def _get_kerker_methods(player, card):
     from class_card import Construction, Critter
 
@@ -335,6 +370,7 @@ def _get_methods_for_card(
     discount=0,
     allow_kerker=True,
     allow_kraan=True,
+    allow_herbergier=True,
     allow_related_free=True,
     game_state=None,
 ):
@@ -409,6 +445,9 @@ def _get_methods_for_card(
         if allow_kraan:
             methods.extend(_get_kraan_methods(player, card))
 
+        if allow_herbergier:
+            methods.extend(_get_herbergier_methods(player, card))
+
     if needs_own_city_space and not city_fit:
         on_play_frees_space = _card_can_create_space_before_place(
             player, card, game_state
@@ -457,6 +496,7 @@ def get_possible_card_plays(
             discount=0,
             allow_kerker=True,
             allow_kraan=True,
+            allow_herbergier=True,
             allow_related_free=True,
             game_state=game_state,
         )
@@ -575,6 +615,7 @@ def get_possible_meadow_card_plays_with_discount(game_state, discount=3):
             discount=discount,
             allow_kerker=False,
             allow_kraan=False,
+            allow_herbergier=False,
             allow_related_free=False,
             game_state=game_state,
         )

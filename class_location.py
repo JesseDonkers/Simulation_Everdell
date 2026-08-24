@@ -112,7 +112,7 @@ pebble = Location("One_pebble", "basic", 1, action_resource_general("pebble", 1)
 berry = Location("One_berry", "basic", 99, action_resource_general("berry", 1))
 
 twigs_card = Location(
-    "Twigs_point",
+    "Twigs_card",
     "basic",
     99,
     CompositeAction(
@@ -123,7 +123,7 @@ twigs_card = Location(
     ),
 )
 resin_card = Location(
-    "Resins_point",
+    "Resin_card",
     "basic",
     99,
     CompositeAction(

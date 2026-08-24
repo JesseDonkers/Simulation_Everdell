@@ -222,6 +222,7 @@ def run_scenario(game_state):
     game_state_as_df_to_text(game_state, "Game_state")
 
     action_advance_season().execute(game_state)
+    finish_current_player(game_state)
 
     game_state_as_df_to_text(game_state, "Game_state")
 
