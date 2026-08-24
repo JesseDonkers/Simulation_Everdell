@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from actions.base import Action, ActionContext
 
 __all__ = [
+    "action_place_point_tokens_on_card",
     "action_points_for_given_resources",
     "action_points_for_payed_resources",
     "action_points_general",
@@ -14,10 +15,19 @@ __all__ = [
     "action_points_for_events",
 ]
 
+
 if TYPE_CHECKING:
     from class_player import Player
     from class_discard_pile import DiscardPile
     from class_card import Card
+
+
+class action_place_point_tokens_on_card(Action):
+    def __init__(self, nr_points):
+        self.nr_points = nr_points
+
+    def execute_action(self, context: ActionContext):
+        context.host_card.card_storage["point_tokens"] += self.nr_points
 
 
 class action_points_general(Action):

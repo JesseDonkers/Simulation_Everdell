@@ -19,6 +19,7 @@ from actions.cards import (
     action_resource_on_card_type,
 )
 from actions.locations import (
+    action_activate_worker_location_for_point_token,
     action_add_destination_card_as_location,
     action_add_destination_if_card_present,
     action_location_copy_action,
@@ -26,6 +27,7 @@ from actions.locations import (
     action_replace_worker,
 )
 from actions.points import (
+    action_place_point_tokens_on_card,
     action_points_for_cards_in_city,
     action_points_for_color_in_city,
     action_points_for_discarding_cards,
@@ -708,7 +710,18 @@ kermis = Construction(
     action_on_discard=action_remove_card_from_city("Kermis"),
 )
 
-# TODO: klokkentoren
+klokkentoren = Construction(
+    name="Klokkentoren",
+    color="blue",
+    costs=dict(twig=3, resin=0, pebble=1, berry=0),
+    cardsindeck=3,
+    unique=True,
+    points=0,
+    relatedcritters=["Historicus"],
+    action_on_play=action_place_point_tokens_on_card(3),
+    action_on_reactivate=None,  # Action is handled in season.py (every season change)
+    action_on_discard=action_remove_card_from_city("Klokkentoren"),
+)
 
 klooster = Construction(
     name="Klooster",
@@ -988,6 +1001,7 @@ cards_unique.append(kapel)
 cards_unique.append(kasteel)
 cards_unique.append(kerker)
 cards_unique.append(kermis)
+cards_unique.append(klokkentoren)
 cards_unique.append(klooster)
 cards_unique.append(kraan)
 cards_unique.append(mijn)

@@ -4,6 +4,7 @@ from actions.base import Action, ActionContext
 from engine.selectors import get_possible_locations
 
 __all__ = [
+    "action_activate_worker_location_for_point_token",
     "action_add_destination_card_as_location",
     "action_add_destination_if_card_present",
     "action_location_copy_action",
@@ -240,6 +241,45 @@ class action_location_copy_action(Action):
             l for l in locations if l.location_type in self.possible_types
         ]
         loc = player.decide(game_state, "location_place_worker", locations_of_type)
+        loc.action_on_place_worker.execute(
+            context=ActionContext(
+                player=player,
+                game_state=game_state,
+                trigger_location=loc,
+            )
+        )
+
+
+class action_activate_worker_location_for_point_token(Action):
+    """Clock Tower: spend 1 point token from the host card to activate a
+    basic/forest location where the player already has a worker deployed."""
+
+    def __init__(self, possible_types):
+        self.possible_types = possible_types
+
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
+        host_card = context.host_card
+
+        if host_card.card_storage["point_tokens"] <= 0:
+            return
+
+        locations = [
+            l
+            for l in game_state["locations"]
+            if l.location_type in self.possible_types
+            and l.get_player_workers(player) > 0
+        ]
+        if len(locations) == 0:
+            return
+
+        # Spending the point token is optional, so a None choice means skip.
+        loc = player.decide(game_state, "location_activate_with_point_token", locations)
+        if loc is None:
+            return
+
+        host_card.card_storage["point_tokens"] -= 1
         loc.action_on_place_worker.execute(
             context=ActionContext(
                 player=player,

@@ -50,6 +50,10 @@ class Strategy_random(Strategy):
     def choose_location_place_worker(self, game_state, possible_locations):
         return random.choice(possible_locations)
 
+    def choose_location_activate_with_point_token(self, game_state, possible_locations):
+        # Include a None option to model declining to spend the point token.
+        return random.choice(possible_locations + [None])
+
     def choose_location_take_worker(self, game_state, possible_locations):
         return random.choice(possible_locations)
 

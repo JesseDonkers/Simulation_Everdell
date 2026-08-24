@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 from actions.base import Action, ActionContext
 from actions.cards import action_cards_from_meadow_to_hand
+from actions.locations import action_activate_worker_location_for_point_token
 from actions.resources import action_resources_by_choice
 
 __all__ = ["action_advance_season"]
@@ -70,6 +71,21 @@ class action_advance_season(Action):
             self._grant_man_vrouw_production_resources(context)
 
         location: "Location"
+        # Clock Tower: spend a point token to activate a location where a
+        # worker is deployed, before workers are brought back.
+        for card in player.city:
+            if card.name == "Klokkentoren":
+                action_activate_worker_location_for_point_token(
+                    ["basic", "forest"]
+                ).execute(
+                    context=ActionContext(
+                        player=player,
+                        game_state=game_state,
+                        host_card=card,
+                        options=dict(context.options),
+                    )
+                )
+
         for location in game_state["locations"]:
             # Do not return workers placed on permanent locations
             if location.get_player_workers(player) > 0 and not getattr(
