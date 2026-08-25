@@ -35,9 +35,11 @@ from actions.points import (
     action_points_for_given_resources,
     action_points_for_payed_resources,
     action_points_for_resources_hand,
+    action_points_for_tokens_on_card,
     action_points_general,
 )
 from actions.resources import (
+    action_add_resource_to_other_player,
     action_resource_general,
     action_resource_if_other_card,
     action_resource_if_paired_with_other_card,
@@ -258,11 +260,26 @@ herbergier = Critter(
     cardsindeck=3,
     unique=True,
     points=1,
-    action_on_play=None,  # TODO
+    action_on_play=None,
     action_on_discard=action_remove_card_from_city("Herbergier"),
 )
 
-# TODO: herder
+herder = Critter(
+    name="Herder",
+    color="tan",
+    costs=dict(twig=0, resin=0, pebble=0, berry=3),
+    cardsindeck=2,
+    unique=True,
+    points=1,
+    action_on_play=CompositeAction(
+        [
+            action_resource_general("berry", 3),
+            action_add_resource_to_other_player("berry", 3),
+            action_points_for_tokens_on_card("Kapel"),
+        ]
+    ),
+    action_on_discard=action_remove_card_from_city("Herder"),
+)
 
 historicus = Critter(
     name="Historicus",
@@ -502,6 +519,7 @@ cards_unique.append(begrafenisondernemer)
 cards_unique.append(boswachter)
 cards_unique.append(dokter)
 cards_unique.append(dwaas)
+cards_unique.append(herder)
 cards_unique.append(historicus)
 cards_unique.append(herbergier)
 cards_unique.append(houtsnijder)

@@ -7,6 +7,7 @@ from shared.context_contracts import PlayCheckContext
 
 __all__ = [
     "action_resources_for_cards",
+    "action_add_resource_to_other_player",
     "action_resource_general",
     "action_resource_if_other_card",
     "action_resource_if_paired_with_other_card",
@@ -33,6 +34,28 @@ class action_resource_general(Action):
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
         player.resources[self.resource_type] += self.amount
+
+
+class action_add_resource_to_other_player(Action):
+    """Add a fixed amount of a resource to another chosen player (Herder)."""
+
+    def __init__(self, resource_type, amount):
+        self.resource_type = resource_type
+        self.amount = amount
+
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
+        eligible_receivers = [
+            p for p in game_state["players"] if p != player and not p.finished
+        ]
+        if len(eligible_receivers) == 0:
+            return
+
+        other_player = player.decide(
+            game_state, "player_to_receive_resources", eligible_receivers
+        )
+        other_player.resources_add(self.resource_type, self.amount)
 
 
 class action_resource_per_other_card(Action):

@@ -146,7 +146,7 @@ def run_scenario(game_state):
     class ScenarioStrategy(Strategy_random):
         def __init__(self):
             super().__init__()
-            self.preferred_cards = ["Klokkentoren"]
+            self.preferred_cards = ["Kapel", "Herder"]
             self.preferred_locations = ["Kapel"]
 
         def choose_card_new(self, game_state, possible_cards):
@@ -202,7 +202,7 @@ def run_scenario(game_state):
 
     # Build a deterministic test state for Gerechtsgebouw and Winkelier.
     player.city.clear()
-    player.resources = {"twig": 3, "resin": 0, "pebble": 1, "berry": 0}
+    player.resources = {"twig": 2, "resin": 1, "pebble": 1, "berry": 0}
     player.workers = 2
     player.finished = False
     player.strategy = ScenarioStrategy()
@@ -214,15 +214,11 @@ def run_scenario(game_state):
         50, game_state["deck"], game_state["discardpile"]
     )
 
-    action_place_worker().execute(game_state)
-    action_place_worker().execute(game_state)
-
-    action_play_card().execute(game_state)
-
     game_state_as_df_to_text(game_state, "Game_state")
 
-    action_advance_season().execute(game_state)
-    finish_current_player(game_state)
+    action_play_card().execute(game_state)
+    action_place_worker().execute(game_state)
+    action_play_card().execute(game_state)
 
     game_state_as_df_to_text(game_state, "Game_state")
 

@@ -6,6 +6,7 @@ __all__ = [
     "action_place_point_tokens_on_card",
     "action_points_for_given_resources",
     "action_points_for_payed_resources",
+    "action_points_for_tokens_on_card",
     "action_points_general",
     "action_points_for_cards_in_city",
     "action_points_for_color_in_city",
@@ -28,6 +29,30 @@ class action_place_point_tokens_on_card(Action):
 
     def execute_action(self, context: ActionContext):
         context.host_card.card_storage["point_tokens"] += self.nr_points
+
+
+class action_points_for_tokens_on_card(Action):
+    """Gain 1 token point for each point token on a named card in own city (Herder/Kapel)."""
+
+    def __init__(self, card_name):
+        self.card_name = card_name
+
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        target_card = next(
+            (
+                city_card
+                for city_card in player.city
+                if city_card.name == self.card_name
+            ),
+            None,
+        )
+        if target_card is None:
+            return
+
+        nr_tokens = target_card.card_storage.get("point_tokens", 0)
+        if nr_tokens > 0:
+            player.points_add("token", nr_tokens)
 
 
 class action_points_general(Action):
