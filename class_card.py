@@ -453,7 +453,15 @@ postduif = Critter(
     requirements={"kind": "has_city_space"},
 )
 
-# TODO: rechter
+rechter = Critter(
+    name="Rechter",
+    color="blue",
+    costs=dict(twig=0, resin=0, pebble=0, berry=3),
+    cardsindeck=2,
+    unique=True,
+    points=2,
+    action_on_discard=action_remove_card_from_city("Rechter"),
+)
 
 schoonmaker = Critter(
     name="Schoonmaker",
@@ -532,6 +540,7 @@ cards_unique.append(marskramer)
 cards_unique.append(mijnwerkermol)
 cards_unique.append(monnik)
 cards_unique.append(postduif)
+cards_unique.append(rechter)
 cards_unique.append(schoonmaker)
 cards_unique.append(vrouw)
 cards_unique.append(winkelier)

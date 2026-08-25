@@ -337,6 +337,7 @@ class action_play_card(Action):
             player,
             game_state,
             selected_method,
+            card,
         )
 
         # Pay the cost defined by the chosen play method.
@@ -379,7 +380,7 @@ class action_play_card(Action):
                         )
                     )
 
-    def _execute_selected_method(self, player: "Player", game_state, selected_method):
+    def _execute_selected_method(self, player: "Player", game_state, selected_method, card=None):
         if selected_method.method == "pay_resources":
             return self._method_pay_resources()
         if selected_method.method == "related_free":
@@ -390,6 +391,8 @@ class action_play_card(Action):
             return self._method_kraan_discount(player, game_state, selected_method)
         if selected_method.method == "herbergier_discount":
             return self._method_herbergier_discount(player, game_state, selected_method)
+        if selected_method.method == "rechter_substitution":
+            return self._method_rechter_substitution(player, game_state, card)
         if selected_method.method == "free_no_pay":
             return self._method_free_no_pay()
 
@@ -490,6 +493,33 @@ class action_play_card(Action):
             game_state["discardpile"].add_to_discardpile([herbergier])
 
         return True
+
+    def _method_rechter_substitution(self, player: "Player", game_state, card):
+        from engine.selectors import get_valid_rechter_swaps
+
+        if card is None:
+            raise ValueError("rechter_substitution requires the card being played")
+
+        valid_swaps = get_valid_rechter_swaps(player, card)
+        if len(valid_swaps) == 0:
+            raise ValueError("No valid Rechter substitution available")
+
+        remove_options = sorted({remove for remove, _ in valid_swaps})
+        remove_type = player.decide(game_state, "resource_discard", remove_options)
+
+        add_options = sorted(
+            add for remove, add in valid_swaps if remove == remove_type
+        )
+        add_type = player.decide(game_state, "resource_new", add_options)
+
+        cost = dict(card.costs)
+        cost[remove_type] -= 1
+        cost[add_type] = cost.get(add_type, 0) + 1
+        for resource, amount in cost.items():
+            player.resources_remove(resource, amount)
+
+        # Payment is already handled above.
+        return False
 
     def _method_free_no_pay(self):
         return False

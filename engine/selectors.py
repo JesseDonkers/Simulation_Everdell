@@ -17,6 +17,7 @@ __all__ = [
     "get_possible_locations",
     "get_possible_meadow_card_plays_with_discount",
     "get_possible_moves",
+    "get_valid_rechter_swaps",
 ]
 
 
@@ -225,6 +226,58 @@ def _iter_discounted_requirements(requirements, discount):
     return unique_costs
 
 
+def get_valid_rechter_swaps(player, card):
+    """
+    All (remove_type, add_type) pairs where swapping 1 unit of remove_type
+    for 1 unit of add_type in the card's cost still leaves it payable.
+    """
+    resource_types = ("twig", "resin", "pebble", "berry")
+    valid_swaps = []
+
+    for remove_type in resource_types:
+        if card.costs.get(remove_type, 0) <= 0:
+            continue
+
+        for add_type in resource_types:
+            if add_type == remove_type:
+                continue
+
+            reduced_cost = dict(card.costs)
+            reduced_cost[remove_type] -= 1
+            reduced_cost[add_type] = reduced_cost.get(add_type, 0) + 1
+
+            if _has_resources(player.resources, reduced_cost):
+                valid_swaps.append((remove_type, add_type))
+
+    return valid_swaps
+
+
+def _get_rechter_methods(player, card):
+    rechter = next(
+        (city_card for city_card in player.city if city_card.name == "Rechter"),
+        None,
+    )
+    if rechter is None:
+        return []
+
+    # A single method regardless of how many swaps are possible, so it isn't
+    # over-represented versus other methods when a strategy picks randomly.
+    if len(get_valid_rechter_swaps(player, card)) == 0:
+        return []
+
+    return [
+        PlayMethod(
+            method="rechter_substitution",
+            requires_city_discard=False,
+            city_discard_optional=False,
+            pay_requirements=None,
+            source_card=rechter,
+            play_tags=(EXTERNAL_PLAY_ABILITY,),
+            play_conflicts=(EXTERNAL_PLAY_ABILITY,),
+        )
+    ]
+
+
 def _get_kraan_methods(player, card):
     from class_card import Construction
 
@@ -371,6 +424,7 @@ def _get_methods_for_card(
     allow_kerker=True,
     allow_kraan=True,
     allow_herbergier=True,
+    allow_rechter=True,
     allow_related_free=True,
     game_state=None,
 ):
@@ -448,6 +502,9 @@ def _get_methods_for_card(
         if allow_herbergier:
             methods.extend(_get_herbergier_methods(player, card))
 
+        if allow_rechter:
+            methods.extend(_get_rechter_methods(player, card))
+
     if needs_own_city_space and not city_fit:
         on_play_frees_space = _card_can_create_space_before_place(
             player, card, game_state
@@ -497,6 +554,7 @@ def get_possible_card_plays(
             allow_kerker=True,
             allow_kraan=True,
             allow_herbergier=True,
+            allow_rechter=True,
             allow_related_free=True,
             game_state=game_state,
         )
@@ -616,6 +674,7 @@ def get_possible_meadow_card_plays_with_discount(game_state, discount=3):
             allow_kerker=False,
             allow_kraan=False,
             allow_herbergier=False,
+            allow_rechter=False,
             allow_related_free=False,
             game_state=game_state,
         )
