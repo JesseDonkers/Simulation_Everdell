@@ -248,10 +248,13 @@ sckl = Location(
     1,
     action_retake_worker(),
     action_on_finish=action_points_general("event", 4),
-    requirements={
-        "kind": "required_cards_in_city",
-        "cards": ["Schoonmaker", "Klokkentoren"],
-    },
+    requirements=[
+        {
+            "kind": "required_cards_in_city",
+            "cards": ["Schoonmaker", "Klokkentoren"],
+        },
+        {"kind": "has_placed_worker"},
+    ],
 )
 
 reko = None  # TODO

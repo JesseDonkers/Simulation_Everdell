@@ -284,6 +284,7 @@ class action_play_card(Action):
         player: "Player" = context.player
         game_state = context.game_state
         candidate_cards = context.options.get("candidate_cards")
+        temporary_cards = context.options.get("temporary_cards", [])
         from engine.selectors import get_possible_card_plays
 
         meadow: "Meadow" = game_state["meadow"]
@@ -293,6 +294,7 @@ class action_play_card(Action):
             game_state,
             self.max_points,
             self.pay,
+            extra_cards=temporary_cards,
         )
         if candidate_cards is not None:
             allowed = set(candidate_cards)
@@ -318,6 +320,7 @@ class action_play_card(Action):
 
         in_hand = card in player.hand
         in_meadow = card in meadow.cards
+        in_temporary = card in temporary_cards
 
         loc = (
             player.decide(game_state, "card_hand_or_meadow", None)
@@ -327,8 +330,12 @@ class action_play_card(Action):
 
         if loc == "hand":
             player.cards_remove([card], "hand")
-        else:
+        elif in_meadow:
             meadow.draw_cards([card], deck, discardpile)
+        elif in_temporary:
+            temporary_cards.remove(card)
+        else:
+            raise ValueError("Selected card is not in a playable card zone")
 
         target_player = self._get_target_player(player, game_state, card)
         existing_city_cards = list(player.city)
@@ -380,7 +387,9 @@ class action_play_card(Action):
                         )
                     )
 
-    def _execute_selected_method(self, player: "Player", game_state, selected_method, card=None):
+    def _execute_selected_method(
+        self, player: "Player", game_state, selected_method, card=None
+    ):
         if selected_method.method == "pay_resources":
             return self._method_pay_resources()
         if selected_method.method == "related_free":
@@ -472,7 +481,9 @@ class action_play_card(Action):
 
         return True
 
-    def _method_herbergier_discount(self, player: "Player", game_state, selected_method):
+    def _method_herbergier_discount(
+        self, player: "Player", game_state, selected_method
+    ):
         if selected_method.source_card is None:
             raise ValueError("herbergier_discount requires a source_card")
 
@@ -688,17 +699,17 @@ class action_play_revealed_deck_card_for_free(Action):
 
         revealed_cards = deck.draw_cards(self.nr_see, discardpile)
 
-        # Temporarily add revealed cards to hand so normal play checks can be reused.
-        player.cards_add(revealed_cards, "hand")
+        temporary_cards = list(revealed_cards)
         helper = action_play_card(self.max_points, False)
 
         possible_card_plays = get_possible_card_plays(
             game_state,
             self.max_points,
             False,
+            extra_cards=temporary_cards,
         )
         playable_revealed_cards = [
-            entry.card for entry in possible_card_plays if entry.card in revealed_cards
+            entry.card for entry in possible_card_plays if entry.card in temporary_cards
         ]
 
         if len(playable_revealed_cards) > 0:
@@ -706,14 +717,16 @@ class action_play_revealed_deck_card_for_free(Action):
                 context=ActionContext(
                     player=player,
                     game_state=game_state,
-                    options={"candidate_cards": playable_revealed_cards},
+                    options={
+                        "candidate_cards": playable_revealed_cards,
+                        "temporary_cards": temporary_cards,
+                    },
                 )
             )
 
-        # Discard all remaining revealed cards that were not played.
-        leftovers = [card for card in revealed_cards if card in player.hand]
+        # Discard all revealed cards that were not played.
+        leftovers = list(temporary_cards)
         if len(leftovers) > 0:
-            player.cards_remove(leftovers, "hand")
             discardpile.add_to_discardpile(leftovers)
 
 

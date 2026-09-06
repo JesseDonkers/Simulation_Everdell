@@ -532,10 +532,11 @@ def get_possible_card_plays(
     game_state,
     max_points=99,
     pay=True,
+    extra_cards=None,
 ):
     player = game_state["current_player"]
     meadow = game_state["meadow"]
-    all_cards = player.hand + meadow.cards
+    all_cards = player.hand + meadow.cards + (extra_cards or [])
     possible_card_plays: list[PlayCardOption] = []
 
     for card in all_cards:
