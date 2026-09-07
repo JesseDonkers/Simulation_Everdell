@@ -113,7 +113,12 @@ def _location_requirement_met(player, loc, requirement, game_state):
     if kind == "has_playable_meadow_card":
         discount = requirement.get("discount", 3)
         return (
-            len(get_possible_meadow_card_plays_with_discount(game_state, discount)) > 0
+            len(
+                get_possible_meadow_card_plays_with_discount(
+                    game_state, player, discount
+                )
+            )
+            > 0
         )
 
     if kind == "has_playable_card_with_max_points":
@@ -122,6 +127,7 @@ def _location_requirement_met(player, loc, requirement, game_state):
             len(
                 get_possible_card_plays(
                     game_state,
+                    player,
                     max_points=max_points,
                     pay=True,
                 )
@@ -530,11 +536,11 @@ def _get_methods_for_card(
 
 def get_possible_card_plays(
     game_state,
+    player,
     max_points=99,
     pay=True,
     extra_cards=None,
 ):
-    player = game_state["current_player"]
     meadow = game_state["meadow"]
     all_cards = player.hand + meadow.cards + (extra_cards or [])
     possible_card_plays: list[PlayCardOption] = []
@@ -569,11 +575,13 @@ def get_possible_card_plays(
 
 def get_possible_cards(
     game_state,
+    player,
     max_points=99,
     pay=True,
 ):
     possible_card_plays = get_possible_card_plays(
         game_state,
+        player,
         max_points,
         pay,
     )
@@ -584,8 +592,7 @@ def get_possible_cards(
     return possible_cards
 
 
-def get_possible_locations(game_state):
-    player = game_state["current_player"]
+def get_possible_locations(game_state, player):
     locations = game_state["locations"]
     loc: "Location"
     possible_locations = []
@@ -596,6 +603,14 @@ def get_possible_locations(game_state):
 
         # Basic locations
         if loc.location_type == "basic" and loc.get_open_spaces() > 0:
+            possible_locations.append(loc)
+
+        # Forest locations (allow at most one worker from each player)
+        if (
+            loc.location_type == "forest"
+            and loc.get_open_spaces() > 0
+            and loc.get_player_workers(player) == 0
+        ):
             possible_locations.append(loc)
 
         # Destination cards
@@ -627,27 +642,27 @@ def get_possible_locations(game_state):
         ):
             possible_locations.append(loc)
 
-    # TODO: forest locations
-
     return possible_locations
 
 
-def get_possible_moves(game_state):
+def get_possible_moves(game_state, player):
     possible_moves = []
-    possible_cards = get_possible_cards(game_state, 99, True)
-    possible_locations = get_possible_locations(game_state)
-    workers = game_state["current_player"].workers
+    possible_cards = get_possible_cards(game_state, player, 99, True)
+    possible_locations = get_possible_locations(game_state, player)
+    workers = player.workers
 
     if len(possible_cards) > 0:
         possible_moves.append("play_card")
     if len(possible_locations) > 0 and workers > 0:
         possible_moves.append("place_worker")
-    if game_state["current_player"].season != "autumn" and workers == 0:
+    if player.season != "autumn" and workers == 0:
         possible_moves.append("advance_season")
     return possible_moves
 
 
-def get_possible_meadow_card_plays_with_discount(game_state, discount=3):
+def get_possible_meadow_card_plays_with_discount(
+    game_state, player, discount=3, candidate_cards=None
+):
     """
     Returns PlayCardOption list for meadow-only cards with a resource discount.
 
@@ -657,11 +672,13 @@ def get_possible_meadow_card_plays_with_discount(game_state, discount=3):
     Any future method added to _get_methods_for_card with allow_* flags will
     be picked up here too once the appropriate flag is added.
     """
-    player = game_state["current_player"]
     meadow = game_state["meadow"]
 
     result = []
-    for card in meadow.cards:
+    cards_to_check = meadow.cards if candidate_cards is None else candidate_cards
+    for card in cards_to_check:
+        if card not in meadow.cards:
+            continue
         if card.unique and any(c.name == card.name for c in player.city):
             continue
         if not _requirements_met(player, card, game_state):

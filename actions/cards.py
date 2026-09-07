@@ -6,6 +6,7 @@ from shared.play_plan import build_play_plan
 
 __all__ = [
     "action_discard_cards_from_hand",
+    "action_discard_cards_for_deck_cards",
     "action_discard_stored_cards",
     "action_cards_from_deck_to_hand",
     "action_cards_from_meadow_to_hand",
@@ -15,6 +16,7 @@ __all__ = [
     "action_give_discard_refill_hand",
     "action_play_card",
     "action_play_meadow_card_with_discount",
+    "action_play_two_meadow_cards_with_discount",
     "action_remove_card_from_city",
     "action_play_revealed_deck_card_for_free",
     "action_play_cards_from_deck_or_discardpile",
@@ -28,6 +30,7 @@ if TYPE_CHECKING:
     from class_discard_pile import DiscardPile
     from class_meadow import Meadow
     from class_player import Player
+    from class_card import Card
 
 
 class action_discard_cards_from_hand(Action):
@@ -51,6 +54,35 @@ class action_discard_cards_from_hand(Action):
 
         player.cards_remove(cards_to_discard, "hand")
         discardpile.add_to_discardpile(cards_to_discard)
+
+
+class action_discard_cards_for_deck_cards(Action):
+    """Discard cards from hand and draw two cards per discarded card."""
+
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
+        discardpile: "DiscardPile" = game_state["discardpile"]
+
+        hand_space = max(0, player.cards_get_open_spaces("hand"))
+        max_discard = min(len(player.hand), hand_space)
+        nr_discard = player.decide(game_state, "nr_cards_discard_hand", max_discard)
+        nr_discard = max(0, min(nr_discard, max_discard))
+        if nr_discard == 0:
+            return
+
+        selectable = player.hand.copy()
+        cards_to_discard = []
+        for _ in range(nr_discard):
+            card = player.decide(game_state, "card_discard", selectable)
+            cards_to_discard.append(card)
+            selectable.remove(card)
+
+        player.cards_remove(cards_to_discard, "hand")
+        discardpile.add_to_discardpile(cards_to_discard)
+
+        nr_cards_to_draw = min(nr_discard * 2, hand_space)
+        action_cards_from_deck_to_hand(nr_cards_to_draw).execute(context=context)
 
 
 class action_discard_stored_cards(Action):
@@ -292,6 +324,7 @@ class action_play_card(Action):
         discardpile = game_state["discardpile"]
         possible_card_plays = get_possible_card_plays(
             game_state,
+            player,
             self.max_points,
             self.pay,
             extra_cards=temporary_cards,
@@ -560,7 +593,10 @@ class action_play_meadow_card_with_discount(action_play_card):
         discardpile = game_state["discardpile"]
 
         possible_card_plays = get_possible_meadow_card_plays_with_discount(
-            game_state, self.discount
+            game_state,
+            player,
+            self.discount,
+            candidate_cards=context.options.get("candidate_cards"),
         )
         possible_cards = [entry.card for entry in possible_card_plays]
 
@@ -623,6 +659,62 @@ class action_play_meadow_card_with_discount(action_play_card):
                         played_card=card,
                     )
                 )
+
+
+class action_play_two_meadow_cards_with_discount(action_play_meadow_card_with_discount):
+    """Play one of two chosen meadow cards with a one-resource discount."""
+
+    def __init__(self):
+        super().__init__(discount=1)
+
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
+        meadow: "Meadow" = game_state["meadow"]
+        deck = game_state["deck"]
+        discardpile = game_state["discardpile"]
+        from engine.selectors import get_possible_meadow_card_plays_with_discount
+
+        if len(meadow.cards) < 2:
+            raise ValueError("Not enough meadow cards to choose two cards")
+
+        playable_cards = [
+            entry.card
+            for entry in get_possible_meadow_card_plays_with_discount(
+                game_state, player, discount=1
+            )
+        ]
+        if len(playable_cards) == 0:
+            raise ValueError(
+                "No meadow cards can be played with a one-resource discount"
+            )
+
+        selectable_cards = meadow.cards.copy()
+        selected_cards: list["Card"] = []
+        for _ in range(2):
+            if selected_cards and selected_cards[0] not in playable_cards:
+                selectable_cards = [
+                    card for card in selectable_cards if card in playable_cards
+                ]
+            card = player.decide(game_state, "card_new", selectable_cards)
+            selected_cards.append(card)
+            selectable_cards.remove(card)
+
+        super().execute_action(
+            context=ActionContext(
+                player=player,
+                game_state=game_state,
+                options={"candidate_cards": selected_cards},
+            )
+        )
+
+        remaining_card = next(
+            (card for card in selected_cards if card in meadow.cards),
+            None,
+        )
+        if remaining_card is not None:
+            meadow.draw_cards([remaining_card], deck, discardpile)
+            discardpile.add_to_discardpile([remaining_card])
 
 
 class action_remove_card_from_city(Action):
@@ -704,6 +796,7 @@ class action_play_revealed_deck_card_for_free(Action):
 
         possible_card_plays = get_possible_card_plays(
             game_state,
+            player,
             self.max_points,
             False,
             extra_cards=temporary_cards,

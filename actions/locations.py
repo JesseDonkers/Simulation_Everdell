@@ -26,6 +26,10 @@ def _resolve_worker_placement(
 ):
     player: "Player" = context.player
     game_state = context.game_state
+
+    if location.location_type == "forest" and location.get_player_workers(player) > 0:
+        raise ValueError("Player may only place one worker on a forest location")
+
     location.add_worker(player)
 
     if remove_from_supply:
@@ -74,7 +78,7 @@ class action_place_worker(Action):
         game_state = context.game_state
         player: "Player" = context.player
         preferred_location: "Location"
-        possib_loc = get_possible_locations(game_state)
+        possib_loc = get_possible_locations(game_state, player)
 
         if len(possib_loc) == 0:
             raise ValueError("No possible locations to place worker")
@@ -261,6 +265,7 @@ class action_activate_worker_location_for_point_token(Action):
         player: "Player" = context.player
         game_state = context.game_state
         host_card = context.host_card
+        from engine.selectors import _requirements_met
 
         if host_card.card_storage["point_tokens"] <= 0:
             return
@@ -270,6 +275,7 @@ class action_activate_worker_location_for_point_token(Action):
             for l in game_state["locations"]
             if l.location_type in self.possible_types
             and l.get_player_workers(player) > 0
+            and _requirements_met(player, l, game_state)
         ]
         if len(locations) == 0:
             return
@@ -312,7 +318,7 @@ class action_replace_worker(Action):
         loc_from.remove_worker(player)
 
         possible_target_locations = [
-            loc for loc in get_possible_locations(game_state) if loc != loc_from
+            loc for loc in get_possible_locations(game_state, player) if loc != loc_from
         ]
 
         if len(possible_target_locations) == 0:

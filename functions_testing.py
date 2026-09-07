@@ -62,7 +62,7 @@ def game_state_as_df_to_text(game_state, output_file=None):
 
     from engine.selectors import get_possible_moves
 
-    turn_options = get_possible_moves(game_state)
+    turn_options = get_possible_moves(game_state, current_player)
     turn_options_text = (
         "TURN OPTIONS: " + ", ".join(turn_options)
         if turn_options
@@ -120,20 +120,12 @@ def game_state_as_df_to_text(game_state, output_file=None):
     )
     right_rows.extend(
         _locations_to_rows(
-            [
-                loc
-                for loc in locations
-                if loc.location_type == "basic_event"
-            ]
+            [loc for loc in locations if loc.location_type == "basic_event"]
         )
     )
     right_rows.extend(
         _locations_to_rows(
-            [
-                loc
-                for loc in locations
-                if loc.location_type == "special_event"
-            ]
+            [loc for loc in locations if loc.location_type == "special_event"]
         )
     )
     right_rows.extend(

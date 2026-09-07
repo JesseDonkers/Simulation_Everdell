@@ -199,19 +199,24 @@ class action_resources_building_costs_discard(Action):
 
 
 class action_resources_for_cards(Action):
-    """Discard any number of cards from hand;
-    gain 1 resource of choice per 2 discarded cards."""
+    """Discard hand cards for chosen resource per configured card count."""
+
+    def __init__(self, max_discard=None, cards_per_resource=2):
+        self.max_discard = max_discard
+        self.cards_per_resource = cards_per_resource
 
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
         game_state = context.game_state
         discardpile: "DiscardPile" = game_state["discardpile"]
 
-        # Player decides how many cards to discard (0 to len(hand))
-        nr_discard = player.decide(
-            game_state, "nr_cards_discard_hand", len(player.hand)
-        )
-        nr_discard = (nr_discard // 2) * 2  # Round down to nearest even number
+        max_discard = len(player.hand)
+        if self.max_discard is not None:
+            max_discard = min(self.max_discard, max_discard)
+
+        nr_discard = player.decide(game_state, "nr_cards_discard_hand", max_discard)
+        nr_discard = max(0, min(nr_discard, max_discard))
+        nr_discard = (nr_discard // self.cards_per_resource) * self.cards_per_resource
 
         # Player picks each card to discard
         selectable = player.hand.copy()
@@ -224,9 +229,8 @@ class action_resources_for_cards(Action):
         player.cards_remove(cards_to_discard, "hand")
         discardpile.add_to_discardpile(cards_to_discard)
 
-        # Gain 1 resource of choice per 2 cards discarded
         resources = ["twig", "resin", "pebble", "berry"]
-        for _ in range(nr_discard // 2):
+        for _ in range(nr_discard // self.cards_per_resource):
             choice = player.decide(game_state, "resource_new", resources)
             player.resources_add(choice, 1)
 

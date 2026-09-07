@@ -1,15 +1,22 @@
 from typing import TYPE_CHECKING, Any
 
 from actions.base import CompositeAction
-from actions.cards import action_cards_from_deck_to_hand, action_discard_cards_from_hand
+from actions.cards import (
+    action_cards_from_deck_to_hand,
+    action_discard_cards_from_hand,
+    action_discard_cards_for_deck_cards,
+    action_play_two_meadow_cards_with_discount,
+)
 from actions.locations import action_retake_worker
 from actions.points import (
     action_points_for_given_resources,
     action_points_for_resources_event_location,
     action_points_general,
 )
+from actions.locations import action_location_copy_action
 from actions.resources import (
     action_resource_general,
+    action_resources_by_choice,
     action_resources_for_cards,
     action_resources_to_location,
 )
@@ -112,7 +119,7 @@ pebble = Location("One_pebble", "basic", 1, action_resource_general("pebble", 1)
 berry = Location("One_berry", "basic", 99, action_resource_general("berry", 1))
 
 twigs_card = Location(
-    "Twigs_card",
+    "Twigs_Card",
     "basic",
     99,
     CompositeAction(
@@ -123,7 +130,7 @@ twigs_card = Location(
     ),
 )
 resin_card = Location(
-    "Resin_card",
+    "Resin_Card",
     "basic",
     99,
     CompositeAction(
@@ -134,7 +141,7 @@ resin_card = Location(
     ),
 )
 cards_point = Location(
-    "Cards_point",
+    "Cards_Point",
     "basic",
     99,
     CompositeAction(
@@ -145,7 +152,7 @@ cards_point = Location(
     ),
 )
 berry_card = Location(
-    "Berry_card",
+    "Berry_Card",
     "basic",
     1,
     CompositeAction(
@@ -164,21 +171,123 @@ init_locations.extend([twigs_card, resin_card, cards_point, berry_card])
 # FOREST
 # ============================================
 
-# Add constraint for number of workers per player = max 1
+forest_locations: list[Location] = []
 
-cards_for_resources = None  # TODO
-card_for_cards = None  # TODO
-card_from_meadow = None  # TODO
-copy_basic_location = None  # TODO
-berries_card = None  # TODO
-twig_resin_berry = None  # TODO
-resins_twig = None  # TODO
-cards_resource = None  # TODO
-two_resources = None  # TODO
-cards_pebble = None  # TODO
-berries = None  # TODO
+cards_for_resources = Location(
+    "Cards_For_Resources",
+    "forest",
+    1,
+    action_resources_for_cards(max_discard=3, cards_per_resource=1),
+    requirements={"kind": "has_hand_cards", "amount": 1},
+)
+card_for_cards = Location(
+    "Cards_For_Cards",
+    "forest",
+    1,
+    action_discard_cards_for_deck_cards(),
+    requirements={"kind": "has_hand_cards", "amount": 1},
+)
+card_from_meadow = Location(
+    "Card_From_Meadow",
+    "forest",
+    1,
+    action_play_two_meadow_cards_with_discount(),
+    requirements=[
+        {"kind": "has_city_space"},
+        {"kind": "has_playable_meadow_card", "discount": 1},
+    ],
+)
+copy_basic_location = Location(
+    "Copy_Basic",
+    "forest",
+    1,
+    CompositeAction(
+        [
+            action_location_copy_action(["basic"]),
+            action_cards_from_deck_to_hand(1),
+        ]
+    ),
+)
+two_resources = Location(
+    "Two_resources",
+    "forest",
+    1,
+    action_resources_by_choice(["twig", "resin", "pebble", "berry"], 2),
+)
+cards_resource = Location(
+    "Cards_Resource",
+    "forest",
+    1,
+    CompositeAction(
+        [
+            action_resources_by_choice(["twig", "resin", "pebble", "berry"], 1),
+            action_cards_from_deck_to_hand(2),
+        ]
+    ),
+)
+twig_resin_berry = Location(
+    "Twig_Resin_Berry",
+    "forest",
+    1,
+    CompositeAction(
+        [
+            action_resource_general("twig", 1),
+            action_resource_general("resin", 1),
+            action_resource_general("berry", 1),
+        ]
+    ),
+)
+cards_pebble = Location(
+    "Cards_Pebble",
+    "forest",
+    1,
+    CompositeAction(
+        [
+            action_resource_general("pebble", 1),
+            action_cards_from_deck_to_hand(3),
+        ]
+    ),
+)
+berries_card = Location(
+    "Berries_Card",
+    "forest",
+    1,
+    CompositeAction(
+        [
+            action_resource_general("berry", 2),
+            action_cards_from_deck_to_hand(1),
+        ]
+    ),
+)
+resins_twig = Location(
+    "Resins_Twig",
+    "forest",
+    1,
+    CompositeAction(
+        [
+            action_resource_general("resin", 2),
+            action_resource_general("twig", 1),
+        ]
+    ),
+)
+berries = Location("Three_berries", "forest", 1, action_resource_general("berry", 3))
 
-# TODO: should not be added to init_locations, but seperate forest_locations list
+
+forest_locations.extend(
+    [
+        cards_for_resources,
+        card_for_cards,
+        card_from_meadow,
+        copy_basic_location,
+        cards_resource,
+        two_resources,
+        twig_resin_berry,
+        cards_pebble,
+        berries_card,
+        resins_twig,
+        berries,
+    ]
+)
 
 
 # ============================================

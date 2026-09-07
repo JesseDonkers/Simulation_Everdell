@@ -8,7 +8,7 @@ from actions.season import action_advance_season
 from class_card import init_cards
 from class_deck import Deck
 from class_discard_pile import DiscardPile
-from class_location import init_locations, special_events
+from class_location import forest_locations, init_locations, special_events
 from class_meadow import Meadow
 from class_player import Player
 from class_strategy import Strategy_random
@@ -28,7 +28,7 @@ from functions_testing import clear_test_results, game_state_as_df_to_text
 
 MODE = "simulation"  # "scenario" or "simulation"
 
-NR_SIMULATION_RUNS = 100  # Number of times to run the scenario or simulation
+NR_SIMULATION_RUNS = 1000  # Number of times to run the scenario or simulation
 NR_PLAYERS = 2  # Number of players in the game (2-4)
 STRATEGY_PER_PLAYER = [Strategy_random, Strategy_random]
 MAX_TURNS_PER_GAME = 10_000
@@ -73,10 +73,19 @@ def create_game_state(nr_players, strategy_per_player):
     for i in range(4):
         game_state["locations"].append(special_events_copy[i])
 
-    # TODO: forecast cards shuffle and place
-    #  - Shuffle forest cards
-    #  - Place 3 or 4 forest cards depending on nr players (add to locations)
+    # Shuffle forest locations and place 3 or 4 selected clearings.
+    nr_forest_locations = 3 if nr_players <= 3 else 4
+    forest_locations_copy = copy.deepcopy(forest_locations)
+    random.shuffle(forest_locations_copy)
+    selected_forest_locations = forest_locations_copy[:nr_forest_locations]
 
+    if nr_players == 4:
+        for location in selected_forest_locations:
+            location.maxworkers = 2
+
+    game_state["locations"].extend(selected_forest_locations)
+
+    # Provide each player with a strategy
     if len(strategy_per_player) != len(players):
         raise ValueError(
             f"Number of strategies ({len(strategy_per_player)})"
@@ -107,16 +116,16 @@ def run_single_turn(game_state):
         pass
 
     # Branch 2: active player has no legal moves and therefore finishes.
-    elif len(get_possible_moves(game_state)) == 0:
+    elif len(get_possible_moves(game_state, player)) == 0:
         finish_current_player(game_state)
 
     # Branch 3: active player takes one move; may finish if that was final.
     else:
-        possible_moves = get_possible_moves(game_state)
+        possible_moves = get_possible_moves(game_state, player)
         chosen_move = player.decide(game_state, "move", possible_moves)
         _execute_move(game_state, chosen_move)
 
-        updated_moves = get_possible_moves(game_state)
+        updated_moves = get_possible_moves(game_state, player)
         if len(updated_moves) == 0:
             finish_current_player(game_state)
 
