@@ -81,6 +81,7 @@ class action_discard_cards_for_deck_cards(Action):
         player.cards_remove(cards_to_discard, "hand")
         discardpile.add_to_discardpile(cards_to_discard)
 
+        hand_space = max(0, player.cards_get_open_spaces("hand"))
         nr_cards_to_draw = min(nr_discard * 2, hand_space)
         action_cards_from_deck_to_hand(nr_cards_to_draw).execute(context=context)
 
@@ -692,11 +693,14 @@ class action_play_two_meadow_cards_with_discount(action_play_meadow_card_with_di
         selectable_cards = meadow.cards.copy()
         selected_cards: list["Card"] = []
         for _ in range(2):
-            if selected_cards and selected_cards[0] not in playable_cards:
+            decision_kind = "card_new"
+            if selected_cards and selected_cards[0] in playable_cards:
+                decision_kind = "card_discard"
+            elif selected_cards:
                 selectable_cards = [
                     card for card in selectable_cards if card in playable_cards
                 ]
-            card = player.decide(game_state, "card_new", selectable_cards)
+            card = player.decide(game_state, decision_kind, selectable_cards)
             selected_cards.append(card)
             selectable_cards.remove(card)
 

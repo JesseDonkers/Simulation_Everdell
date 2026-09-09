@@ -26,7 +26,7 @@ from functions_testing import clear_test_results, game_state_as_df_to_text
 # VARIABLES & PARAMETERS
 # ============================================
 
-MODE = "simulation"  # "scenario" or "simulation"
+MODE = "scenario"  # "scenario" or "simulation"
 
 NR_SIMULATION_RUNS = 1000  # Number of times to run the scenario or simulation
 NR_PLAYERS = 2  # Number of players in the game (2-4)
@@ -155,8 +155,8 @@ def run_scenario(game_state):
     class ScenarioStrategy(Strategy_random):
         def __init__(self):
             super().__init__()
-            self.preferred_cards = ["Boerderij"]
-            self.preferred_locations = ["Kapel"]
+            self.preferred_cards = []
+            self.preferred_locations = ["Card_From_Meadow"]
 
         def choose_card_new(self, game_state, possible_cards):
             for preferred in self.preferred_cards:
@@ -211,13 +211,14 @@ def run_scenario(game_state):
 
     # Build a deterministic test state for Gerechtsgebouw and Winkelier.
     player.city.clear()
-    player.resources = {"twig": 3, "resin": 0, "pebble": 1, "berry": 0}
+    player.resources = {"twig": 2, "resin": 0, "pebble": 0, "berry": 0}
     player.workers = 2
     player.finished = False
     player.strategy = ScenarioStrategy()
 
     move_card_to_zone("Rechter", "city")
-    # move_card_to_zone("Boerderij", "city")
+    move_card_to_zone("Boerderij", "city")
+    move_card_to_zone("Man", "city")
 
     game_state["meadow"].add_to_meadow(
         50, game_state["deck"], game_state["discardpile"]
@@ -225,7 +226,7 @@ def run_scenario(game_state):
 
     game_state_as_df_to_text(game_state, "Game_state")
 
-    action_play_card().execute(game_state)
+    action_place_worker().execute(game_state)
 
     game_state_as_df_to_text(game_state, "Game_state")
 
