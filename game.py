@@ -28,7 +28,7 @@ from functions_testing import clear_test_results, game_state_as_df_to_text
 
 MODE = "scenario"  # "scenario" or "simulation"
 
-NR_SIMULATION_RUNS = 1000  # Number of times to run the scenario or simulation
+NR_SIMULATION_RUNS = 100  # Number of times to run the scenario or simulation
 NR_PLAYERS = 2  # Number of players in the game (2-4)
 STRATEGY_PER_PLAYER = [Strategy_random, Strategy_random]
 MAX_TURNS_PER_GAME = 10_000
@@ -156,7 +156,7 @@ def run_scenario(game_state):
         def __init__(self):
             super().__init__()
             self.preferred_cards = []
-            self.preferred_locations = ["Card_From_Meadow"]
+            self.preferred_locations = ["Reko"]
 
         def choose_card_new(self, game_state, possible_cards):
             for preferred in self.preferred_cards:
@@ -217,8 +217,11 @@ def run_scenario(game_state):
     player.strategy = ScenarioStrategy()
 
     move_card_to_zone("Rechter", "city")
-    move_card_to_zone("Boerderij", "city")
+    move_card_to_zone("Koningin", "city")
     move_card_to_zone("Man", "city")
+    move_card_to_zone("Boerderij", "city")
+    move_card_to_zone("Vrouw", "city")
+    move_card_to_zone("Kermis", "city")
 
     game_state["meadow"].add_to_meadow(
         50, game_state["deck"], game_state["discardpile"]

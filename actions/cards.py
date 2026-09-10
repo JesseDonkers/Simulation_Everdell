@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Optional
 
 from actions.base import Action, ActionContext
 from actions.common import resolve_city_card_target
+from actions.resources import action_resources_by_choice
 from shared.play_plan import build_play_plan
 
 __all__ = [
@@ -22,6 +23,8 @@ __all__ = [
     "action_play_cards_from_deck_or_discardpile",
     "action_refresh_meadow_draw_cards",
     "action_reactivate_green_card",
+    "action_reactivate_all_green_cards",
+    "action_grant_man_vrouw_production_resources",
     "action_point_on_location_take_cards",
 ]
 
@@ -272,8 +275,6 @@ class action_resource_on_card_type(Action):
     def _grant_resources(self, context: ActionContext):
         player: "Player" = context.player
         if isinstance(self.resource, (list, tuple)):
-            from actions.resources import action_resources_by_choice
-
             action_resources_by_choice(self.resource, self.amount).execute(
                 context=context
             )
@@ -976,6 +977,40 @@ class action_reactivate_green_card(Action):
                     host_card=card,
                 )
             )
+
+
+class action_reactivate_all_green_cards(Action):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        card: "Card"
+        for card in player.city:
+            if card.color == "green" and card.action_on_reactivate:
+                card.action_on_reactivate.execute(
+                    context=ActionContext(
+                        player=context.player,
+                        game_state=context.game_state,
+                        host_card=card,
+                        options=dict(context.options),
+                    )
+                )
+        action_grant_man_vrouw_production_resources().execute(context=context)
+
+
+class action_grant_man_vrouw_production_resources(Action):
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        if not any(card.name == "Boerderij" for card in player.city):
+            return
+
+        count_man = sum(1 for card in player.city if card.name == "Man")
+        count_vrouw = sum(1 for card in player.city if card.name == "Vrouw")
+        nr_pairs = min(count_man, count_vrouw)
+        if nr_pairs == 0:
+            return
+
+        action_resources_by_choice(
+            ["twig", "resin", "pebble", "berry"], nr_pairs
+        ).execute(context=context)
 
 
 class action_point_on_location_take_cards(Action):

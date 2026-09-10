@@ -1,34 +1,20 @@
 from typing import TYPE_CHECKING
 
 from actions.base import Action, ActionContext
-from actions.cards import action_cards_from_meadow_to_hand
+from actions.cards import (
+    action_cards_from_meadow_to_hand,
+    action_reactivate_all_green_cards,
+)
 from actions.locations import action_activate_worker_location_for_point_token
-from actions.resources import action_resources_by_choice
 
 __all__ = ["action_advance_season"]
 
 if TYPE_CHECKING:
-    from class_card import Card
     from class_location import Location
     from class_player import Player
 
 
 class action_advance_season(Action):
-    def _grant_man_vrouw_production_resources(self, context: ActionContext):
-        player: "Player" = context.player
-        if not any(card.name == "Boerderij" for card in player.city):
-            return
-
-        count_man = sum(1 for card in player.city if card.name == "Man")
-        count_vrouw = sum(1 for card in player.city if card.name == "Vrouw")
-        nr_pairs = min(count_man, count_vrouw)
-        if nr_pairs == 0:
-            return
-
-        action_resources_by_choice(
-            ["twig", "resin", "pebble", "berry"], nr_pairs
-        ).execute(context=context)
-
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
         game_state = context.game_state
@@ -38,18 +24,7 @@ class action_advance_season(Action):
 
         if current_season == "winter":
             player.workers_add(1)
-            card: "Card"
-            for card in player.city:
-                if card.color == "green" and card.action_on_reactivate:
-                    card.action_on_reactivate.execute(
-                        context=ActionContext(
-                            player=context.player,
-                            game_state=context.game_state,
-                            host_card=card,
-                            options=dict(context.options),
-                        )
-                    )
-            self._grant_man_vrouw_production_resources(context)
+            action_reactivate_all_green_cards().execute(context=context)
 
         elif current_season == "spring":
             player.workers_add(1)
@@ -57,18 +32,7 @@ class action_advance_season(Action):
 
         elif current_season == "summer":
             player.workers_add(2)
-            for card in player.city:
-                if card.color == "green" and card.action_on_reactivate:
-                    # On season change, execute action_on_reactivate
-                    card.action_on_reactivate.execute(
-                        context=ActionContext(
-                            player=context.player,
-                            game_state=context.game_state,
-                            host_card=card,
-                            options=dict(context.options),
-                        )
-                    )
-            self._grant_man_vrouw_production_resources(context)
+            action_reactivate_all_green_cards().execute(context=context)
 
         location: "Location"
         # Clock Tower: spend a point token to activate a location where a

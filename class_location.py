@@ -6,6 +6,7 @@ from actions.cards import (
     action_discard_cards_from_hand,
     action_discard_cards_for_deck_cards,
     action_play_two_meadow_cards_with_discount,
+    action_reactivate_all_green_cards,
 )
 from actions.locations import action_retake_worker
 from actions.points import (
@@ -366,7 +367,20 @@ sckl = Location(
     ],
 )
 
-reko = None  # TODO
+reko = Location(
+    "Reko",
+    "special_event",
+    1,
+    action_reactivate_all_green_cards(),
+    action_on_finish=action_points_general("event", 3),
+    requirements=[
+        {
+            "kind": "required_cards_in_city",
+            "cards": ["Rechter", "Koningin"],
+        },
+    ],
+)
+
 dopo = None  # TODO
 gebo = None  # TODO
 behe = None  # TODO
@@ -406,7 +420,7 @@ hoka = None  # TODO
 leun = None  # TODO
 
 # Special events should not be added to init_locations, but to a separate list
-special_events.extend([heza, sckl, wipo, uimi])
+special_events.extend([heza, sckl, reko, wipo, uimi])
 # TODO: add all special events
 
 
