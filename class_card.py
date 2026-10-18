@@ -423,9 +423,8 @@ monnik = Critter(
                 check_card_name="Klooster",
                 permanent_workers=True,
                 requirements={
-                    "kind": "has_resource_type",
-                    "resource": "berry",
-                    "amount": 1,
+                    "kind": "has_total_resources",
+                    "amount": 2,
                 },
             ),
         ]
@@ -776,7 +775,7 @@ klooster = Construction(
                 1,
                 action_points_for_given_resources(nr_resources=2, points=4),
                 permanent_workers=True,
-                requirements={"kind": "has_any_resource"},
+                requirements={"kind": "has_total_resources", "amount": 2},
             ),
             action_add_destination_if_card_present(
                 "Klooster 2",
@@ -785,7 +784,7 @@ klooster = Construction(
                 action_points_for_given_resources(nr_resources=2, points=4),
                 check_card_name="Monnik",
                 permanent_workers=True,
-                requirements={"kind": "has_any_resource"},
+                requirements={"kind": "has_total_resources", "amount": 2},
             ),
         ]
     ),

@@ -156,7 +156,7 @@ def run_scenario(game_state):
         def __init__(self):
             super().__init__()
             self.preferred_cards = []
-            self.preferred_locations = ["Reko"]
+            self.preferred_locations = []
 
         def choose_card_new(self, game_state, possible_cards):
             for preferred in self.preferred_cards:
@@ -211,19 +211,15 @@ def run_scenario(game_state):
 
     # Build a deterministic test state for Gerechtsgebouw and Winkelier.
     player.city.clear()
-    player.resources = {"twig": 2, "resin": 0, "pebble": 0, "berry": 0}
+    player.resources = {"twig": 3, "resin": 3, "pebble": 1, "berry": 0}
     player.workers = 2
     player.finished = False
     player.strategy = ScenarioStrategy()
 
-    # TODO: test special events: dopo, behe, klzw, and moke
-
-    move_card_to_zone("Rechter", "city")
-    move_card_to_zone("Koningin", "city")
     move_card_to_zone("Man", "city")
-    move_card_to_zone("Boerderij", "city")
     move_card_to_zone("Vrouw", "city")
-    move_card_to_zone("Kermis", "city")
+    move_card_to_zone("Kerker", "city")
+    move_card_to_zone("Monnik", "city")
 
     game_state["meadow"].add_to_meadow(
         50, game_state["deck"], game_state["discardpile"]
@@ -232,7 +228,7 @@ def run_scenario(game_state):
     game_state_as_df_to_text(game_state, "Game_state")
 
     action_place_worker().execute(game_state)
-
+    finish_current_player(game_state)
     game_state_as_df_to_text(game_state, "Game_state")
 
     print("Scenario completed successfully.")

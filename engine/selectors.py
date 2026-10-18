@@ -79,6 +79,10 @@ def _location_requirement_met(player, loc, requirement, game_state):
     if kind == "has_any_resource":
         return sum(player.resources.values()) >= 1
 
+    if kind == "has_total_resources":
+        amount = requirement.get("amount", 1)
+        return sum(player.resources.values()) >= amount
+
     if kind == "has_hand_cards":
         amount = requirement.get("amount", 1)
         return len(player.hand) >= amount

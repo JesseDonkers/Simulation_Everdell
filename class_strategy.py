@@ -1,4 +1,5 @@
 import random
+from typing import Any
 
 # ============================================
 # BASE STRATEGY CLASS
@@ -28,7 +29,12 @@ class Strategy_random(Strategy):
         return random.choice(possible_cards)
 
     def choose_card_play_method(self, game_state, possible_methods):
-        return random.choice(possible_methods)
+        methods_by_type: dict[str, list[Any]] = {}
+        for method in possible_methods:
+            methods_by_type.setdefault(method.method, []).append(method)
+
+        method_type = random.choice(list(methods_by_type))
+        return random.choice(methods_by_type[method_type])
 
     def choose_card_hand_or_meadow(self, game_state, _):
         opt = ["hand", "meadow"]
