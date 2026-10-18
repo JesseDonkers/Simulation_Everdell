@@ -448,7 +448,17 @@ wipo = Location(
     ],
 )
 
-twve = None  # TODO
+twve = Location(
+    "Twve",
+    "special_event",
+    1,
+    None,
+    action_on_finish=action_points_general("event", 9),
+    requirements=[
+        {"kind": "min_color_cards", "color": color, "count": 1}
+        for color in ("tan", "red", "green", "blue", "purple")
+    ],
+)
 beki = None  # TODO
 
 uimi = Location(
@@ -469,7 +479,7 @@ hoka = None  # TODO
 leun = None  # TODO
 
 # Special events should not be added to init_locations, but to a separate list
-special_events.extend([heza, sckl, reko, dopo, behe, klzw, moke, wipo, uimi])
+special_events.extend([heza, sckl, reko, dopo, behe, klzw, moke, wipo, twve, uimi])
 # TODO: add all special events
 
 

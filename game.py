@@ -156,7 +156,7 @@ def run_scenario(game_state):
         def __init__(self):
             super().__init__()
             self.preferred_cards = []
-            self.preferred_locations = []
+            self.preferred_locations = ["Twve"]
 
         def choose_card_new(self, game_state, possible_cards):
             for preferred in self.preferred_cards:
@@ -217,9 +217,10 @@ def run_scenario(game_state):
     player.strategy = ScenarioStrategy()
 
     move_card_to_zone("Man", "city")
-    move_card_to_zone("Vrouw", "city")
     move_card_to_zone("Kerker", "city")
-    move_card_to_zone("Monnik", "city")
+    move_card_to_zone("Begraafplaats", "city")
+    move_card_to_zone("School", "city")
+    move_card_to_zone("Zanger", "city")
 
     game_state["meadow"].add_to_meadow(
         50, game_state["deck"], game_state["discardpile"]
