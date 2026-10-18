@@ -9,6 +9,7 @@ __all__ = [
     "action_points_for_tokens_on_card",
     "action_points_general",
     "action_points_for_cards_in_city",
+    "action_points_for_city_assets",
     "action_points_for_color_in_city",
     "action_points_for_resources_event_location",
     "action_points_for_resources_hand",
@@ -258,6 +259,61 @@ class action_points_for_cards_in_city(Action):
                 and type(card).__name__ == self.critter_or_construction
             ):
                 player.points_add("prosperity", self.points_per_card)
+
+
+class action_points_for_city_assets(Action):
+    """Award event points for a countable feature of cards in the player's city."""
+
+    def __init__(
+        self,
+        asset_type: str,
+        points_per_asset: int,
+        *,
+        card_name: str | None = None,
+        paired_card_names: tuple[str, str] | None = None,
+    ):
+        if asset_type not in {"destination_workers", "stored_cards", "card_pairs"}:
+            raise ValueError(f"Unsupported city asset type: {asset_type}")
+        if asset_type in {"destination_workers", "stored_cards"} and card_name is None:
+            raise ValueError(f"{asset_type} requires a card_name")
+        if asset_type == "card_pairs" and paired_card_names is None:
+            raise ValueError("card_pairs requires paired_card_names")
+
+        self.asset_type = asset_type
+        self.points_per_asset = points_per_asset
+        self.card_name = card_name
+        self.paired_card_names = paired_card_names
+
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+
+        if self.asset_type == "card_pairs":
+            assert self.paired_card_names is not None
+            first_name, second_name = self.paired_card_names
+            first_count = sum(1 for card in player.city if card.name == first_name)
+            second_count = sum(1 for card in player.city if card.name == second_name)
+            count = min(first_count, second_count)
+        else:
+            assert self.card_name is not None
+            city_cards = [card for card in player.city if card.name == self.card_name]
+
+            if self.asset_type == "stored_cards":
+                count = sum(
+                    len(card.card_storage.get("cards", [])) for card in city_cards
+                )
+            else:
+                source_card_ids = {
+                    getattr(card, "card_id", None) for card in city_cards
+                }
+                count = sum(
+                    location.get_player_workers(player)
+                    for location in context.game_state["locations"]
+                    if location.location_type == "destination_card"
+                    and location.source_card_id in source_card_ids
+                )
+
+        if count:
+            player.points_add("event", count * self.points_per_asset)
 
 
 class action_points_for_color_in_city(Action):

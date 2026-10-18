@@ -240,9 +240,14 @@ class action_location_copy_action(Action):
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
         game_state = context.game_state
+        from engine.selectors import _requirements_met
+
         locations = game_state["locations"]
         locations_of_type = [
-            l for l in locations if l.location_type in self.possible_types
+            l
+            for l in locations
+            if l.location_type in self.possible_types
+            and _requirements_met(player, l, game_state)
         ]
         loc = player.decide(game_state, "location_place_worker", locations_of_type)
         loc.action_on_place_worker.execute(

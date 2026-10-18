@@ -965,8 +965,6 @@ uitkijkpost = Construction(
         1,
         action_location_copy_action(["basic", "forest"]),
     ),
-    # TODO: check if requirement is necessary?
-    # Copying basic locations is no problem, but forest locations?
     action_on_discard=CompositeAction(
         [
             action_remove_destination("Uitkijkpost"),

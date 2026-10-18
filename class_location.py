@@ -11,6 +11,7 @@ from actions.cards import (
 from actions.locations import action_retake_worker
 from actions.points import (
     action_points_for_given_resources,
+    action_points_for_city_assets,
     action_points_for_resources_event_location,
     action_points_general,
 )
@@ -381,11 +382,59 @@ reko = Location(
     ],
 )
 
-dopo = None  # TODO
+dopo = Location(
+    "Dopo",
+    "special_event",
+    1,
+    None,
+    action_on_finish=action_points_for_city_assets(
+        "card_pairs", 3, paired_card_names=("Man", "Vrouw")
+    ),
+    requirements={
+        "kind": "required_cards_in_city",
+        "cards": ["Dokter", "Postduif"],
+    },
+)
 gebo = None  # TODO
-behe = None  # TODO
-klzw = None  # TODO
-moke = None  # TODO
+behe = Location(
+    "Behe",
+    "special_event",
+    1,
+    None,
+    action_on_finish=action_points_for_city_assets(
+        "destination_workers", 3, card_name="Begraafplaats"
+    ),
+    requirements={
+        "kind": "required_cards_in_city",
+        "cards": ["Begraafplaats", "Herder"],
+    },
+)
+klzw = Location(
+    "Klzw",
+    "special_event",
+    1,
+    None,
+    action_on_finish=action_points_for_city_assets(
+        "destination_workers", 3, card_name="Klooster"
+    ),
+    requirements={
+        "kind": "required_cards_in_city",
+        "cards": ["Klooster", "Zwerver"],
+    },
+)
+moke = Location(
+    "Moke",
+    "special_event",
+    1,
+    None,
+    action_on_finish=action_points_for_city_assets(
+        "stored_cards", 3, card_name="Kerker"
+    ),
+    requirements={
+        "kind": "required_cards_in_city",
+        "cards": ["Monnik", "Kerker"],
+    },
+)
 mawi = None  # TODO
 
 wipo = Location(
@@ -420,7 +469,7 @@ hoka = None  # TODO
 leun = None  # TODO
 
 # Special events should not be added to init_locations, but to a separate list
-special_events.extend([heza, sckl, reko, wipo, uimi])
+special_events.extend([heza, sckl, reko, dopo, behe, klzw, moke, wipo, uimi])
 # TODO: add all special events
 
 

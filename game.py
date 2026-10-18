@@ -216,6 +216,8 @@ def run_scenario(game_state):
     player.finished = False
     player.strategy = ScenarioStrategy()
 
+    # TODO: test special events: dopo, behe, klzw, and moke
+
     move_card_to_zone("Rechter", "city")
     move_card_to_zone("Koningin", "city")
     move_card_to_zone("Man", "city")
