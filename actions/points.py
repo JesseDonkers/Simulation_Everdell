@@ -237,12 +237,20 @@ class action_points_for_resources_event_location(Action):
                 f"Event location '{self.location_name}' not found in player's events"
             )
 
-        total_resources = sum(
-            target_location.resources.get(resource_type, 0)
-            for resource_type in self.resources
-        )
+        if isinstance(self.point_per_resource, dict):
+            points = sum(
+                target_location.resources.get(resource_type, 0)
+                * self.point_per_resource.get(resource_type, 0)
+                for resource_type in self.resources
+            )
+        else:
+            total_resources = sum(
+                target_location.resources.get(resource_type, 0)
+                for resource_type in self.resources
+            )
+            points = total_resources * self.point_per_resource
 
-        player.points_add("event", total_resources * self.point_per_resource)
+        player.points_add("event", points)
 
 
 class action_points_for_cards_in_city(Action):

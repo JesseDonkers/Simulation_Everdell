@@ -343,7 +343,7 @@ heza = Location(
     "Heza",
     "special_event",
     1,
-    action_resources_to_location("Heza", ["berry"], 3),
+    action_resources_to_location("Heza", ["berry"], 3, {"berry": 2}),
     action_on_finish=action_points_for_resources_event_location(
         ["berry"], 2, location_name="Heza"
     ),
@@ -435,7 +435,26 @@ moke = Location(
         "cards": ["Monnik", "Kerker"],
     },
 )
-mawi = None  # TODO
+mawi = Location(
+    "Mawi",
+    "special_event",
+    1,
+    action_resources_to_location(
+        "Mawi",
+        ["berry", "twig", "resin", "pebble"],
+        3,
+        points_per_resource={"berry": 1, "twig": 1, "resin": 2, "pebble": 2},
+    ),
+    action_on_finish=action_points_for_resources_event_location(
+        ["berry", "twig", "resin", "pebble"],
+        {"berry": 1, "twig": 1, "resin": 2, "pebble": 2},
+        location_name="Mawi",
+    ),
+    requirements=[
+        {"kind": "required_cards_in_city", "cards": ["Marskramer", "Winkel"]},
+        {"kind": "has_any_resource"},
+    ],
+)
 
 wipo = Location(
     "Wipo",
@@ -465,7 +484,7 @@ uimi = Location(
     "Uimi",
     "special_event",
     1,
-    action_resources_to_location("Uimi", ["twig"], 3),
+    action_resources_to_location("Uimi", ["twig"], 3, {"twig": 2}),
     action_on_finish=action_points_for_resources_event_location(
         ["twig"], 2, location_name="Uimi"
     ),
@@ -479,7 +498,9 @@ hoka = None  # TODO
 leun = None  # TODO
 
 # Special events should not be added to init_locations, but to a separate list
-special_events.extend([heza, sckl, reko, dopo, behe, klzw, moke, wipo, twve, uimi])
+special_events.extend(
+    [heza, sckl, reko, dopo, behe, klzw, moke, mawi, wipo, twve, uimi]
+)
 # TODO: add all special events
 
 

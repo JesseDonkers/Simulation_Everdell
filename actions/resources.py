@@ -236,10 +236,11 @@ class action_resources_for_cards(Action):
 
 
 class action_resources_to_location(Action):
-    def __init__(self, location_name, resources, max_nr_resources):
+    def __init__(self, location_name, resources, max_nr_resources, points_per_resource):
         self.location_name = location_name
         self.resources = resources
         self.max_nr_resources = max_nr_resources
+        self.points_per_resource = points_per_resource
 
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
@@ -256,24 +257,31 @@ class action_resources_to_location(Action):
                 f"Location '{self.location_name}' not found in player events"
             )
 
+        available = {
+            resource_type: player.resources.get(resource_type, 0)
+            for resource_type in self.resources
+        }
+        allocation = player.decide(
+            game_state,
+            "resources_to_location",
+            {
+                "available": available,
+                "max_nr_resources": self.max_nr_resources,
+                "points_per_resource": self.points_per_resource,
+            },
+        )
         remaining = self.max_nr_resources
         for resource_type in self.resources:
-            if remaining == 0:
-                break
-
-            available = player.resources.get(resource_type, 0)
-            max_allowed = min(remaining, available)
-
-            requested = player.decide(
-                game_state,
-                "nr_resources_for_points",
-                max_allowed,
+            amount = max(
+                0,
+                min(
+                    allocation.get(resource_type, 0),
+                    available[resource_type],
+                    remaining,
+                ),
             )
-            amount = max(0, min(requested, max_allowed))
-
             if amount == 0:
                 continue
-
             player.resources_remove(resource_type, amount)
             target_location.resources_add(resource_type, amount)
             remaining -= amount

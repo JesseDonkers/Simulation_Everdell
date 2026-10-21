@@ -80,6 +80,13 @@ class Strategy_random(Strategy):
     def choose_nr_resources_for_points(self, game_state, max_nr_resources):
         return random.randint(0, max_nr_resources)
 
+    def choose_resources_to_location(self, game_state, parameters):
+        available = parameters["available"]
+        max_count = min(parameters["max_nr_resources"], sum(available.values()))
+        pool = [resource for resource, count in available.items() for _ in range(count)]
+        chosen = random.sample(pool, random.randint(0, max_count))
+        return {resource: chosen.count(resource) for resource in available}
+
     def choose_player_to_receive_resources(self, game_state, possible_players):
         return random.choice(possible_players)
 
