@@ -156,7 +156,7 @@ def run_scenario(game_state):
         def __init__(self):
             super().__init__()
             self.preferred_cards = []
-            self.preferred_locations = ["Mawi"]
+            self.preferred_locations = ["Beki"]
 
         def choose_card_new(self, game_state, possible_cards):
             for preferred in self.preferred_cards:
@@ -211,19 +211,17 @@ def run_scenario(game_state):
 
     # Build a deterministic test state for Gerechtsgebouw and Winkelier.
     player.city.clear()
-    player.resources = {"twig": 3, "resin": 3, "pebble": 1, "berry": 0}
+    player.resources = {"twig": 0, "resin": 0, "pebble": 0, "berry": 2}
     player.workers = 2
     player.finished = False
     player.strategy = ScenarioStrategy()
 
-    move_card_to_zone("Marskramer", "city")
-    move_card_to_zone("Winkel", "city")
+    move_card_to_zone("Begrafenisondernemer", "city")
+    move_card_to_zone("Kikkerkapitein", "city")
 
     game_state["meadow"].add_to_meadow(
         50, game_state["deck"], game_state["discardpile"]
     )
-
-    # TODO: Test mawi special event location
 
     game_state_as_df_to_text(game_state, "Game_state")
 

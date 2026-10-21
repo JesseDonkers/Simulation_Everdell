@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any
 from actions.base import CompositeAction
 from actions.cards import (
     action_cards_from_deck_to_hand,
+    action_discard_cards_from_city,
     action_discard_cards_from_hand,
     action_discard_cards_for_deck_cards,
     action_play_two_meadow_cards_with_discount,
@@ -478,7 +479,26 @@ twve = Location(
         for color in ("tan", "red", "green", "blue", "purple")
     ],
 )
-beki = None  # TODO
+beki = Location(
+    "Beki",
+    "special_event",
+    1,
+    CompositeAction(
+        [
+            action_resource_general("berry", -2),
+            action_discard_cards_from_city(2),
+        ]
+    ),
+    action_on_finish=action_points_general("event", 6),
+    requirements=[
+        {
+            "kind": "required_cards_in_city",
+            "cards": ["Begrafenisondernemer", "Kikkerkapitein"],
+        },
+        {"kind": "has_city_cards", "amount": 2},
+        {"kind": "has_resource_type", "resource": "berry", "amount": 2},
+    ],
+)
 
 uimi = Location(
     "Uimi",
@@ -499,7 +519,7 @@ leun = None  # TODO
 
 # Special events should not be added to init_locations, but to a separate list
 special_events.extend(
-    [heza, sckl, reko, dopo, behe, klzw, moke, mawi, wipo, twve, uimi]
+    [heza, sckl, reko, dopo, behe, klzw, moke, mawi, wipo, twve, beki, uimi]
 )
 # TODO: add all special events
 

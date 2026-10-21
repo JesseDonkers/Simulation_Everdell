@@ -7,6 +7,7 @@ from shared.play_plan import build_play_plan
 
 __all__ = [
     "action_discard_cards_from_hand",
+    "action_discard_cards_from_city",
     "action_discard_cards_for_deck_cards",
     "action_discard_stored_cards",
     "action_cards_from_deck_to_hand",
@@ -56,6 +57,29 @@ class action_discard_cards_from_hand(Action):
             selectable.remove(card)
 
         player.cards_remove(cards_to_discard, "hand")
+        discardpile.add_to_discardpile(cards_to_discard)
+
+
+class action_discard_cards_from_city(Action):
+    def __init__(self, nr_cards):
+        self.nr_cards = nr_cards
+
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
+        discardpile: "DiscardPile" = game_state["discardpile"]
+
+        if len(player.city) < self.nr_cards:
+            raise ValueError("Not enough cards in city to discard")
+
+        selectable = player.city.copy()
+        cards_to_discard = []
+        for _ in range(self.nr_cards):
+            card = player.decide(game_state, "card_discard", selectable)
+            cards_to_discard.append(card)
+            selectable.remove(card)
+
+        player.cards_remove(cards_to_discard, "city")
         discardpile.add_to_discardpile(cards_to_discard)
 
 
