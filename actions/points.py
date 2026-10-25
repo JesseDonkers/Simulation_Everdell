@@ -12,6 +12,7 @@ __all__ = [
     "action_points_for_city_assets",
     "action_points_for_color_in_city",
     "action_points_for_resources_event_location",
+    "action_points_for_cards_in_event_location",
     "action_points_for_resources_hand",
     "action_points_for_discarding_cards",
     "action_points_for_events",
@@ -253,6 +254,16 @@ class action_points_for_resources_event_location(Action):
             points = total_resources * self.point_per_resource
 
         player.points_add("event", points)
+
+
+class action_points_for_cards_in_event_location(Action):
+    def execute_action(self, context: ActionContext):
+        event_location = context.event_location
+        if event_location is None:
+            raise ValueError("An event location is required to score stored cards")
+
+        nr_cards = len(event_location.card_storage["cards"])
+        context.player.points_add("event", nr_cards)
 
 
 class action_points_for_cards_in_city(Action):

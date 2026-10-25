@@ -155,8 +155,8 @@ def run_scenario(game_state):
     class ScenarioStrategy(Strategy_random):
         def __init__(self):
             super().__init__()
-            self.preferred_cards = ["Kapel"]
-            self.preferred_locations = ["Kapel", "Hoka"]
+            self.preferred_cards = []
+            self.preferred_locations = ["Hiru"]
 
         def choose_card_new(self, game_state, possible_cards):
             for preferred in self.preferred_cards:
@@ -209,14 +209,15 @@ def run_scenario(game_state):
         else:
             raise ValueError(f"Unknown destination zone: {zone}")
 
-    # Build a deterministic test state for Gerechtsgebouw and Winkelier.
+    # Build a deterministic test state
     player.city.clear()
-    player.resources = {"twig": 2, "resin": 1, "pebble": 1, "berry": 0}
+    player.resources = {"twig": 0, "resin": 0, "pebble": 0, "berry": 0}
     player.workers = 2
     player.finished = False
     player.strategy = ScenarioStrategy()
 
-    move_card_to_zone("Houtsnijder", "city")
+    move_card_to_zone("Historicus", "city")
+    move_card_to_zone("Ruines", "city")
 
     game_state["meadow"].add_to_meadow(
         50, game_state["deck"], game_state["discardpile"]
@@ -224,8 +225,8 @@ def run_scenario(game_state):
 
     game_state_as_df_to_text(game_state, "Game_state")
 
-    action_play_card().execute(game_state)
-    action_place_worker().execute(game_state)
+    # TODO: Test Hiru
+
     action_place_worker().execute(game_state)
     finish_current_player(game_state)
     game_state_as_df_to_text(game_state, "Game_state")

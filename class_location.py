@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 from actions.base import CompositeAction
 from actions.cards import (
+    action_cards_from_deck_to_hand_or_location,
     action_cards_from_deck_to_hand,
     action_discard_cards_from_city,
     action_discard_cards_from_hand,
@@ -14,6 +15,7 @@ from actions.points import (
     action_points_for_given_resources,
     action_points_for_city_assets,
     action_points_for_resources_event_location,
+    action_points_for_cards_in_event_location,
     action_points_for_tokens_on_card,
     action_points_general,
 )
@@ -27,6 +29,7 @@ from actions.resources import (
 )
 
 if TYPE_CHECKING:
+    from class_card import Card
     from class_player import Player
 
 
@@ -54,6 +57,7 @@ class Location:
         self.action_on_finish = action_on_finish
         self.workers: dict["Player", int] = {}
         self.resources = dict(twig=0, resin=0, pebble=0, berry=0)
+        self.card_storage: dict[str, list["Card"]] = {"cards": []}
         self.permanent_workers = permanent_workers
         self.owner = owner  # Player that owns this destination location
         self.points = points
@@ -340,7 +344,17 @@ init_locations.extend([monument, tour, festival, expedition])
 
 special_events = []
 
-hiru = None  # TODO
+hiru = Location(
+    "Hiru",
+    "special_event",
+    1,
+    action_cards_from_deck_to_hand_or_location(5, "Hiru"),
+    action_on_finish=action_points_for_cards_in_event_location(),
+    requirements={
+        "kind": "required_cards_in_city",
+        "cards": ["Historicus", "Ruines"],
+    },
+)
 
 heza = Location(
     "Heza",
@@ -540,7 +554,7 @@ leun = None  # TODO
 
 # Special events should not be added to init_locations, but to a separate list
 special_events.extend(
-    [heza, sckl, reko, dopo, behe, klzw, moke, mawi, wipo, twve, beki, uimi, hoka]
+    [hiru, heza, sckl, reko, dopo, behe, klzw, moke, mawi, wipo, twve, beki, uimi, hoka]
 )
 # TODO: add all special events
 

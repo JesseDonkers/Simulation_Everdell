@@ -11,6 +11,7 @@ __all__ = [
     "action_discard_cards_for_deck_cards",
     "action_discard_stored_cards",
     "action_cards_from_deck_to_hand",
+    "action_cards_from_deck_to_hand_or_location",
     "action_cards_from_meadow_to_hand",
     "action_draw_on_card_type",
     "action_cards_keep_and_give",
@@ -158,6 +159,53 @@ class action_cards_from_deck_to_hand(Action):
         nr_draw = min(self.nrCards, spaces_hand)
         listofcards = deck.draw_cards(nr_draw, discardpile)
         player.cards_add(listofcards, "hand")
+
+
+class action_cards_from_deck_to_hand_or_location(Action):
+    def __init__(self, nr_cards, location_name):
+        self.nr_cards = nr_cards
+        self.location_name = location_name
+
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        game_state = context.game_state
+        location = context.trigger_location or context.event_location
+        if location is None or location.name != self.location_name:
+            raise ValueError(
+                f"Location '{self.location_name}' not found in action context"
+            )
+
+        deck: "Deck" = game_state["deck"]
+        discardpile: "DiscardPile" = game_state["discardpile"]
+        revealed_cards = deck.draw_cards(self.nr_cards, discardpile)
+
+        max_to_keep = min(
+            len(revealed_cards), max(0, player.cards_get_open_spaces("hand"))
+        )
+        cards_to_keep = player.decide(
+            game_state,
+            "cards_to_take_hand",
+            {"cards": revealed_cards.copy(), "max_count": max_to_keep},
+        )
+        if not isinstance(cards_to_keep, list):
+            raise TypeError("cards_to_take_hand must return a list of cards")
+        if len(cards_to_keep) > max_to_keep:
+            raise ValueError("cards_to_take_hand returned more cards than allowed")
+        if len({id(card) for card in cards_to_keep}) != len(cards_to_keep):
+            raise ValueError("cards_to_take_hand returned duplicate cards")
+        if any(
+            not any(card is revealed_card for revealed_card in revealed_cards)
+            for card in cards_to_keep
+        ):
+            raise ValueError("cards_to_take_hand returned a card that was not revealed")
+
+        cards_to_store = [
+            revealed_card
+            for revealed_card in revealed_cards
+            if not any(revealed_card is card_to_keep for card_to_keep in cards_to_keep)
+        ]
+        location.card_storage["cards"].extend(cards_to_store)
+        player.cards_add(cards_to_keep, "hand")
 
 
 class action_draw_on_card_type(Action):

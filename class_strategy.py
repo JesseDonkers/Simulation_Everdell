@@ -1,6 +1,12 @@
 import random
 from typing import Any
 
+STRATEGY_TODO: list[str] = [
+    "cards_to_take_hand: evaluate revealed card value and playability when choosing both the subset and its size; the random strategy samples uniformly.",
+    "resources_to_location: use points_per_resource to prioritize the allocation; the random strategy currently samples without regard to point value.",
+    "card_play_method: compare payment requirements, consumed cards, and card effects; the random strategy currently chooses a method category and option randomly.",
+]
+
 # ============================================
 # BASE STRATEGY CLASS
 # ============================================
@@ -46,6 +52,12 @@ class Strategy_random(Strategy):
 
     def choose_nr_cards_discard_hand(self, game_state, max_nr):
         return random.randint(0, max_nr)
+
+    def choose_cards_to_take_hand(self, game_state, parameters):
+        possible_cards = parameters["cards"]
+        max_count = parameters["max_count"]
+        nr_to_take = random.randint(0, max_count)
+        return random.sample(possible_cards, nr_to_take)
 
     def choose_card_discard(self, game_state, possible_cards):
         return random.choice(possible_cards)
