@@ -14,6 +14,7 @@ __all__ = [
     "action_resource_per_other_card",
     "action_resources_building_costs_discard",
     "action_resources_by_choice",
+    "action_resources_by_choice_for_card_tokens",
     "action_resources_swap",
     "action_resources_to_card_storage_choice",
     "action_take_all_resources_from_card_storage",
@@ -126,6 +127,23 @@ class action_resources_by_choice(Action):
         for _ in range(self.nr_resources):
             choice = player.decide(game_state, "resource_new", self.resources)
             player.resources_add(choice, 1)
+
+
+class action_resources_by_choice_for_card_tokens(Action):
+    def __init__(self, card_name, resources):
+        self.card_name = card_name
+        self.resources = resources
+
+    def execute_action(self, context: ActionContext):
+        player: "Player" = context.player
+        target_card = next(
+            (card for card in player.city if card.name == self.card_name), None
+        )
+        if target_card is None:
+            return
+
+        nr_tokens = target_card.card_storage.get("point_tokens", 0)
+        action_resources_by_choice(self.resources, nr_tokens).execute(context=context)
 
 
 class action_resources_swap(Action):

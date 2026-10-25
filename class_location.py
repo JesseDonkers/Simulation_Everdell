@@ -14,12 +14,14 @@ from actions.points import (
     action_points_for_given_resources,
     action_points_for_city_assets,
     action_points_for_resources_event_location,
+    action_points_for_tokens_on_card,
     action_points_general,
 )
 from actions.locations import action_location_copy_action
 from actions.resources import (
     action_resource_general,
     action_resources_by_choice,
+    action_resources_by_choice_for_card_tokens,
     action_resources_for_cards,
     action_resources_to_location,
 )
@@ -514,12 +516,31 @@ uimi = Location(
     ],
 )
 
-hoka = None  # TODO
+hoka = Location(
+    "Hoka",
+    "special_event",
+    1,
+    CompositeAction(
+        [
+            action_cards_from_deck_to_hand(1),
+            action_resources_by_choice_for_card_tokens(
+                "Kapel", ["twig", "resin", "pebble", "berry"]
+            ),
+        ]
+    ),
+    action_on_finish=action_points_for_tokens_on_card(
+        "Kapel", points_per_token=2, category="event"
+    ),
+    requirements={
+        "kind": "required_cards_in_city",
+        "cards": ["Houtsnijder", "Kapel"],
+    },
+)
 leun = None  # TODO
 
 # Special events should not be added to init_locations, but to a separate list
 special_events.extend(
-    [heza, sckl, reko, dopo, behe, klzw, moke, mawi, wipo, twve, beki, uimi]
+    [heza, sckl, reko, dopo, behe, klzw, moke, mawi, wipo, twve, beki, uimi, hoka]
 )
 # TODO: add all special events
 

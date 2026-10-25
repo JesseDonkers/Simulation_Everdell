@@ -35,8 +35,10 @@ class action_place_point_tokens_on_card(Action):
 class action_points_for_tokens_on_card(Action):
     """Gain 1 token point for each point token on a named card in own city (Herder/Kapel)."""
 
-    def __init__(self, card_name):
+    def __init__(self, card_name, points_per_token=1, category="token"):
         self.card_name = card_name
+        self.points_per_token = points_per_token
+        self.category = category
 
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
@@ -53,7 +55,7 @@ class action_points_for_tokens_on_card(Action):
 
         nr_tokens = target_card.card_storage.get("point_tokens", 0)
         if nr_tokens > 0:
-            player.points_add("token", nr_tokens)
+            player.points_add(self.category, nr_tokens * self.points_per_token)
 
 
 class action_points_general(Action):
