@@ -63,13 +63,27 @@ def _location_requirement_met(player, loc, requirement, game_state):
 
     from class_card import Critter, Construction
 
-    if kind == "construction_or_critter_in_city":
-        required_type = requirement.get("construction_or_critter")
-        return (
-            any(isinstance(card, Critter) for card in player.city)
-            if required_type == "critter"
-            else any(isinstance(card, Construction) for card in player.city)
+    if kind == "min_cards_of_type":
+        card_type_name = requirement.get("card_type")
+        card_type = (
+            Critter
+            if card_type_name == "critter"
+            else Construction if card_type_name == "construction" else None
         )
+        area = requirement.get("area")
+        card_area = (
+            player.city if area == "city" else player.hand if area == "hand" else None
+        )
+        if card_type is None or card_area is None:
+            return False
+        count = requirement.get("count", 1)
+        matched_cards = 0
+        for card in card_area:
+            if isinstance(card, card_type):
+                matched_cards += 1
+                if matched_cards >= count:
+                    return True
+        return count <= 0
 
     if kind == "has_resource_type":
         resource = requirement.get("resource")

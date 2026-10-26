@@ -908,8 +908,10 @@ ruines = Construction(
     ),
     action_on_discard=action_remove_card_from_city("Ruines"),
     requirements={
-        "kind": "construction_or_critter_in_city",
-        "construction_or_critter": "construction",
+        "kind": "min_cards_of_type",
+        "card_type": "construction",
+        "area": "city",
+        "count": 1,
     },
 )
 

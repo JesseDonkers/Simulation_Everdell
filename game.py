@@ -156,7 +156,7 @@ def run_scenario(game_state):
         def __init__(self):
             super().__init__()
             self.preferred_cards = []
-            self.preferred_locations = ["Hiru"]
+            self.preferred_locations = ["Leun"]
 
         def choose_card_new(self, game_state, possible_cards):
             for preferred in self.preferred_cards:
@@ -216,16 +216,20 @@ def run_scenario(game_state):
     player.finished = False
     player.strategy = ScenarioStrategy()
 
-    move_card_to_zone("Historicus", "city")
     move_card_to_zone("Ruines", "city")
+    move_card_to_zone("Man", "city")
+    move_card_to_zone("Vrouw", "city")
+    move_card_to_zone("Kikkerkapitein", "city")
+    move_card_to_zone("Leraar", "city")
+    move_card_to_zone("Gerechtsgebouw", "city")
+    move_card_to_zone("Boswachter", "city")
+    move_card_to_zone("Universiteit", "city")
 
     game_state["meadow"].add_to_meadow(
         50, game_state["deck"], game_state["discardpile"]
     )
 
     game_state_as_df_to_text(game_state, "Game_state")
-
-    # TODO: Test Hiru
 
     action_place_worker().execute(game_state)
     finish_current_player(game_state)

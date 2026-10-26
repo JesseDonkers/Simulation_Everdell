@@ -9,6 +9,7 @@ from actions.cards import (
     action_discard_cards_for_deck_cards,
     action_play_two_meadow_cards_with_discount,
     action_reactivate_all_green_cards,
+    action_store_critter_cards,
 )
 from actions.locations import action_retake_worker
 from actions.points import (
@@ -344,75 +345,7 @@ init_locations.extend([monument, tour, festival, expedition])
 
 special_events = []
 
-hiru = Location(
-    "Hiru",
-    "special_event",
-    1,
-    action_cards_from_deck_to_hand_or_location(5, "Hiru"),
-    action_on_finish=action_points_for_cards_in_event_location(),
-    requirements={
-        "kind": "required_cards_in_city",
-        "cards": ["Historicus", "Ruines"],
-    },
-)
 
-heza = Location(
-    "Heza",
-    "special_event",
-    1,
-    action_resources_to_location("Heza", ["berry"], 3, {"berry": 2}),
-    action_on_finish=action_points_for_resources_event_location(
-        ["berry"], 2, location_name="Heza"
-    ),
-    requirements=[
-        {"kind": "required_cards_in_city", "cards": ["Herberg", "Zanger"]},
-        {"kind": "has_resource_type", "resource": "berry", "amount": 1},
-    ],
-)
-
-sckl = Location(
-    "Sckl",
-    "special_event",
-    1,
-    action_retake_worker(),
-    action_on_finish=action_points_general("event", 4),
-    requirements=[
-        {
-            "kind": "required_cards_in_city",
-            "cards": ["Schoonmaker", "Klokkentoren"],
-        },
-        {"kind": "has_placed_worker"},
-    ],
-)
-
-reko = Location(
-    "Reko",
-    "special_event",
-    1,
-    action_reactivate_all_green_cards(),
-    action_on_finish=action_points_general("event", 3),
-    requirements=[
-        {
-            "kind": "required_cards_in_city",
-            "cards": ["Rechter", "Koningin"],
-        },
-    ],
-)
-
-dopo = Location(
-    "Dopo",
-    "special_event",
-    1,
-    None,
-    action_on_finish=action_points_for_city_assets(
-        "card_pairs", 3, paired_card_names=("Man", "Vrouw")
-    ),
-    requirements={
-        "kind": "required_cards_in_city",
-        "cards": ["Dokter", "Postduif"],
-    },
-)
-gebo = None  # TODO
 behe = Location(
     "Behe",
     "special_event",
@@ -426,75 +359,7 @@ behe = Location(
         "cards": ["Begraafplaats", "Herder"],
     },
 )
-klzw = Location(
-    "Klzw",
-    "special_event",
-    1,
-    None,
-    action_on_finish=action_points_for_city_assets(
-        "destination_workers", 3, card_name="Klooster"
-    ),
-    requirements={
-        "kind": "required_cards_in_city",
-        "cards": ["Klooster", "Zwerver"],
-    },
-)
-moke = Location(
-    "Moke",
-    "special_event",
-    1,
-    None,
-    action_on_finish=action_points_for_city_assets(
-        "stored_cards", 3, card_name="Kerker"
-    ),
-    requirements={
-        "kind": "required_cards_in_city",
-        "cards": ["Monnik", "Kerker"],
-    },
-)
-mawi = Location(
-    "Mawi",
-    "special_event",
-    1,
-    action_resources_to_location(
-        "Mawi",
-        ["berry", "twig", "resin", "pebble"],
-        3,
-        points_per_resource={"berry": 1, "twig": 1, "resin": 2, "pebble": 2},
-    ),
-    action_on_finish=action_points_for_resources_event_location(
-        ["berry", "twig", "resin", "pebble"],
-        {"berry": 1, "twig": 1, "resin": 2, "pebble": 2},
-        location_name="Mawi",
-    ),
-    requirements=[
-        {"kind": "required_cards_in_city", "cards": ["Marskramer", "Winkel"]},
-        {"kind": "has_any_resource"},
-    ],
-)
 
-wipo = Location(
-    "Wipo",
-    "special_event",
-    1,
-    action_points_for_given_resources(max_nr_resources=3, points_per_resource=2),
-    requirements=[
-        {"kind": "required_cards_in_city", "cards": ["Winkelier", "Postkantoor"]},
-        {"kind": "has_any_resource"},
-    ],
-)
-
-twve = Location(
-    "Twve",
-    "special_event",
-    1,
-    None,
-    action_on_finish=action_points_general("event", 9),
-    requirements=[
-        {"kind": "min_color_cards", "color": color, "count": 1}
-        for color in ("tan", "red", "green", "blue", "purple")
-    ],
-)
 beki = Location(
     "Beki",
     "special_event",
@@ -516,18 +381,64 @@ beki = Location(
     ],
 )
 
-uimi = Location(
-    "Uimi",
+dopo = Location(
+    "Dopo",
     "special_event",
     1,
-    action_resources_to_location("Uimi", ["twig"], 3, {"twig": 2}),
+    None,
+    action_on_finish=action_points_for_city_assets(
+        "card_pairs", 3, paired_card_names=("Man", "Vrouw")
+    ),
+    requirements={
+        "kind": "required_cards_in_city",
+        "cards": ["Dokter", "Postduif"],
+    },
+)
+
+gebo = Location(
+    "Gebo",
+    "special_event",
+    1,
+    action_store_critter_cards("city", 2),
+    action_on_finish=action_points_for_cards_in_event_location(3),
+    requirements=[
+        {
+            "kind": "required_cards_in_city",
+            "cards": ["Gerechtsgebouw", "Boswachter"],
+        },
+        {
+            "kind": "min_cards_of_type",
+            "card_type": "critter",
+            "area": "city",
+            "count": 1,
+        },
+    ],
+)
+
+heza = Location(
+    "Heza",
+    "special_event",
+    1,
+    action_resources_to_location("Heza", ["berry"], 3, {"berry": 2}),
     action_on_finish=action_points_for_resources_event_location(
-        ["twig"], 2, location_name="Uimi"
+        ["berry"], 2, location_name="Heza"
     ),
     requirements=[
-        {"kind": "required_cards_in_city", "cards": ["Uitkijkpost", "Mijnwerker mol"]},
-        {"kind": "has_resource_type", "resource": "twig", "amount": 1},
+        {"kind": "required_cards_in_city", "cards": ["Herberg", "Zanger"]},
+        {"kind": "has_resource_type", "resource": "berry", "amount": 1},
     ],
+)
+
+hiru = Location(
+    "Hiru",
+    "special_event",
+    1,
+    action_cards_from_deck_to_hand_or_location(5, "Hiru"),
+    action_on_finish=action_points_for_cards_in_event_location(),
+    requirements={
+        "kind": "required_cards_in_city",
+        "cards": ["Historicus", "Ruines"],
+    },
 )
 
 hoka = Location(
@@ -550,13 +461,161 @@ hoka = Location(
         "cards": ["Houtsnijder", "Kapel"],
     },
 )
-leun = None  # TODO
+
+klzw = Location(
+    "Klzw",
+    "special_event",
+    1,
+    None,
+    action_on_finish=action_points_for_city_assets(
+        "destination_workers", 3, card_name="Klooster"
+    ),
+    requirements={
+        "kind": "required_cards_in_city",
+        "cards": ["Klooster", "Zwerver"],
+    },
+)
+
+leun = Location(
+    "Leun",
+    "special_event",
+    1,
+    action_store_critter_cards("hand", 3),
+    action_on_finish=action_points_for_cards_in_event_location(2),
+    requirements=[
+        {"kind": "required_cards_in_city", "cards": ["Leraar", "Universiteit"]},
+        {
+            "kind": "min_cards_of_type",
+            "card_type": "critter",
+            "area": "hand",
+            "count": 1,
+        },
+    ],
+)
+
+mawi = Location(
+    "Mawi",
+    "special_event",
+    1,
+    action_resources_to_location(
+        "Mawi",
+        ["berry", "twig", "resin", "pebble"],
+        3,
+        points_per_resource={"berry": 1, "twig": 1, "resin": 2, "pebble": 2},
+    ),
+    action_on_finish=action_points_for_resources_event_location(
+        ["berry", "twig", "resin", "pebble"],
+        {"berry": 1, "twig": 1, "resin": 2, "pebble": 2},
+        location_name="Mawi",
+    ),
+    requirements=[
+        {"kind": "required_cards_in_city", "cards": ["Marskramer", "Winkel"]},
+        {"kind": "has_any_resource"},
+    ],
+)
+
+moke = Location(
+    "Moke",
+    "special_event",
+    1,
+    None,
+    action_on_finish=action_points_for_city_assets(
+        "stored_cards", 3, card_name="Kerker"
+    ),
+    requirements={
+        "kind": "required_cards_in_city",
+        "cards": ["Monnik", "Kerker"],
+    },
+)
+
+reko = Location(
+    "Reko",
+    "special_event",
+    1,
+    action_reactivate_all_green_cards(),
+    action_on_finish=action_points_general("event", 3),
+    requirements=[
+        {
+            "kind": "required_cards_in_city",
+            "cards": ["Rechter", "Koningin"],
+        },
+    ],
+)
+
+sckl = Location(
+    "Sckl",
+    "special_event",
+    1,
+    action_retake_worker(),
+    action_on_finish=action_points_general("event", 4),
+    requirements=[
+        {
+            "kind": "required_cards_in_city",
+            "cards": ["Schoonmaker", "Klokkentoren"],
+        },
+        {"kind": "has_placed_worker"},
+    ],
+)
+
+twve = Location(
+    "Twve",
+    "special_event",
+    1,
+    None,
+    action_on_finish=action_points_general("event", 9),
+    requirements=[
+        {"kind": "min_color_cards", "color": color, "count": 1}
+        for color in ("tan", "red", "green", "blue", "purple")
+    ],
+)
+
+uimi = Location(
+    "Uimi",
+    "special_event",
+    1,
+    action_resources_to_location("Uimi", ["twig"], 3, {"twig": 2}),
+    action_on_finish=action_points_for_resources_event_location(
+        ["twig"], 2, location_name="Uimi"
+    ),
+    requirements=[
+        {"kind": "required_cards_in_city", "cards": ["Uitkijkpost", "Mijnwerker mol"]},
+        {"kind": "has_resource_type", "resource": "twig", "amount": 1},
+    ],
+)
+
+wipo = Location(
+    "Wipo",
+    "special_event",
+    1,
+    action_points_for_given_resources(max_nr_resources=3, points_per_resource=2),
+    requirements=[
+        {"kind": "required_cards_in_city", "cards": ["Winkelier", "Postkantoor"]},
+        {"kind": "has_any_resource"},
+    ],
+)
+
 
 # Special events should not be added to init_locations, but to a separate list
 special_events.extend(
-    [hiru, heza, sckl, reko, dopo, behe, klzw, moke, mawi, wipo, twve, beki, uimi, hoka]
+    [
+        behe,
+        beki,
+        dopo,
+        gebo,
+        heza,
+        hiru,
+        hoka,
+        klzw,
+        leun,
+        mawi,
+        moke,
+        reko,
+        sckl,
+        twve,
+        uimi,
+        wipo,
+    ]
 )
-# TODO: add all special events
 
 
 # ============================================

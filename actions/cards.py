@@ -12,6 +12,7 @@ __all__ = [
     "action_discard_stored_cards",
     "action_cards_from_deck_to_hand",
     "action_cards_from_deck_to_hand_or_location",
+    "action_store_critter_cards",
     "action_cards_from_meadow_to_hand",
     "action_draw_on_card_type",
     "action_cards_keep_and_give",
@@ -206,6 +207,42 @@ class action_cards_from_deck_to_hand_or_location(Action):
         ]
         location.card_storage["cards"].extend(cards_to_store)
         player.cards_add(cards_to_keep, "hand")
+
+
+class action_store_critter_cards(Action):
+    def __init__(self, source_area, max_cards):
+        if source_area not in {"city", "hand"}:
+            raise ValueError("source_area must be 'city' or 'hand'")
+        self.source_area = source_area
+        self.max_cards = max_cards
+
+    def execute_action(self, context: ActionContext):
+        from class_card import Critter
+
+        player: "Player" = context.player
+        location = context.trigger_location or context.event_location
+        if location is None:
+            raise ValueError("An event location is required to store critter cards")
+
+        source_cards = getattr(player, self.source_area)
+        critter_cards = [card for card in source_cards if isinstance(card, Critter)]
+        max_count = min(self.max_cards, len(critter_cards))
+        cards_to_store = player.decide(
+            context.game_state,
+            "cards_to_store",
+            {"cards": critter_cards, "max_count": max_count},
+        )
+        if not isinstance(cards_to_store, list):
+            raise TypeError("cards_to_store must return a list of cards")
+        if len(cards_to_store) > max_count:
+            raise ValueError("cards_to_store returned more cards than allowed")
+        if len({id(card) for card in cards_to_store}) != len(cards_to_store):
+            raise ValueError("cards_to_store returned duplicate cards")
+        if any(card not in critter_cards for card in cards_to_store):
+            raise ValueError("cards_to_store returned an unavailable card")
+
+        player.cards_remove(cards_to_store, self.source_area)
+        location.card_storage["cards"].extend(cards_to_store)
 
 
 class action_draw_on_card_type(Action):

@@ -257,13 +257,16 @@ class action_points_for_resources_event_location(Action):
 
 
 class action_points_for_cards_in_event_location(Action):
+    def __init__(self, points_per_card=1):
+        self.points_per_card = points_per_card
+
     def execute_action(self, context: ActionContext):
         event_location = context.event_location
         if event_location is None:
             raise ValueError("An event location is required to score stored cards")
 
         nr_cards = len(event_location.card_storage["cards"])
-        context.player.points_add("event", nr_cards)
+        context.player.points_add("event", nr_cards * self.points_per_card)
 
 
 class action_points_for_cards_in_city(Action):

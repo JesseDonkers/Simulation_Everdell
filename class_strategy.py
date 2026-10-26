@@ -3,6 +3,7 @@ from typing import Any
 
 STRATEGY_TODO: list[str] = [
     "cards_to_take_hand: evaluate revealed card value and playability when choosing both the subset and its size; the random strategy samples uniformly.",
+    "cards_to_store: use the possible cards as input when choosing how many cards to store; the random strategy samples uniformly.",
     "resources_to_location: use points_per_resource to prioritize the allocation; the random strategy currently samples without regard to point value.",
     "card_play_method: compare payment requirements, consumed cards, and card effects; the random strategy currently chooses a method category and option randomly.",
 ]
@@ -58,6 +59,12 @@ class Strategy_random(Strategy):
         max_count = parameters["max_count"]
         nr_to_take = random.randint(0, max_count)
         return random.sample(possible_cards, nr_to_take)
+
+    def choose_cards_to_store(self, game_state, parameters):
+        possible_cards = parameters["cards"]
+        max_count = parameters["max_count"]
+        nr_to_store = random.randint(1, max_count)
+        return random.sample(possible_cards, nr_to_store)
 
     def choose_card_discard(self, game_state, possible_cards):
         return random.choice(possible_cards)
