@@ -419,9 +419,11 @@ class action_play_card(Action):
         self,
         max_points=99,
         pay=True,
+        precomputed_card_plays=None,
     ):
         self.max_points = max_points
         self.pay = pay
+        self.precomputed_card_plays = precomputed_card_plays
 
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
@@ -433,13 +435,23 @@ class action_play_card(Action):
         meadow: "Meadow" = game_state["meadow"]
         deck = game_state["deck"]
         discardpile = game_state["discardpile"]
-        possible_card_plays = get_possible_card_plays(
-            game_state,
-            player,
-            self.max_points,
-            self.pay,
-            extra_cards=temporary_cards,
+        can_reuse_precomputed = (
+            self.precomputed_card_plays is not None
+            and self.max_points == 99
+            and self.pay
+            and candidate_cards is None
+            and not temporary_cards
         )
+        if can_reuse_precomputed:
+            possible_card_plays = self.precomputed_card_plays
+        else:
+            possible_card_plays = get_possible_card_plays(
+                game_state,
+                player,
+                self.max_points,
+                self.pay,
+                extra_cards=temporary_cards,
+            )
         if candidate_cards is not None:
             allowed = set(candidate_cards)
             possible_card_plays = [

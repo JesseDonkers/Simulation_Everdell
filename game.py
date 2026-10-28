@@ -2,6 +2,8 @@ import copy
 import random
 from typing import Any
 
+from tqdm import tqdm
+
 from actions.cards import action_play_card
 from actions.locations import action_place_worker
 from actions.season import action_advance_season
@@ -12,7 +14,11 @@ from class_location import forest_locations, init_locations, special_events
 from class_meadow import Meadow
 from class_player import Player
 from class_strategy import Strategy_random
-from engine.selectors import get_possible_cards, get_possible_moves
+from engine.selectors import (
+    get_possible_cards,
+    get_possible_moves,
+    get_possible_moves_and_card_plays,
+)
 from engine.turn import advance_current_player, finish_current_player
 from functions_statistics import (
     init_simulation_results,
@@ -26,7 +32,7 @@ from functions_testing import clear_test_results, game_state_as_df_to_text
 # VARIABLES & PARAMETERS
 # ============================================
 
-MODE = "scenario"  # "scenario" or "simulation"
+MODE = "simulation"  # "scenario" or "simulation"
 
 NR_SIMULATION_RUNS = 100  # Number of times to run the scenario or simulation
 NR_PLAYERS = 2  # Number of players in the game (2-4)
@@ -97,9 +103,11 @@ def create_game_state(nr_players, strategy_per_player):
     return game_state
 
 
-def _execute_move(game_state, move):
+def _execute_move(game_state, move, precomputed_card_plays=None):
     if move == "play_card":
-        action_play_card().execute(game_state)
+        action_play_card(precomputed_card_plays=precomputed_card_plays).execute(
+            game_state
+        )
     elif move == "place_worker":
         action_place_worker().execute(game_state)
     elif move == "advance_season":
@@ -112,22 +120,23 @@ def run_single_turn(game_state):
     player = game_state["current_player"]
 
     # Branch 1: this player is already finished; skip to next player.
-    if player.finished:
-        pass
+    if not player.finished:
+        possible_moves, possible_card_plays = get_possible_moves_and_card_plays(
+            game_state, player
+        )
 
-    # Branch 2: active player has no legal moves and therefore finishes.
-    elif len(get_possible_moves(game_state, player)) == 0:
-        finish_current_player(game_state)
-
-    # Branch 3: active player takes one move; may finish if that was final.
-    else:
-        possible_moves = get_possible_moves(game_state, player)
-        chosen_move = player.decide(game_state, "move", possible_moves)
-        _execute_move(game_state, chosen_move)
-
-        updated_moves = get_possible_moves(game_state, player)
-        if len(updated_moves) == 0:
+        # Branch 2: active player has no legal moves and therefore finishes.
+        if not possible_moves:
             finish_current_player(game_state)
+
+        # Branch 3: active player takes one move; may finish if that was final.
+        else:
+            chosen_move = player.decide(game_state, "move", possible_moves)
+            _execute_move(game_state, chosen_move, possible_card_plays)
+
+            updated_moves = get_possible_moves(game_state, player)
+            if len(updated_moves) == 0:
+                finish_current_player(game_state)
 
     # Advance turn unless all players have already finished.
     if not all(p.finished for p in game_state["players"]):
@@ -254,9 +263,7 @@ def run_simulation_mode():
 
     game_state = None
 
-    # TODO: tqdm progress bar
-
-    for _ in range(NR_SIMULATION_RUNS):
+    for _ in tqdm(range(NR_SIMULATION_RUNS), desc="Simulating", unit="game"):
         game_state = create_game_state(NR_PLAYERS, STRATEGY_PER_PLAYER)
         run_full_game(game_state, max_turns=MAX_TURNS_PER_GAME)
         record_game_result(simulation_results, game_state["players"])

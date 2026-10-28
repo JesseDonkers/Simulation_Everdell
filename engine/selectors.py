@@ -17,6 +17,7 @@ __all__ = [
     "get_possible_locations",
     "get_possible_meadow_card_plays_with_discount",
     "get_possible_moves",
+    "get_possible_moves_and_card_plays",
     "get_valid_rechter_swaps",
 ]
 
@@ -209,6 +210,16 @@ def _iter_discounted_requirements(requirements, discount):
     resin = requirements.get("resin", 0)
     pebble = requirements.get("pebble", 0)
     berry = requirements.get("berry", 0)
+
+    if discount == 0 and min(twig, resin, pebble, berry) >= 0:
+        return [
+            {
+                "twig": twig,
+                "resin": resin,
+                "pebble": pebble,
+                "berry": berry,
+            }
+        ]
 
     max_discount = min(discount, twig + resin + pebble + berry)
     unique_costs = []
@@ -663,18 +674,23 @@ def get_possible_locations(game_state, player):
     return possible_locations
 
 
-def get_possible_moves(game_state, player):
+def get_possible_moves_and_card_plays(game_state, player):
     possible_moves = []
-    possible_cards = get_possible_cards(game_state, player, 99, True)
+    possible_card_plays = get_possible_card_plays(game_state, player, 99, True)
     possible_locations = get_possible_locations(game_state, player)
     workers = player.workers
 
-    if len(possible_cards) > 0:
+    if possible_card_plays:
         possible_moves.append("play_card")
     if len(possible_locations) > 0 and workers > 0:
         possible_moves.append("place_worker")
     if player.season != "autumn" and workers == 0:
         possible_moves.append("advance_season")
+    return possible_moves, possible_card_plays
+
+
+def get_possible_moves(game_state, player):
+    possible_moves, _ = get_possible_moves_and_card_plays(game_state, player)
     return possible_moves
 
 
