@@ -1,6 +1,12 @@
 from typing import TYPE_CHECKING
 
 from actions.base import ActionContext
+from shared.game_types import (
+    CardColor,
+    CardStorageKey,
+    LocationType,
+    PointCategory,
+)
 
 if TYPE_CHECKING:
     from class_player import Player
@@ -9,8 +15,8 @@ __all__ = ["advance_current_player", "finish_current_player"]
 
 
 def advance_current_player(game_state):
-    players = game_state["players"]
-    current_player = game_state["current_player"]
+    players = game_state.players
+    current_player = game_state.current_player
     current_player_index = players.index(current_player)
 
     nr_not_finished = len([p for p in players if p.finished is False])
@@ -22,24 +28,27 @@ def advance_current_player(game_state):
     while players[new_player_index].finished:
         new_player_index = (new_player_index + 1) % len(players)
 
-    game_state["current_player"] = players[new_player_index]
+    game_state.current_player = players[new_player_index]
 
 
 def finish_current_player(game_state):
     """
     Sets player.finished to True and evaluates all points.
     """
-    player: "Player" = game_state["current_player"]
-    players = game_state["players"]
+    player: "Player" = game_state.current_player
+    players = game_state.players
     player.finished = True
 
     # Card points
     for card in player.city:
-        player.points_add("card", card.points)
-        player.points_add("token", card.card_storage.get("point_tokens", 0))
+        player.points_add(PointCategory.CARD, card.points)
+        player.points_add(
+            PointCategory.TOKEN,
+            card.card_storage.get(CardStorageKey.POINT_TOKENS, 0),
+        )
 
         # Prosperity points
-        if card.color == "purple" and card.action_on_finish is not None:
+        if card.color == CardColor.PURPLE and card.action_on_finish is not None:
             card.action_on_finish.execute(
                 context=ActionContext(
                     player=player,
@@ -51,14 +60,14 @@ def finish_current_player(game_state):
     # Vrouw scores 3 points per Man/Vrouw pair at game end.
     count_man = sum(1 for card in player.city if card.name == "Man")
     count_vrouw = sum(1 for card in player.city if card.name == "Vrouw")
-    player.points_add("prosperity", 3 * min(count_man, count_vrouw))
+    player.points_add(PointCategory.PROSPERITY, 3 * min(count_man, count_vrouw))
 
     # Journey points
-    for location in game_state["locations"]:
-        if location.location_type == "journey":
+    for location in game_state.locations:
+        if location.location_type == LocationType.JOURNEY:
             nr_workers = location.get_player_workers(player)
             for _ in range(nr_workers):
-                player.points_add("journey", location.points)
+                player.points_add(PointCategory.JOURNEY, location.points)
 
     # Event points
     for event in player.events:

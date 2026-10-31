@@ -1,6 +1,8 @@
 import random
 from typing import Any
 
+from shared.game_types import CardZone, DecisionKind
+
 STRATEGY_TODO: list[str] = [
     "cards_to_take_hand: evaluate revealed card value and playability when choosing both the subset and its size; the random strategy samples uniformly.",
     "cards_to_store: use the possible cards as input when choosing how many cards to store; the random strategy samples uniformly.",
@@ -14,7 +16,9 @@ STRATEGY_TODO: list[str] = [
 
 
 class Strategy:
-    def decide(self, game_state, decision_kind, parameters):
+    def decide(self, game_state, decision_kind: DecisionKind, parameters):
+        if not isinstance(decision_kind, DecisionKind):
+            raise TypeError("decision_kind must be a DecisionKind")
         handler_name = f"choose_{decision_kind}"
         handler = getattr(self, handler_name, None)
 
@@ -44,11 +48,11 @@ class Strategy_random(Strategy):
         return random.choice(methods_by_type[method_type])
 
     def choose_card_hand_or_meadow(self, game_state, _):
-        opt = ["hand", "meadow"]
+        opt = [CardZone.HAND, CardZone.MEADOW]
         return random.choice(opt)
 
     def choose_card_deck_or_discardpile(self, game_state, _):
-        opt = ["deck", "discardpile"]
+        opt = [CardZone.DECK, CardZone.DISCARD_PILE]
         return random.choice(opt)
 
     def choose_nr_cards_discard_hand(self, game_state, max_nr):

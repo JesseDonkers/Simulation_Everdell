@@ -1,5 +1,6 @@
 import copy
 import random
+from concurrent.futures import ProcessPoolExecutor
 from typing import Any
 
 from tqdm import tqdm
@@ -27,12 +28,14 @@ from functions_statistics import (
     summarize_simulation_results,
 )
 from functions_testing import clear_test_results, game_state_as_df_to_text
+from shared.game_state import GameState
+from shared.game_types import CardZone, DecisionKind, GameMode, GameMove, ResourceType
 
 # ============================================
 # VARIABLES & PARAMETERS
 # ============================================
 
-MODE = "simulation"  # "scenario" or "simulation"
+MODE = GameMode.SIMULATION
 
 NR_SIMULATION_RUNS = 100  # Number of times to run the scenario or simulation
 NR_PLAYERS = 2  # Number of players in the game (2-4)
@@ -59,25 +62,25 @@ def create_game_state(nr_players, strategy_per_player):
     for i, player in enumerate(players):
         player.index = i
         drawn_cards = deck.draw_cards(card_counter, discardpile)
-        player.cards_add(drawn_cards, "hand")
+        player.cards_add(drawn_cards, CardZone.HAND)
         card_counter += 1
         player.workers_add(2)
 
     locations: list[Any] = copy.deepcopy(init_locations)
-    game_state: dict[str, Any] = {
-        "deck": deck,
-        "discardpile": discardpile,
-        "meadow": meadow,
-        "locations": locations,
-        "players": players,
-        "current_player": players[0],
-    }
+    game_state = GameState(
+        deck=deck,
+        discardpile=discardpile,
+        meadow=meadow,
+        locations=locations,
+        players=players,
+        current_player=players[0],
+    )
 
     # Shuffle special events and add 4 to locations.
     special_events_copy = copy.deepcopy(special_events)
     random.shuffle(special_events_copy)
     for i in range(4):
-        game_state["locations"].append(special_events_copy[i])
+        game_state.locations.append(special_events_copy[i])
 
     # Shuffle forest locations and place 3 or 4 selected clearings.
     nr_forest_locations = 3 if nr_players <= 3 else 4
@@ -89,7 +92,7 @@ def create_game_state(nr_players, strategy_per_player):
         for location in selected_forest_locations:
             location.maxworkers = 2
 
-    game_state["locations"].extend(selected_forest_locations)
+    game_state.locations.extend(selected_forest_locations)
 
     # Provide each player with a strategy
     if len(strategy_per_player) != len(players):
@@ -104,20 +107,22 @@ def create_game_state(nr_players, strategy_per_player):
 
 
 def _execute_move(game_state, move, precomputed_card_plays=None):
-    if move == "play_card":
+    if not isinstance(move, GameMove):
+        raise TypeError("move must be a GameMove")
+    if move == GameMove.PLAY_CARD:
         action_play_card(precomputed_card_plays=precomputed_card_plays).execute(
             game_state
         )
-    elif move == "place_worker":
+    elif move == GameMove.PLACE_WORKER:
         action_place_worker().execute(game_state)
-    elif move == "advance_season":
+    elif move == GameMove.ADVANCE_SEASON:
         action_advance_season().execute(game_state)
     else:
         raise ValueError(f"Unknown move: {move}")
 
 
 def run_single_turn(game_state):
-    player = game_state["current_player"]
+    player = game_state.current_player
 
     # Branch 1: this player is already finished; skip to next player.
     if not player.finished:
@@ -131,7 +136,7 @@ def run_single_turn(game_state):
 
         # Branch 3: active player takes one move; may finish if that was final.
         else:
-            chosen_move = player.decide(game_state, "move", possible_moves)
+            chosen_move = player.decide(game_state, DecisionKind.MOVE, possible_moves)
             _execute_move(game_state, chosen_move, possible_card_plays)
 
             updated_moves = get_possible_moves(game_state, player)
@@ -139,13 +144,13 @@ def run_single_turn(game_state):
                 finish_current_player(game_state)
 
     # Advance turn unless all players have already finished.
-    if not all(p.finished for p in game_state["players"]):
+    if not all(p.finished for p in game_state.players):
         advance_current_player(game_state)
 
 
 def run_full_game(game_state, max_turns=MAX_TURNS_PER_GAME):
     nr_turns = 0
-    status_game_finished = all(player.finished for player in game_state["players"])
+    status_game_finished = all(player.finished for player in game_state.players)
 
     while not status_game_finished:
         if nr_turns >= max_turns:
@@ -153,13 +158,28 @@ def run_full_game(game_state, max_turns=MAX_TURNS_PER_GAME):
 
         run_single_turn(game_state)
         nr_turns += 1
-        status_game_finished = all(player.finished for player in game_state["players"])
+        status_game_finished = all(player.finished for player in game_state.players)
 
     return game_state
 
 
+def _simulate_one_game(game_spec):
+    seed, include_state = game_spec
+    random.seed(seed)
+    game_state = create_game_state(NR_PLAYERS, STRATEGY_PER_PLAYER)
+    run_full_game(game_state, max_turns=MAX_TURNS_PER_GAME)
+
+    game_result = init_simulation_results(NR_PLAYERS)
+    record_game_result(game_result, game_state.players)
+    return (
+        game_result["game_winners"][0],
+        [player.points_total() for player in game_state.players],
+        game_state if include_state else None,
+    )
+
+
 def run_scenario(game_state):
-    player: "Player" = game_state["current_player"]
+    player: "Player" = game_state.current_player
 
     class ScenarioStrategy(Strategy_random):
         def __init__(self):
@@ -185,13 +205,13 @@ def run_scenario(game_state):
         for card in player.hand + player.city:
             if card.name == card_name:
                 return card
-        for card in game_state["meadow"].cards:
+        for card in game_state.meadow.cards:
             if card.name == card_name:
                 return card
-        for card in list(game_state["deck"].cards):
+        for card in list(game_state.deck.cards):
             if card.name == card_name:
                 return card
-        for card in game_state["discardpile"].cards:
+        for card in game_state.discardpile.cards:
             if card.name == card_name:
                 return card
         raise ValueError(f"Card not found in any zone: {card_name}")
@@ -199,44 +219,47 @@ def run_scenario(game_state):
     def move_card_to_zone(card_name, zone):
         card = find_card_in_zones(card_name)
         if card in player.hand:
-            player.cards_remove([card], "hand")
+            player.cards_remove([card], CardZone.HAND)
         elif card in player.city:
-            player.cards_remove([card], "city")
-        elif card in game_state["meadow"].cards:
-            game_state["meadow"].cards.remove(card)
-        elif card in game_state["deck"].cards:
-            game_state["deck"].cards.remove(card)
-        elif card in game_state["discardpile"].cards:
-            game_state["discardpile"].cards.remove(card)
+            player.cards_remove([card], CardZone.CITY)
+        elif card in game_state.meadow.cards:
+            game_state.meadow.cards.remove(card)
+        elif card in game_state.deck.cards:
+            game_state.deck.cards.remove(card)
+        elif card in game_state.discardpile.cards:
+            game_state.discardpile.cards.remove(card)
         else:
             raise ValueError(f"Unable to move card: {card_name}")
 
-        if zone == "hand":
-            player.cards_add([card], "hand")
-        elif zone == "city":
-            player.cards_add([card], "city")
+        if zone == CardZone.HAND:
+            player.cards_add([card], CardZone.HAND)
+        elif zone == CardZone.CITY:
+            player.cards_add([card], CardZone.CITY)
         else:
             raise ValueError(f"Unknown destination zone: {zone}")
 
     # Build a deterministic test state
     player.city.clear()
-    player.resources = {"twig": 0, "resin": 0, "pebble": 0, "berry": 0}
+    player.resources = {
+        ResourceType.TWIG: 0,
+        ResourceType.RESIN: 0,
+        ResourceType.PEBBLE: 0,
+        ResourceType.BERRY: 0,
+    }
     player.workers = 2
     player.finished = False
     player.strategy = ScenarioStrategy()
 
-    move_card_to_zone("Ruines", "city")
-    move_card_to_zone("Man", "city")
-    move_card_to_zone("Vrouw", "city")
-    move_card_to_zone("Kikkerkapitein", "city")
-    move_card_to_zone("Leraar", "city")
-    move_card_to_zone("Gerechtsgebouw", "city")
-    move_card_to_zone("Boswachter", "city")
-    move_card_to_zone("Universiteit", "city")
+    move_card_to_zone("Ruines", CardZone.CITY)
+    move_card_to_zone("Man", CardZone.CITY)
+    move_card_to_zone("Vrouw", CardZone.CITY)
+    move_card_to_zone("Kikkerkapitein", CardZone.CITY)
+    move_card_to_zone("Leraar", CardZone.CITY)
+    move_card_to_zone("Gerechtsgebouw", CardZone.CITY)
+    move_card_to_zone("Boswachter", CardZone.CITY)
+    move_card_to_zone("Universiteit", CardZone.CITY)
 
-    game_state["meadow"].add_to_meadow(
-        50, game_state["deck"], game_state["discardpile"]
-    )
+    game_state.meadow.add_to_meadow(50, game_state.deck, game_state.discardpile)
 
     game_state_as_df_to_text(game_state, "Game_state")
 
@@ -261,12 +284,24 @@ def run_simulation_mode():
     clear_test_results()
     simulation_results = init_simulation_results(NR_PLAYERS)
 
+    seeds = [random.randrange(2**32) for _ in range(NR_SIMULATION_RUNS)]
+    game_specs = [
+        (seed, game_index == NR_SIMULATION_RUNS - 1)
+        for game_index, seed in enumerate(seeds)
+    ]
     game_state = None
 
-    for _ in tqdm(range(NR_SIMULATION_RUNS), desc="Simulating", unit="game"):
-        game_state = create_game_state(NR_PLAYERS, STRATEGY_PER_PLAYER)
-        run_full_game(game_state, max_turns=MAX_TURNS_PER_GAME)
-        record_game_result(simulation_results, game_state["players"])
+    with ProcessPoolExecutor(max_workers=4) as executor:
+        results = executor.map(_simulate_one_game, game_specs)
+        for winner, points, final_game_state in tqdm(
+            results, total=NR_SIMULATION_RUNS, desc="Simulating", unit="game"
+        ):
+            simulation_results["game_winners"].append(winner)
+            simulation_results["game_win_frequency"][winner] += 1
+            for player_index, score in enumerate(points):
+                simulation_results["game_points"][player_index].append(score)
+            if final_game_state is not None:
+                game_state = final_game_state
 
     if game_state is not None:
         game_state_as_df_to_text(game_state, "last_game_state.txt")
@@ -284,10 +319,10 @@ def run_simulation_mode():
 
 
 def main():
-    if MODE == "scenario":
+    if MODE == GameMode.SCENARIO:
         run_scenario_mode()
         return
-    if MODE == "simulation":
+    if MODE == GameMode.SIMULATION:
         run_simulation_mode()
         return
     raise ValueError(f"Unknown MODE: {MODE}")

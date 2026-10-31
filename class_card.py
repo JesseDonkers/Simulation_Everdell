@@ -1,5 +1,7 @@
 import copy
 import uuid
+from dataclasses import dataclass
+from typing import Any
 
 from actions.base import CompositeAction
 from actions.cards import (
@@ -50,29 +52,67 @@ from actions.resources import (
     action_resources_to_card_storage_choice,
     action_take_all_resources_from_card_storage,
 )
+from shared.game_types import (
+    CardColor,
+    CardStorageKey,
+    CardType,
+    CardZone,
+    LocationType,
+    PointCategory,
+    RequirementKind,
+    ResourceType,
+)
 
 
+@dataclass(init=False, eq=False, repr=False)
 class Card:
+    name: str
+    color: CardColor
+    costs: dict[ResourceType, int]
+    cardsindeck: int
+    unique: bool
+    points: int
+    action_on_play: Any
+    action_on_reactivate: Any
+    action_on_discard: Any
+    action_on_finish: Any
+    action_when_card_played: Any
+    requirements: Any
+    card_storage: dict[CardStorageKey, Any]
+    city_space_cost: int
+    city_space_group: list[str] | None
+    card_id: str
+
     def __init__(
         self,
-        name,
-        color,
-        costs,
-        cardsindeck,
-        unique,
-        points,
-        action_on_play=None,
-        action_on_reactivate=None,
-        action_on_discard=None,
-        action_on_finish=None,
-        action_when_card_played=None,
-        requirements=None,
-        city_space_cost=1,
-        city_space_group=None,
+        name: str,
+        color: CardColor,
+        costs: dict[ResourceType, int],
+        cardsindeck: int,
+        unique: bool,
+        points: int,
+        action_on_play: Any = None,
+        action_on_reactivate: Any = None,
+        action_on_discard: Any = None,
+        action_on_finish: Any = None,
+        action_when_card_played: Any = None,
+        requirements: Any = None,
+        city_space_cost: int = 1,
+        city_space_group: list[str] | None = None,
     ):
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("Card name must be a non-empty string")
+        if not isinstance(color, CardColor):
+            raise TypeError("color must be a CardColor")
+        if any(not isinstance(resource, ResourceType) for resource in costs):
+            raise TypeError("Card costs must use ResourceType keys")
+        if set(costs) != set(ResourceType):
+            raise ValueError("Card costs must define every ResourceType exactly once")
+        if any(type(amount) is not int or amount < 0 for amount in costs.values()):
+            raise ValueError("Card resource costs must be non-negative integers")
         self.name = name
         self.color = color
-        self.costs = costs
+        self.costs = dict(costs)
         self.cardsindeck = cardsindeck
         self.unique = unique
         self.points = points
@@ -84,9 +124,9 @@ class Card:
         self.requirements = requirements  # Optional play preconditions
         # Shared storage for effects that keep cards/resources on a card.
         self.card_storage = {
-            "cards": [],
-            "resources": dict(twig=0, resin=0, pebble=0, berry=0),
-            "point_tokens": 0,
+            CardStorageKey.CARDS: [],
+            CardStorageKey.RESOURCES: {resource: 0 for resource in ResourceType},
+            CardStorageKey.POINT_TOKENS: 0,
         }
         self.city_space_cost = city_space_cost
         self.city_space_group = city_space_group
@@ -99,20 +139,20 @@ class Card:
 class Critter(Card):
     def __init__(
         self,
-        name,
-        color,
-        costs,
-        cardsindeck,
-        unique,
-        points,
-        action_on_play=None,
-        action_on_reactivate=None,
-        action_on_discard=None,
-        action_on_finish=None,
-        action_when_card_played=None,
-        requirements=None,
-        city_space_cost=1,
-        city_space_group=None,
+        name: str,
+        color: CardColor,
+        costs: dict[ResourceType, int],
+        cardsindeck: int,
+        unique: bool,
+        points: int,
+        action_on_play: Any = None,
+        action_on_reactivate: Any = None,
+        action_on_discard: Any = None,
+        action_on_finish: Any = None,
+        action_when_card_played: Any = None,
+        requirements: Any = None,
+        city_space_cost: int = 1,
+        city_space_group: list[str] | None = None,
     ):
         super().__init__(
             name,
@@ -135,21 +175,21 @@ class Critter(Card):
 class Construction(Card):
     def __init__(
         self,
-        name,
-        color,
-        costs,
-        cardsindeck,
-        unique,
-        points,
-        relatedcritters,
-        action_on_play=None,
-        action_on_reactivate=None,
-        action_on_discard=None,
-        action_on_finish=None,
-        action_when_card_played=None,
-        requirements=None,
-        city_space_cost=1,
-        city_space_group=None,
+        name: str,
+        color: CardColor,
+        costs: dict[ResourceType, int],
+        cardsindeck: int,
+        unique: bool,
+        points: int,
+        relatedcritters: list[str],
+        action_on_play: Any = None,
+        action_on_reactivate: Any = None,
+        action_on_discard: Any = None,
+        action_on_finish: Any = None,
+        action_when_card_played: Any = None,
+        requirements: Any = None,
+        city_space_cost: int = 1,
+        city_space_group: list[str] | None = None,
     ):
         super().__init__(
             name,
@@ -180,19 +220,19 @@ cards_unique: list[Card] = []
 
 architect = Critter(
     name="Architect",
-    color="purple",
-    costs=dict(twig=0, resin=0, pebble=0, berry=4),
+    color=CardColor.PURPLE,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 4},
     cardsindeck=2,
     unique=True,
     points=2,
-    action_on_finish=action_points_for_resources_hand(["resin", "pebble"], 1),
+    action_on_finish=action_points_for_resources_hand([ResourceType.RESIN, ResourceType.PEBBLE], 1),
     action_on_discard=action_remove_card_from_city("Architect"),
 )
 
 begrafenisondernemer = Critter(
     name="Begrafenisondernemer",
-    color="tan",
-    costs=dict(twig=0, resin=0, pebble=0, berry=2),
+    color=CardColor.TAN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 2},
     cardsindeck=2,
     unique=True,
     points=1,
@@ -201,7 +241,7 @@ begrafenisondernemer = Critter(
             action_refresh_meadow_draw_cards(3),
             action_add_destination_if_card_present(
                 "Begraafplaats 2",
-                "destination_card",
+                LocationType.DESTINATION_CARD,
                 1,
                 action_play_cards_from_deck_or_discardpile(4),
                 check_card_name="Begraafplaats",
@@ -219,44 +259,44 @@ begrafenisondernemer = Critter(
 
 boswachter = Critter(
     name="Boswachter",
-    color="tan",
-    costs=dict(twig=0, resin=0, pebble=0, berry=2),
+    color=CardColor.TAN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 2},
     cardsindeck=2,
     unique=True,
     points=1,
     action_on_play=action_replace_worker(),
     action_on_discard=action_remove_card_from_city("Boswachter"),
-    requirements={"kind": "has_placed_worker"},
+    requirements={"kind": RequirementKind.HAS_PLACED_WORKER},
 )
 
 dokter = Critter(
     name="Dokter",
-    color="green",
-    costs=dict(twig=0, resin=0, pebble=0, berry=4),
+    color=CardColor.GREEN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 4},
     cardsindeck=2,
     unique=True,
     points=4,
-    action_on_play=action_points_for_payed_resources(3, "berry", 1),
-    action_on_reactivate=action_points_for_payed_resources(3, "berry", 1),
+    action_on_play=action_points_for_payed_resources(3, ResourceType.BERRY, 1),
+    action_on_reactivate=action_points_for_payed_resources(3, ResourceType.BERRY, 1),
     action_on_discard=action_remove_card_from_city("Dokter"),
 )
 
 dwaas = Critter(
     name="Dwaas",
-    color="tan",
-    costs=dict(twig=0, resin=0, pebble=0, berry=3),
+    color=CardColor.TAN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 3},
     cardsindeck=2,
     unique=True,
     points=-2,
     action_on_play=None,
     action_on_discard=action_remove_card_from_city("Dwaas"),
-    requirements={"kind": "other_player_has_city_space"},
+    requirements={"kind": RequirementKind.OTHER_PLAYER_HAS_CITY_SPACE},
 )
 
 herbergier = Critter(
     name="Herbergier",
-    color="blue",
-    costs=dict(twig=0, resin=0, pebble=0, berry=1),
+    color=CardColor.BLUE,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 1},
     cardsindeck=3,
     unique=True,
     points=1,
@@ -266,15 +306,15 @@ herbergier = Critter(
 
 herder = Critter(
     name="Herder",
-    color="tan",
-    costs=dict(twig=0, resin=0, pebble=0, berry=3),
+    color=CardColor.TAN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 3},
     cardsindeck=2,
     unique=True,
     points=1,
     action_on_play=CompositeAction(
         [
-            action_resource_general("berry", 3),
-            action_add_resource_to_other_player("berry", 3),
+            action_resource_general(ResourceType.BERRY, 3),
+            action_add_resource_to_other_player(ResourceType.BERRY, 3),
             action_points_for_tokens_on_card("Kapel"),
         ]
     ),
@@ -283,43 +323,43 @@ herder = Critter(
 
 historicus = Critter(
     name="Historicus",
-    color="blue",
-    costs=dict(twig=0, resin=0, pebble=0, berry=2),
+    color=CardColor.BLUE,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 2},
     cardsindeck=3,
     unique=True,
     points=1,
-    action_when_card_played=action_draw_on_card_type(1, ("critter", "construction")),
+    action_when_card_played=action_draw_on_card_type(1, (CardType.CRITTER, CardType.CONSTRUCTION)),
     action_on_discard=action_remove_card_from_city("Historicus"),
 )
 
 houtsnijder = Critter(
     name="Houtsnijder",
-    color="green",
-    costs=dict(twig=0, resin=0, pebble=0, berry=2),
+    color=CardColor.GREEN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 2},
     cardsindeck=3,
     unique=False,
     points=2,
-    action_on_play=action_points_for_payed_resources(3, "twig", 1),
-    action_on_reactivate=action_points_for_payed_resources(3, "twig", 1),
+    action_on_play=action_points_for_payed_resources(3, ResourceType.TWIG, 1),
+    action_on_reactivate=action_points_for_payed_resources(3, ResourceType.TWIG, 1),
     action_on_discard=action_remove_card_from_city("Houtsnijder"),
 )
 
 kikkerkapitein = Critter(
     name="Kikkerkapitein",
-    color="green",
-    costs=dict(twig=0, resin=0, pebble=0, berry=2),
+    color=CardColor.GREEN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 2},
     cardsindeck=3,
     unique=False,
     points=1,
-    action_on_play=action_resource_per_other_card("Boerderij", "twig", 2),
-    action_on_reactivate=action_resource_per_other_card("Boerderij", "twig", 2),
+    action_on_play=action_resource_per_other_card("Boerderij", ResourceType.TWIG, 2),
+    action_on_reactivate=action_resource_per_other_card("Boerderij", ResourceType.TWIG, 2),
     action_on_discard=action_remove_card_from_city("Kikkerkapitein"),
 )
 
 leraar = Critter(
     name="Leraar",
-    color="green",
-    costs=dict(twig=0, resin=0, pebble=0, berry=2),
+    color=CardColor.GREEN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 2},
     cardsindeck=3,
     unique=False,
     points=2,
@@ -330,8 +370,8 @@ leraar = Critter(
 
 koning = Critter(
     name="Koning",
-    color="purple",
-    costs=dict(twig=0, resin=0, pebble=0, berry=6),
+    color=CardColor.PURPLE,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 6},
     cardsindeck=2,
     unique=True,
     points=4,
@@ -341,18 +381,18 @@ koning = Critter(
 
 koningin = Critter(
     name="Koningin",
-    color="red",
-    costs=dict(twig=0, resin=0, pebble=0, berry=5),
+    color=CardColor.RED,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 5},
     cardsindeck=2,
     unique=True,
     points=4,
     action_on_play=action_add_destination_card_as_location(
         "Koningin",
-        "destination_card",
+        LocationType.DESTINATION_CARD,
         1,
         action_play_card(3, False),
         requirements={
-            "kind": "has_playable_card_with_max_points",
+            "kind": RequirementKind.HAS_PLAYABLE_CARD_WITH_MAX_POINTS,
             "max_points": 3,
         },
     ),
@@ -366,13 +406,13 @@ koningin = Critter(
 
 man = Critter(
     name="Man",
-    color="green",
-    costs=dict(twig=0, resin=0, pebble=0, berry=3),
+    color=CardColor.GREEN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 3},
     cardsindeck=4,
     unique=False,
     points=2,
     action_on_play=action_resource_if_paired_with_other_card(
-        "Man", "Vrouw", "Boerderij", ["twig", "resin", "pebble", "berry"], 1
+        "Man", "Vrouw", "Boerderij", [ResourceType.TWIG, ResourceType.RESIN, ResourceType.PEBBLE, ResourceType.BERRY], 1
     ),
     action_on_reactivate=None,  # Action is handled in season.py
     action_on_discard=action_remove_card_from_city("Man"),
@@ -381,8 +421,8 @@ man = Critter(
 
 marskramer = Critter(
     name="Marskramer",
-    color="green",
-    costs=dict(twig=0, resin=0, pebble=0, berry=2),
+    color=CardColor.GREEN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 2},
     cardsindeck=3,
     unique=False,
     points=1,
@@ -393,8 +433,8 @@ marskramer = Critter(
 
 mijnwerkermol = Critter(
     name="Mijnwerkermol",
-    color="green",
-    costs=dict(twig=0, resin=0, pebble=0, berry=3),
+    color=CardColor.GREEN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 3},
     cardsindeck=3,
     unique=False,
     points=1,
@@ -405,32 +445,32 @@ mijnwerkermol = Critter(
 
 monnik = Critter(
     name="Monnik",
-    color="green",
-    costs=dict(twig=0, resin=0, pebble=0, berry=1),
+    color=CardColor.GREEN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 1},
     cardsindeck=2,
     unique=True,
     points=0,
     action_on_play=CompositeAction(
         [
             action_points_for_given_resources(
-                max_nr_resources=2, resource_type="berry", points_per_resource=2
+                max_nr_resources=2, resource_type=ResourceType.BERRY, points_per_resource=2
             ),
             action_add_destination_if_card_present(
                 "Klooster 2",
-                "destination_card",
+                LocationType.DESTINATION_CARD,
                 1,
                 action_points_for_given_resources(nr_resources=2, points=4),
                 check_card_name="Klooster",
                 permanent_workers=True,
                 requirements={
-                    "kind": "has_total_resources",
+                    "kind": RequirementKind.HAS_TOTAL_RESOURCES,
                     "amount": 2,
                 },
             ),
         ]
     ),
     action_on_reactivate=action_points_for_given_resources(
-        max_nr_resources=2, resource_type="berry", points_per_resource=2
+        max_nr_resources=2, resource_type=ResourceType.BERRY, points_per_resource=2
     ),
     action_on_discard=CompositeAction(
         [
@@ -442,20 +482,20 @@ monnik = Critter(
 
 postduif = Critter(
     name="Postduif",
-    color="tan",
-    costs=dict(twig=0, resin=0, pebble=0, berry=2),
+    color=CardColor.TAN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 2},
     cardsindeck=3,
     unique=False,
     points=0,
     action_on_play=action_play_revealed_deck_card_for_free(2, 3),
     action_on_discard=action_remove_card_from_city("Postduif"),
-    requirements={"kind": "has_city_space"},
+    requirements={"kind": RequirementKind.HAS_CITY_SPACE},
 )
 
 rechter = Critter(
     name="Rechter",
-    color="blue",
-    costs=dict(twig=0, resin=0, pebble=0, berry=3),
+    color=CardColor.BLUE,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 3},
     cardsindeck=2,
     unique=True,
     points=2,
@@ -464,8 +504,8 @@ rechter = Critter(
 
 schoonmaker = Critter(
     name="Schoonmaker",
-    color="green",
-    costs=dict(twig=0, resin=0, pebble=0, berry=3),
+    color=CardColor.GREEN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 3},
     cardsindeck=3,
     unique=False,
     points=2,
@@ -476,8 +516,8 @@ schoonmaker = Critter(
 
 vrouw = Critter(
     name="Vrouw",
-    color="purple",
-    costs=dict(twig=0, resin=0, pebble=0, berry=2),
+    color=CardColor.PURPLE,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 2},
     cardsindeck=4,
     unique=False,
     points=2,
@@ -488,19 +528,19 @@ vrouw = Critter(
 
 winkelier = Critter(
     name="Winkelier",
-    color="blue",
-    costs=dict(twig=0, resin=0, pebble=0, berry=2),
+    color=CardColor.BLUE,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 2},
     cardsindeck=3,
     unique=True,
     points=1,
-    action_when_card_played=action_resource_on_card_type("berry", 1, "critter"),
+    action_when_card_played=action_resource_on_card_type(ResourceType.BERRY, 1, CardType.CRITTER),
     action_on_discard=action_remove_card_from_city("Winkelier"),
 )
 
 zanger = Critter(
     name="Zanger",
-    color="tan",
-    costs=dict(twig=0, resin=0, pebble=0, berry=3),
+    color=CardColor.TAN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 3},
     cardsindeck=2,
     unique=True,
     points=0,
@@ -510,8 +550,8 @@ zanger = Critter(
 
 zwerver = Critter(
     name="Zwerver",
-    color="tan",
-    costs=dict(twig=0, resin=0, pebble=0, berry=2),
+    color=CardColor.TAN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 2},
     cardsindeck=3,
     unique=False,
     points=1,
@@ -553,8 +593,8 @@ cards_unique.append(zwerver)
 
 begraafplaats = Construction(
     name="Begraafplaats",
-    color="red",
-    costs=dict(twig=0, resin=0, pebble=2, berry=0),
+    color=CardColor.RED,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 2, ResourceType.BERRY: 0},
     cardsindeck=2,
     unique=True,
     points=0,
@@ -563,20 +603,20 @@ begraafplaats = Construction(
         [
             action_add_destination_card_as_location(
                 "Begraafplaats 1",
-                "destination_card",
+                LocationType.DESTINATION_CARD,
                 1,
                 action_play_cards_from_deck_or_discardpile(4),
                 permanent_workers=True,
-                requirements={"kind": "has_city_space"},
+                requirements={"kind": RequirementKind.HAS_CITY_SPACE},
             ),
             action_add_destination_if_card_present(
                 "Begraafplaats 2",
-                "destination_card",
+                LocationType.DESTINATION_CARD,
                 1,
                 action_play_cards_from_deck_or_discardpile(4),
                 check_card_name="Begrafenisondernemer",
                 permanent_workers=True,
-                requirements={"kind": "has_city_space"},
+                requirements={"kind": RequirementKind.HAS_CITY_SPACE},
             ),
         ]
     ),
@@ -587,27 +627,27 @@ begraafplaats = Construction(
             action_remove_card_from_city("Begraafplaats"),
         ]
     ),
-    requirements={"kind": "has_city_space"},
+    requirements={"kind": RequirementKind.HAS_CITY_SPACE},
 )
 
 
 boerderij = Construction(
     name="Boerderij",
-    color="green",
-    costs=dict(twig=2, resin=1, pebble=0, berry=0),
+    color=CardColor.GREEN,
+    costs={ResourceType.TWIG: 2, ResourceType.RESIN: 1, ResourceType.PEBBLE: 0, ResourceType.BERRY: 0},
     cardsindeck=8,
     unique=False,
     points=1,
     relatedcritters=["Man", "Vrouw"],
-    action_on_play=action_resource_general("berry", 1),
-    action_on_reactivate=action_resource_general("berry", 1),
+    action_on_play=action_resource_general(ResourceType.BERRY, 1),
+    action_on_reactivate=action_resource_general(ResourceType.BERRY, 1),
     action_on_discard=action_remove_card_from_city("Boerderij"),
 )
 
 evertree = Construction(
     name="Evertree",
-    color="purple",
-    costs=dict(twig=3, resin=3, pebble=3, berry=0),
+    color=CardColor.PURPLE,
+    costs={ResourceType.TWIG: 3, ResourceType.RESIN: 3, ResourceType.PEBBLE: 3, ResourceType.BERRY: 0},
     cardsindeck=2,
     unique=True,
     points=5,
@@ -637,52 +677,52 @@ evertree = Construction(
         "Zanger",
         "Zwerver",
     ],
-    action_on_finish=action_points_for_color_in_city("purple", 1),
+    action_on_finish=action_points_for_color_in_city(CardColor.PURPLE, 1),
     action_on_discard=action_remove_card_from_city("Evertree"),
 )
 
 gerechtsgebouw = Construction(
     name="Gerechtsgebouw",
-    color="blue",
-    costs=dict(twig=1, resin=1, pebble=2, berry=0),
+    color=CardColor.BLUE,
+    costs={ResourceType.TWIG: 1, ResourceType.RESIN: 1, ResourceType.PEBBLE: 2, ResourceType.BERRY: 0},
     cardsindeck=2,
     unique=True,
     points=2,
     relatedcritters=["Rechter"],
     action_when_card_played=action_resource_on_card_type(
-        ["twig", "resin", "pebble"], 1, "construction"
+        [ResourceType.TWIG, ResourceType.RESIN, ResourceType.PEBBLE], 1, CardType.CONSTRUCTION
     ),
     action_on_discard=action_remove_card_from_city("Gerechtsgebouw"),
 )
 
 harsraffinaderij = Construction(
     name="Harsraffinaderij",
-    color="green",
-    costs=dict(twig=0, resin=1, pebble=1, berry=0),
+    color=CardColor.GREEN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 1, ResourceType.PEBBLE: 1, ResourceType.BERRY: 0},
     cardsindeck=3,
     unique=False,
     points=1,
     relatedcritters=["Schoonmaker"],
-    action_on_play=action_resource_general("resin", 1),
-    action_on_reactivate=action_resource_general("resin", 1),
+    action_on_play=action_resource_general(ResourceType.RESIN, 1),
+    action_on_reactivate=action_resource_general(ResourceType.RESIN, 1),
     action_on_discard=action_remove_card_from_city("Harsraffinaderij"),
 )
 
 herberg = Construction(
     name="Herberg",
-    color="red",
-    costs=dict(twig=2, resin=1, pebble=0, berry=0),
+    color=CardColor.RED,
+    costs={ResourceType.TWIG: 2, ResourceType.RESIN: 1, ResourceType.PEBBLE: 0, ResourceType.BERRY: 0},
     cardsindeck=3,
     unique=False,
     points=2,
     relatedcritters=["Herbergier"],
     action_on_play=action_add_destination_card_as_location(
         "Herberg",
-        "destination_card",
+        LocationType.DESTINATION_CARD,
         1,
         action_play_meadow_card_with_discount(3),
         is_open=True,
-        requirements={"kind": "has_playable_meadow_card", "discount": 3},
+        requirements={"kind": RequirementKind.HAS_PLAYABLE_MEADOW_CARD, "discount": 3},
     ),
     action_on_discard=CompositeAction(
         [action_remove_destination("Herberg"), action_remove_card_from_city("Herberg")]
@@ -691,15 +731,15 @@ herberg = Construction(
 
 kapel = Construction(
     name="Kapel",
-    color="red",
-    costs=dict(twig=2, resin=1, pebble=1, berry=0),
+    color=CardColor.RED,
+    costs={ResourceType.TWIG: 2, ResourceType.RESIN: 1, ResourceType.PEBBLE: 1, ResourceType.BERRY: 0},
     cardsindeck=2,
     unique=True,
     points=2,
     relatedcritters=["Herder"],
     action_on_play=action_add_destination_card_as_location(
         "Kapel",
-        "destination_card",
+        LocationType.DESTINATION_CARD,
         1,
         action_point_on_location_take_cards("Kapel", 1, 2),
     ),
@@ -710,8 +750,8 @@ kapel = Construction(
 
 kasteel = Construction(
     name="Kasteel",
-    color="purple",
-    costs=dict(twig=2, resin=3, pebble=3, berry=0),
+    color=CardColor.PURPLE,
+    costs={ResourceType.TWIG: 2, ResourceType.RESIN: 3, ResourceType.PEBBLE: 3, ResourceType.BERRY: 0},
     cardsindeck=2,
     unique=True,
     points=4,
@@ -722,8 +762,8 @@ kasteel = Construction(
 
 kerker = Construction(
     name="Kerker",
-    color="blue",
-    costs=dict(twig=0, resin=1, pebble=2, berry=0),
+    color=CardColor.BLUE,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 1, ResourceType.PEBBLE: 2, ResourceType.BERRY: 0},
     cardsindeck=2,
     unique=True,
     points=0,
@@ -735,8 +775,8 @@ kerker = Construction(
 
 kermis = Construction(
     name="Kermis",
-    color="green",
-    costs=dict(twig=1, resin=2, pebble=1, berry=0),
+    color=CardColor.GREEN,
+    costs={ResourceType.TWIG: 1, ResourceType.RESIN: 2, ResourceType.PEBBLE: 1, ResourceType.BERRY: 0},
     cardsindeck=3,
     unique=False,
     points=3,
@@ -748,8 +788,8 @@ kermis = Construction(
 
 klokkentoren = Construction(
     name="Klokkentoren",
-    color="blue",
-    costs=dict(twig=3, resin=0, pebble=1, berry=0),
+    color=CardColor.BLUE,
+    costs={ResourceType.TWIG: 3, ResourceType.RESIN: 0, ResourceType.PEBBLE: 1, ResourceType.BERRY: 0},
     cardsindeck=3,
     unique=True,
     points=0,
@@ -761,8 +801,8 @@ klokkentoren = Construction(
 
 klooster = Construction(
     name="Klooster",
-    color="red",
-    costs=dict(twig=1, resin=1, pebble=1, berry=0),
+    color=CardColor.RED,
+    costs={ResourceType.TWIG: 1, ResourceType.RESIN: 1, ResourceType.PEBBLE: 1, ResourceType.BERRY: 0},
     cardsindeck=2,
     unique=True,
     points=1,
@@ -771,20 +811,20 @@ klooster = Construction(
         [
             action_add_destination_card_as_location(
                 "Klooster 1",
-                "destination_card",
+                LocationType.DESTINATION_CARD,
                 1,
                 action_points_for_given_resources(nr_resources=2, points=4),
                 permanent_workers=True,
-                requirements={"kind": "has_total_resources", "amount": 2},
+                requirements={"kind": RequirementKind.HAS_TOTAL_RESOURCES, "amount": 2},
             ),
             action_add_destination_if_card_present(
                 "Klooster 2",
-                "destination_card",
+                LocationType.DESTINATION_CARD,
                 1,
                 action_points_for_given_resources(nr_resources=2, points=4),
                 check_card_name="Monnik",
                 permanent_workers=True,
-                requirements={"kind": "has_total_resources", "amount": 2},
+                requirements={"kind": RequirementKind.HAS_TOTAL_RESOURCES, "amount": 2},
             ),
         ]
     ),
@@ -799,8 +839,8 @@ klooster = Construction(
 
 kraan = Construction(
     name="Kraan",
-    color="blue",
-    costs=dict(twig=0, resin=0, pebble=1, berry=0),
+    color=CardColor.BLUE,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 1, ResourceType.BERRY: 0},
     cardsindeck=3,
     unique=True,
     points=1,
@@ -810,21 +850,21 @@ kraan = Construction(
 
 mijn = Construction(
     name="Mijn",
-    color="green",
-    costs=dict(twig=1, resin=1, pebble=1, berry=0),
+    color=CardColor.GREEN,
+    costs={ResourceType.TWIG: 1, ResourceType.RESIN: 1, ResourceType.PEBBLE: 1, ResourceType.BERRY: 0},
     cardsindeck=3,
     unique=False,
     points=2,
     relatedcritters=["Mijnwerkermol"],
-    action_on_play=action_resource_general("pebble", 1),
-    action_on_reactivate=action_resource_general("pebble", 1),
+    action_on_play=action_resource_general(ResourceType.PEBBLE, 1),
+    action_on_reactivate=action_resource_general(ResourceType.PEBBLE, 1),
     action_on_discard=action_remove_card_from_city("Mijn"),
 )
 
 pakhuis = Construction(
     name="Pakhuis",
-    color="green",
-    costs=dict(twig=1, resin=1, pebble=1, berry=0),
+    color=CardColor.GREEN,
+    costs={ResourceType.TWIG: 1, ResourceType.RESIN: 1, ResourceType.PEBBLE: 1, ResourceType.BERRY: 0},
     cardsindeck=3,
     unique=False,
     points=2,
@@ -832,18 +872,18 @@ pakhuis = Construction(
     action_on_play=CompositeAction(
         [
             action_resources_to_card_storage_choice(
-                "Pakhuis", {"twig": 3, "resin": 2, "pebble": 1, "berry": 2}
+                "Pakhuis", {ResourceType.TWIG: 3, ResourceType.RESIN: 2, ResourceType.PEBBLE: 1, ResourceType.BERRY: 2}
             ),
             action_add_destination_card_as_location(
                 "Pakhuis",
-                "destination_card",
+                LocationType.DESTINATION_CARD,
                 1,
                 action_take_all_resources_from_card_storage("Pakhuis"),
             ),
         ]
     ),
     action_on_reactivate=action_resources_to_card_storage_choice(
-        "Pakhuis", {"twig": 3, "resin": 2, "pebble": 1, "berry": 2}
+        "Pakhuis", {ResourceType.TWIG: 3, ResourceType.RESIN: 2, ResourceType.PEBBLE: 1, ResourceType.BERRY: 2}
     ),
     action_on_discard=CompositeAction(
         [
@@ -855,8 +895,8 @@ pakhuis = Construction(
 
 paleis = Construction(
     name="Paleis",
-    color="purple",
-    costs=dict(twig=2, resin=3, pebble=3, berry=0),
+    color=CardColor.PURPLE,
+    costs={ResourceType.TWIG: 2, ResourceType.RESIN: 3, ResourceType.PEBBLE: 3, ResourceType.BERRY: 0},
     cardsindeck=2,
     unique=True,
     points=4,
@@ -867,21 +907,21 @@ paleis = Construction(
 
 postkantoor = Construction(
     name="Postkantoor",
-    color="red",
-    costs=dict(twig=1, resin=2, pebble=0, berry=0),
+    color=CardColor.RED,
+    costs={ResourceType.TWIG: 1, ResourceType.RESIN: 2, ResourceType.PEBBLE: 0, ResourceType.BERRY: 0},
     cardsindeck=3,
     unique=False,
     points=2,
     relatedcritters=["Postduif"],
     action_on_play=action_add_destination_card_as_location(
         "Postkantoor",
-        "destination_card",
+        LocationType.DESTINATION_CARD,
         1,
         action_give_discard_refill_hand(2),
         is_open=True,
         requirements=[
-            {"kind": "has_hand_cards", "amount": 2},
-            {"kind": "other_player_has_hand_space", "amount": 2},
+            {"kind": RequirementKind.HAS_HAND_CARDS, "amount": 2},
+            {"kind": RequirementKind.OTHER_PLAYER_HAS_HAND_SPACE, "amount": 2},
         ],
     ),
     action_on_discard=CompositeAction(
@@ -894,8 +934,8 @@ postkantoor = Construction(
 
 ruines = Construction(
     name="Ruines",
-    color="tan",
-    costs=dict(twig=0, resin=0, pebble=0, berry=0),
+    color=CardColor.TAN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 0, ResourceType.PEBBLE: 0, ResourceType.BERRY: 0},
     cardsindeck=3,
     unique=False,
     points=0,
@@ -908,17 +948,17 @@ ruines = Construction(
     ),
     action_on_discard=action_remove_card_from_city("Ruines"),
     requirements={
-        "kind": "min_cards_of_type",
-        "card_type": "construction",
-        "area": "city",
+        "kind": RequirementKind.MIN_CARDS_OF_TYPE,
+        "card_type": CardType.CONSTRUCTION,
+        "area": CardZone.CITY,
         "count": 1,
     },
 )
 
 school = Construction(
     name="School",
-    color="purple",
-    costs=dict(twig=2, resin=2, pebble=0, berry=0),
+    color=CardColor.PURPLE,
+    costs={ResourceType.TWIG: 2, ResourceType.RESIN: 2, ResourceType.PEBBLE: 0, ResourceType.BERRY: 0},
     cardsindeck=2,
     unique=True,
     points=2,
@@ -929,21 +969,21 @@ school = Construction(
 
 takkenboot = Construction(
     name="Takkenboot",
-    color="green",
-    costs=dict(twig=1, resin=0, pebble=1, berry=0),
+    color=CardColor.GREEN,
+    costs={ResourceType.TWIG: 1, ResourceType.RESIN: 0, ResourceType.PEBBLE: 1, ResourceType.BERRY: 0},
     cardsindeck=3,
     unique=False,
     points=1,
     relatedcritters=["Kikkerkapitein"],
-    action_on_play=action_resource_general("twig", 2),
-    action_on_reactivate=action_resource_general("twig", 2),
+    action_on_play=action_resource_general(ResourceType.TWIG, 2),
+    action_on_reactivate=action_resource_general(ResourceType.TWIG, 2),
     action_on_discard=action_remove_card_from_city("Takkenboot"),
 )
 
 theater = Construction(
     name="Theater",
-    color="purple",
-    costs=dict(twig=3, resin=1, pebble=1, berry=0),
+    color=CardColor.PURPLE,
+    costs={ResourceType.TWIG: 3, ResourceType.RESIN: 1, ResourceType.PEBBLE: 1, ResourceType.BERRY: 0},
     cardsindeck=2,
     unique=True,
     points=3,
@@ -954,17 +994,17 @@ theater = Construction(
 
 uitkijkpost = Construction(
     name="Uitkijkpost",
-    color="red",
-    costs=dict(twig=1, resin=1, pebble=1, berry=0),
+    color=CardColor.RED,
+    costs={ResourceType.TWIG: 1, ResourceType.RESIN: 1, ResourceType.PEBBLE: 1, ResourceType.BERRY: 0},
     cardsindeck=2,
     unique=True,
     points=2,
     relatedcritters=["Zwerver"],
     action_on_play=action_add_destination_card_as_location(
         "Uitkijkpost",
-        "destination_card",
+        LocationType.DESTINATION_CARD,
         1,
-        action_location_copy_action(["basic", "forest"]),
+        action_location_copy_action([LocationType.BASIC, LocationType.FOREST]),
     ),
     action_on_discard=CompositeAction(
         [
@@ -976,24 +1016,24 @@ uitkijkpost = Construction(
 
 universiteit = Construction(
     name="Universiteit",
-    color="red",
-    costs=dict(twig=0, resin=1, pebble=2, berry=0),
+    color=CardColor.RED,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 1, ResourceType.PEBBLE: 2, ResourceType.BERRY: 0},
     cardsindeck=2,
     unique=True,
     points=3,
     relatedcritters=["Dokter"],
     action_on_play=action_add_destination_card_as_location(
         "Universiteit",
-        "destination_card",
+        LocationType.DESTINATION_CARD,
         1,
         CompositeAction(
             [
                 action_resources_building_costs_discard(True, True),
-                action_resources_by_choice(["twig", "resin", "pebble", "berry"], 1),
-                action_points_general("token", 1),
+                action_resources_by_choice([ResourceType.TWIG, ResourceType.RESIN, ResourceType.PEBBLE, ResourceType.BERRY], 1),
+                action_points_general(PointCategory.TOKEN, 1),
             ]
         ),
-        requirements={"kind": "has_city_cards", "amount": 1},
+        requirements={"kind": RequirementKind.HAS_CITY_CARDS, "amount": 1},
     ),
     action_on_discard=CompositeAction(
         [
@@ -1005,22 +1045,22 @@ universiteit = Construction(
 
 winkel = Construction(
     name="Winkel",
-    color="green",
-    costs=dict(twig=0, resin=1, pebble=1, berry=0),
+    color=CardColor.GREEN,
+    costs={ResourceType.TWIG: 0, ResourceType.RESIN: 1, ResourceType.PEBBLE: 1, ResourceType.BERRY: 0},
     cardsindeck=3,
     unique=False,
     points=1,
     relatedcritters=["Winkelier"],
     action_on_play=CompositeAction(
         [
-            action_resource_general("berry", 1),
-            action_resource_if_other_card("Boerderij", "berry", 1),
+            action_resource_general(ResourceType.BERRY, 1),
+            action_resource_if_other_card("Boerderij", ResourceType.BERRY, 1),
         ]
     ),
     action_on_reactivate=CompositeAction(
         [
-            action_resource_general("berry", 1),
-            action_resource_if_other_card("Boerderij", "berry", 1),
+            action_resource_general(ResourceType.BERRY, 1),
+            action_resource_if_other_card("Boerderij", ResourceType.BERRY, 1),
         ]
     ),
     action_on_discard=action_remove_card_from_city("Winkel"),

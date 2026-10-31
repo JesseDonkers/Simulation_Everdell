@@ -4,6 +4,15 @@ from actions.base import Action, ActionContext
 from actions.common import resolve_city_card_target
 from actions.resources import action_resources_by_choice
 from shared.play_plan import build_play_plan
+from shared.game_types import (
+    CardColor,
+    CardStorageKey,
+    CardType,
+    CardZone,
+    DecisionKind,
+    PlayMethodKind,
+    ResourceType,
+)
 
 __all__ = [
     "action_discard_cards_from_hand",
@@ -46,7 +55,7 @@ class action_discard_cards_from_hand(Action):
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
         game_state = context.game_state
-        discardpile: "DiscardPile" = game_state["discardpile"]
+        discardpile: "DiscardPile" = game_state.discardpile
 
         if len(player.hand) < self.nr_cards:
             raise ValueError("Not enough cards in hand to discard")
@@ -54,11 +63,11 @@ class action_discard_cards_from_hand(Action):
         cards_to_discard = []
         selectable = player.hand.copy()
         for _ in range(self.nr_cards):
-            card = player.decide(game_state, "card_discard", selectable)
+            card = player.decide(game_state, DecisionKind.CARD_DISCARD, selectable)
             cards_to_discard.append(card)
             selectable.remove(card)
 
-        player.cards_remove(cards_to_discard, "hand")
+        player.cards_remove(cards_to_discard, CardZone.HAND)
         discardpile.add_to_discardpile(cards_to_discard)
 
 
@@ -69,7 +78,7 @@ class action_discard_cards_from_city(Action):
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
         game_state = context.game_state
-        discardpile: "DiscardPile" = game_state["discardpile"]
+        discardpile: "DiscardPile" = game_state.discardpile
 
         if len(player.city) < self.nr_cards:
             raise ValueError("Not enough cards in city to discard")
@@ -77,11 +86,11 @@ class action_discard_cards_from_city(Action):
         selectable = player.city.copy()
         cards_to_discard = []
         for _ in range(self.nr_cards):
-            card = player.decide(game_state, "card_discard", selectable)
+            card = player.decide(game_state, DecisionKind.CARD_DISCARD, selectable)
             cards_to_discard.append(card)
             selectable.remove(card)
 
-        player.cards_remove(cards_to_discard, "city")
+        player.cards_remove(cards_to_discard, CardZone.CITY)
         discardpile.add_to_discardpile(cards_to_discard)
 
 
@@ -91,11 +100,13 @@ class action_discard_cards_for_deck_cards(Action):
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
         game_state = context.game_state
-        discardpile: "DiscardPile" = game_state["discardpile"]
+        discardpile: "DiscardPile" = game_state.discardpile
 
-        hand_space = max(0, player.cards_get_open_spaces("hand"))
+        hand_space = max(0, player.cards_get_open_spaces(CardZone.HAND))
         max_discard = min(len(player.hand), hand_space)
-        nr_discard = player.decide(game_state, "nr_cards_discard_hand", max_discard)
+        nr_discard = player.decide(
+            game_state, DecisionKind.NR_CARDS_DISCARD_HAND, max_discard
+        )
         nr_discard = max(0, min(nr_discard, max_discard))
         if nr_discard == 0:
             return
@@ -103,14 +114,14 @@ class action_discard_cards_for_deck_cards(Action):
         selectable = player.hand.copy()
         cards_to_discard = []
         for _ in range(nr_discard):
-            card = player.decide(game_state, "card_discard", selectable)
+            card = player.decide(game_state, DecisionKind.CARD_DISCARD, selectable)
             cards_to_discard.append(card)
             selectable.remove(card)
 
-        player.cards_remove(cards_to_discard, "hand")
+        player.cards_remove(cards_to_discard, CardZone.HAND)
         discardpile.add_to_discardpile(cards_to_discard)
 
-        hand_space = max(0, player.cards_get_open_spaces("hand"))
+        hand_space = max(0, player.cards_get_open_spaces(CardZone.HAND))
         nr_cards_to_draw = min(nr_discard * 2, hand_space)
         action_cards_from_deck_to_hand(nr_cards_to_draw).execute(context=context)
 
@@ -138,11 +149,11 @@ class action_discard_stored_cards(Action):
             card_name=self.card_name,
             game_state=game_state,
         )
-        stored_cards = target_card.card_storage["cards"]
+        stored_cards = target_card.card_storage[CardStorageKey.CARDS]
         if len(stored_cards) == 0:
             return
 
-        discard_pile: "DiscardPile" = game_state["discardpile"]
+        discard_pile: "DiscardPile" = game_state.discardpile
         discard_pile.add_to_discardpile(list(stored_cards))
         stored_cards.clear()
 
@@ -154,12 +165,12 @@ class action_cards_from_deck_to_hand(Action):
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
         game_state = context.game_state
-        deck: "Deck" = game_state["deck"]
-        discardpile: "DiscardPile" = game_state["discardpile"]
-        spaces_hand = player.cards_get_open_spaces("hand")
+        deck: "Deck" = game_state.deck
+        discardpile: "DiscardPile" = game_state.discardpile
+        spaces_hand = player.cards_get_open_spaces(CardZone.HAND)
         nr_draw = min(self.nrCards, spaces_hand)
         listofcards = deck.draw_cards(nr_draw, discardpile)
-        player.cards_add(listofcards, "hand")
+        player.cards_add(listofcards, CardZone.HAND)
 
 
 class action_cards_from_deck_to_hand_or_location(Action):
@@ -176,16 +187,16 @@ class action_cards_from_deck_to_hand_or_location(Action):
                 f"Location '{self.location_name}' not found in action context"
             )
 
-        deck: "Deck" = game_state["deck"]
-        discardpile: "DiscardPile" = game_state["discardpile"]
+        deck: "Deck" = game_state.deck
+        discardpile: "DiscardPile" = game_state.discardpile
         revealed_cards = deck.draw_cards(self.nr_cards, discardpile)
 
         max_to_keep = min(
-            len(revealed_cards), max(0, player.cards_get_open_spaces("hand"))
+            len(revealed_cards), max(0, player.cards_get_open_spaces(CardZone.HAND))
         )
         cards_to_keep = player.decide(
             game_state,
-            "cards_to_take_hand",
+            DecisionKind.CARDS_TO_TAKE_HAND,
             {"cards": revealed_cards.copy(), "max_count": max_to_keep},
         )
         if not isinstance(cards_to_keep, list):
@@ -205,13 +216,13 @@ class action_cards_from_deck_to_hand_or_location(Action):
             for revealed_card in revealed_cards
             if not any(revealed_card is card_to_keep for card_to_keep in cards_to_keep)
         ]
-        location.card_storage["cards"].extend(cards_to_store)
-        player.cards_add(cards_to_keep, "hand")
+        location.card_storage[CardStorageKey.CARDS].extend(cards_to_store)
+        player.cards_add(cards_to_keep, CardZone.HAND)
 
 
 class action_store_critter_cards(Action):
     def __init__(self, source_area, max_cards):
-        if source_area not in {"city", "hand"}:
+        if source_area not in {CardZone.CITY, CardZone.HAND}:
             raise ValueError("source_area must be 'city' or 'hand'")
         self.source_area = source_area
         self.max_cards = max_cards
@@ -229,7 +240,7 @@ class action_store_critter_cards(Action):
         max_count = min(self.max_cards, len(critter_cards))
         cards_to_store = player.decide(
             context.game_state,
-            "cards_to_store",
+            DecisionKind.CARDS_TO_STORE,
             {"cards": critter_cards, "max_count": max_count},
         )
         if not isinstance(cards_to_store, list):
@@ -242,16 +253,18 @@ class action_store_critter_cards(Action):
             raise ValueError("cards_to_store returned an unavailable card")
 
         player.cards_remove(cards_to_store, self.source_area)
-        location.card_storage["cards"].extend(cards_to_store)
+        location.card_storage[CardStorageKey.CARDS].extend(cards_to_store)
 
 
 class action_draw_on_card_type(Action):
     """Draw cards when a specified kind of card is played elsewhere.
 
-    trigger_kinds: iterable containing any of "critter" and "construction".
+    trigger_kinds: iterable containing any of CardType.CRITTER and CardType.CONSTRUCTION.
     """
 
-    def __init__(self, nrCards, trigger_kinds=("critter", "construction")):
+    def __init__(
+        self, nrCards, trigger_kinds=(CardType.CRITTER, CardType.CONSTRUCTION)
+    ):
         self.nrCards = nrCards
         self.trigger_kinds = tuple(trigger_kinds)
 
@@ -267,9 +280,9 @@ class action_draw_on_card_type(Action):
         from class_card import Critter, Construction
 
         should_trigger = False
-        if "critter" in self.trigger_kinds and isinstance(played_card, Critter):
+        if CardType.CRITTER in self.trigger_kinds and isinstance(played_card, Critter):
             should_trigger = True
-        if "construction" in self.trigger_kinds and isinstance(
+        if CardType.CONSTRUCTION in self.trigger_kinds and isinstance(
             played_card, Construction
         ):
             should_trigger = True
@@ -288,9 +301,9 @@ class action_cards_keep_and_give(Action):
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
         game_state = context.game_state
-        deck: "Deck" = game_state["deck"]
-        discardpile: "DiscardPile" = game_state["discardpile"]
-        players = game_state["players"]
+        deck: "Deck" = game_state.deck
+        discardpile: "DiscardPile" = game_state.discardpile
+        players = game_state.players
 
         if self.nrCards_keep < 0 or self.nrCards_give < 0:
             raise ValueError("Card amounts to keep/give cannot be negative")
@@ -300,18 +313,18 @@ class action_cards_keep_and_give(Action):
             for p in players
             if p != player
             and not p.finished
-            and p.cards_get_open_spaces("hand") >= self.nrCards_give
+            and p.cards_get_open_spaces(CardZone.HAND) >= self.nrCards_give
         ]
 
         other_player: Optional["Player"] = None
         if self.nrCards_give > 0 and len(eligible_targets) > 0:
             other_player = player.decide(
-                game_state, "player_to_receive_cards_hand", eligible_targets
+                game_state, DecisionKind.PLAYER_TO_RECEIVE_CARDS_HAND, eligible_targets
             )
 
-        spaces_hand = player.cards_get_open_spaces("hand")
+        spaces_hand = player.cards_get_open_spaces(CardZone.HAND)
         spaces_hand_other_player = (
-            other_player.cards_get_open_spaces("hand") if other_player else 0
+            other_player.cards_get_open_spaces(CardZone.HAND) if other_player else 0
         )
         max_keep_possible = min(self.nrCards_keep, spaces_hand)
         max_give_possible = min(self.nrCards_give, spaces_hand_other_player)
@@ -329,31 +342,43 @@ class action_cards_keep_and_give(Action):
 
         nr_keep = min(max_keep_possible, nr_draw)
         for _ in range(nr_keep):
-            card_keep = player.decide(game_state, "card_new", listofcards)
+            card_keep = player.decide(game_state, DecisionKind.CARD_NEW, listofcards)
             cards_to_keep.append(card_keep)
             listofcards.remove(card_keep)
 
         nr_give = min(max_give_possible, nr_draw - nr_keep)
         for _ in range(nr_give):
-            card_give = player.decide(game_state, "card_discard", listofcards)
+            card_give = player.decide(
+                game_state, DecisionKind.CARD_DISCARD, listofcards
+            )
             cards_to_give.append(card_give)
             listofcards.remove(card_give)
 
         if len(cards_to_keep) > 0:
-            player.cards_add(cards_to_keep, "hand")
+            player.cards_add(cards_to_keep, CardZone.HAND)
         if len(cards_to_give) > 0:
             assert other_player is not None
-            other_player.cards_add(cards_to_give, "hand")
+            other_player.cards_add(cards_to_give, CardZone.HAND)
 
 
 class action_resource_on_card_type(Action):
     """Gain resources when a specified kind of card is played elsewhere.
 
-    `resource` may be a single resource string or a list/tuple of resources
+    `resource` may be a single ResourceType or a list/tuple of resource types
     to choose from when the trigger happens.
     """
 
-    def __init__(self, resource, amount, trigger_kind="critter"):
+    def __init__(
+        self,
+        resource: ResourceType | list[ResourceType] | tuple[ResourceType, ...],
+        amount: int,
+        trigger_kind: CardType = CardType.CRITTER,
+    ):
+        resources = resource if isinstance(resource, (list, tuple)) else (resource,)
+        if any(not isinstance(item, ResourceType) for item in resources):
+            raise TypeError("resource must contain only ResourceType values")
+        if not isinstance(trigger_kind, CardType):
+            raise TypeError("trigger_kind must be a CardType")
         self.resource = resource
         self.amount = amount
         self.trigger_kind = trigger_kind
@@ -369,9 +394,9 @@ class action_resource_on_card_type(Action):
         from class_card import Critter, Construction
 
         trigger_matches = False
-        if self.trigger_kind == "critter" and isinstance(played_card, Critter):
+        if self.trigger_kind == CardType.CRITTER and isinstance(played_card, Critter):
             trigger_matches = True
-        elif self.trigger_kind == "construction" and isinstance(
+        elif self.trigger_kind == CardType.CONSTRUCTION and isinstance(
             played_card, Construction
         ):
             trigger_matches = True
@@ -383,12 +408,11 @@ class action_resource_on_card_type(Action):
 
     def _grant_resources(self, context: ActionContext):
         player: "Player" = context.player
-        if isinstance(self.resource, (list, tuple)):
-            action_resources_by_choice(self.resource, self.amount).execute(
-                context=context
-            )
+        resource = self.resource
+        if isinstance(resource, ResourceType):
+            player.resources_add(resource, self.amount)
         else:
-            player.resources_add(self.resource, self.amount)
+            action_resources_by_choice(resource, self.amount).execute(context=context)
 
 
 class action_cards_from_meadow_to_hand(Action):
@@ -398,20 +422,20 @@ class action_cards_from_meadow_to_hand(Action):
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
         game_state = context.game_state
-        meadow: "Meadow" = game_state["meadow"]
-        deck = game_state["deck"]
-        discardpile = game_state["discardpile"]
-        spaces_hand = player.cards_get_open_spaces("hand")
+        meadow: "Meadow" = game_state.meadow
+        deck = game_state.deck
+        discardpile = game_state.discardpile
+        spaces_hand = player.cards_get_open_spaces(CardZone.HAND)
         listofcards = []
         selectable_cards = meadow.cards.copy()
 
         for _ in range(min(self.nrCards, spaces_hand)):
-            card = player.decide(game_state, "card_new", selectable_cards)
+            card = player.decide(game_state, DecisionKind.CARD_NEW, selectable_cards)
             listofcards.append(card)
             selectable_cards.remove(card)
 
         meadow.draw_cards(listofcards, deck, discardpile)
-        player.cards_add(listofcards, "hand")
+        player.cards_add(listofcards, CardZone.HAND)
 
 
 class action_play_card(Action):
@@ -432,9 +456,9 @@ class action_play_card(Action):
         temporary_cards = context.options.get("temporary_cards", [])
         from engine.selectors import get_possible_card_plays
 
-        meadow: "Meadow" = game_state["meadow"]
-        deck = game_state["deck"]
-        discardpile = game_state["discardpile"]
+        meadow: "Meadow" = game_state.meadow
+        deck = game_state.deck
+        discardpile = game_state.discardpile
         can_reuse_precomputed = (
             self.precomputed_card_plays is not None
             and self.max_points == 99
@@ -462,7 +486,7 @@ class action_play_card(Action):
         if len(possible_cards) == 0:
             raise ValueError("No possible cards to play")
 
-        card = player.decide(game_state, "card_new", possible_cards)
+        card = player.decide(game_state, DecisionKind.CARD_NEW, possible_cards)
         card_play_data = next(
             entry for entry in possible_card_plays if entry.card == card
         )
@@ -470,7 +494,9 @@ class action_play_card(Action):
 
         selected_method = methods[0]
         if len(methods) > 1:
-            selected_method = player.decide(game_state, "card_play_method", methods)
+            selected_method = player.decide(
+                game_state, DecisionKind.CARD_PLAY_METHOD, methods
+            )
 
         play_plan = build_play_plan(card, selected_method)
 
@@ -479,13 +505,13 @@ class action_play_card(Action):
         in_temporary = card in temporary_cards
 
         loc = (
-            player.decide(game_state, "card_hand_or_meadow", None)
+            player.decide(game_state, DecisionKind.CARD_HAND_OR_MEADOW, None)
             if in_hand and in_meadow
-            else "hand" if in_hand else "meadow"
+            else CardZone.HAND if in_hand else CardZone.MEADOW
         )
 
-        if loc == "hand":
-            player.cards_remove([card], "hand")
+        if loc == CardZone.HAND:
+            player.cards_remove([card], CardZone.HAND)
         elif in_meadow:
             meadow.draw_cards([card], deck, discardpile)
         elif in_temporary:
@@ -521,7 +547,7 @@ class action_play_card(Action):
             )
 
         # Card is added to the target city.
-        target_player.cards_add([card], "city")
+        target_player.cards_add([card], CardZone.CITY)
         for action in play_plan.post_place_actions:
             action.execute(
                 context=ActionContext(
@@ -546,19 +572,19 @@ class action_play_card(Action):
     def _execute_selected_method(
         self, player: "Player", game_state, selected_method, card=None
     ):
-        if selected_method.method == "pay_resources":
+        if selected_method.method == PlayMethodKind.PAY_RESOURCES:
             return self._method_pay_resources()
-        if selected_method.method == "related_free":
+        if selected_method.method == PlayMethodKind.RELATED_FREE:
             return self._method_related_free(selected_method)
-        if selected_method.method == "kerker_discount":
+        if selected_method.method == PlayMethodKind.KERKER_DISCOUNT:
             return self._method_kerker_discount(player, game_state, selected_method)
-        if selected_method.method == "kraan_discount":
+        if selected_method.method == PlayMethodKind.KRAAN_DISCOUNT:
             return self._method_kraan_discount(player, game_state, selected_method)
-        if selected_method.method == "herbergier_discount":
+        if selected_method.method == PlayMethodKind.HERBERGIER_DISCOUNT:
             return self._method_herbergier_discount(player, game_state, selected_method)
-        if selected_method.method == "rechter_substitution":
+        if selected_method.method == PlayMethodKind.RECHTER_SUBSTITUTION:
             return self._method_rechter_substitution(player, game_state, card)
-        if selected_method.method == "free_no_pay":
+        if selected_method.method == PlayMethodKind.FREE_NO_PAY:
             return self._method_free_no_pay()
 
         raise ValueError(f"Unknown card play method: {selected_method.method}")
@@ -569,14 +595,16 @@ class action_play_card(Action):
 
         eligible_targets = [
             p
-            for p in game_state["players"]
-            if p != player and not p.finished and p.cards_get_open_spaces("city") > 0
+            for p in game_state.players
+            if p != player
+            and not p.finished
+            and p.cards_get_open_spaces(CardZone.CITY) > 0
         ]
         if len(eligible_targets) == 0:
             raise ValueError("No opponent has city space for Dwaas")
 
         return player.decide(
-            game_state, "player_to_receive_cards_city", eligible_targets
+            game_state, DecisionKind.PLAYER_TO_RECEIVE_CARDS_CITY, eligible_targets
         )
 
     def _method_pay_resources(self):
@@ -610,9 +638,9 @@ class action_play_card(Action):
                 )
             )
         elif prisoner in player.city:
-            player.cards_remove([prisoner], "city")
+            player.cards_remove([prisoner], CardZone.CITY)
 
-        kerker.card_storage["cards"].append(prisoner)
+        kerker.card_storage[CardStorageKey.CARDS].append(prisoner)
         return True
 
     def _method_kraan_discount(self, player: "Player", game_state, selected_method):
@@ -632,8 +660,8 @@ class action_play_card(Action):
                 )
             )
         elif kraan in player.city:
-            player.cards_remove([kraan], "city")
-            game_state["discardpile"].add_to_discardpile([kraan])
+            player.cards_remove([kraan], CardZone.CITY)
+            game_state.discardpile.add_to_discardpile([kraan])
 
         return True
 
@@ -656,8 +684,8 @@ class action_play_card(Action):
                 )
             )
         elif herbergier in player.city:
-            player.cards_remove([herbergier], "city")
-            game_state["discardpile"].add_to_discardpile([herbergier])
+            player.cards_remove([herbergier], CardZone.CITY)
+            game_state.discardpile.add_to_discardpile([herbergier])
 
         return True
 
@@ -672,12 +700,14 @@ class action_play_card(Action):
             raise ValueError("No valid Rechter substitution available")
 
         remove_options = sorted({remove for remove, _ in valid_swaps})
-        remove_type = player.decide(game_state, "resource_discard", remove_options)
+        remove_type = player.decide(
+            game_state, DecisionKind.RESOURCE_DISCARD, remove_options
+        )
 
         add_options = sorted(
             add for remove, add in valid_swaps if remove == remove_type
         )
-        add_type = player.decide(game_state, "resource_new", add_options)
+        add_type = player.decide(game_state, DecisionKind.RESOURCE_NEW, add_options)
 
         cost = dict(card.costs)
         cost[remove_type] -= 1
@@ -711,9 +741,9 @@ class action_play_meadow_card_with_discount(action_play_card):
         game_state = context.game_state
         from engine.selectors import get_possible_meadow_card_plays_with_discount
 
-        meadow: "Meadow" = game_state["meadow"]
-        deck = game_state["deck"]
-        discardpile = game_state["discardpile"]
+        meadow: "Meadow" = game_state.meadow
+        deck = game_state.deck
+        discardpile = game_state.discardpile
 
         possible_card_plays = get_possible_meadow_card_plays_with_discount(
             game_state,
@@ -726,7 +756,7 @@ class action_play_meadow_card_with_discount(action_play_card):
         if len(possible_cards) == 0:
             raise ValueError("No meadow cards can be played with the Herberg discount")
 
-        card = player.decide(game_state, "card_new", possible_cards)
+        card = player.decide(game_state, DecisionKind.CARD_NEW, possible_cards)
         card_play_data = next(
             entry for entry in possible_card_plays if entry.card == card
         )
@@ -734,7 +764,9 @@ class action_play_meadow_card_with_discount(action_play_card):
 
         selected_method = methods[0]
         if len(methods) > 1:
-            selected_method = player.decide(game_state, "card_play_method", methods)
+            selected_method = player.decide(
+                game_state, DecisionKind.CARD_PLAY_METHOD, methods
+            )
 
         play_plan = build_play_plan(card, selected_method)
 
@@ -762,7 +794,7 @@ class action_play_meadow_card_with_discount(action_play_card):
                 )
             )
 
-        player.cards_add([card], "city")
+        player.cards_add([card], CardZone.CITY)
         for action in play_plan.post_place_actions:
             action.execute(
                 context=ActionContext(
@@ -793,9 +825,9 @@ class action_play_two_meadow_cards_with_discount(action_play_meadow_card_with_di
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
         game_state = context.game_state
-        meadow: "Meadow" = game_state["meadow"]
-        deck = game_state["deck"]
-        discardpile = game_state["discardpile"]
+        meadow: "Meadow" = game_state.meadow
+        deck = game_state.deck
+        discardpile = game_state.discardpile
         from engine.selectors import get_possible_meadow_card_plays_with_discount
 
         if len(meadow.cards) < 2:
@@ -815,9 +847,9 @@ class action_play_two_meadow_cards_with_discount(action_play_meadow_card_with_di
         selectable_cards = meadow.cards.copy()
         selected_cards: list["Card"] = []
         for _ in range(2):
-            decision_kind = "card_new"
+            decision_kind = DecisionKind.CARD_NEW
             if selected_cards and selected_cards[0] in playable_cards:
-                decision_kind = "card_discard"
+                decision_kind = DecisionKind.CARD_DISCARD
             elif selected_cards:
                 selectable_cards = [
                     card for card in selectable_cards if card in playable_cards
@@ -862,14 +894,14 @@ class action_remove_card_from_city(Action):
             card_name=self.card_name,
             game_state=game_state,
         )
-        player.cards_remove([target_card], "city")
+        player.cards_remove([target_card], CardZone.CITY)
 
         add_to_discard = context.options.get("add_to_discard")
         effective_add_to_discard = (
             self.add_to_discard if add_to_discard is None else add_to_discard
         )
         if effective_add_to_discard:
-            discard_pile: "DiscardPile" = game_state["discardpile"]
+            discard_pile: "DiscardPile" = game_state.discardpile
             discard_pile.add_to_discardpile([target_card])
 
 
@@ -880,14 +912,16 @@ class action_refresh_meadow_draw_cards(Action):
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
         game_state = context.game_state
-        meadow: "Meadow" = game_state["meadow"]
-        deck = game_state["deck"]
-        discardpile: "DiscardPile" = game_state["discardpile"]
+        meadow: "Meadow" = game_state.meadow
+        deck = game_state.deck
+        discardpile: "DiscardPile" = game_state.discardpile
         listofcards = []
         selectable_cards = meadow.cards.copy()
 
         for _ in range(self.nr_refresh):
-            card = player.decide(game_state, "card_discard", selectable_cards)
+            card = player.decide(
+                game_state, DecisionKind.CARD_DISCARD, selectable_cards
+            )
             listofcards.append(card)
             selectable_cards.remove(card)
 
@@ -895,9 +929,9 @@ class action_refresh_meadow_draw_cards(Action):
         discardpile.add_to_discardpile(listofcards)
 
         # Player chooses a card from the meadow to take on hand
-        card = player.decide(game_state, "card_new", meadow.cards)
+        card = player.decide(game_state, DecisionKind.CARD_NEW, meadow.cards)
         meadow.draw_cards([card], deck, discardpile)
-        player.cards_add([card], "hand")
+        player.cards_add([card], CardZone.HAND)
 
 
 class action_play_revealed_deck_card_for_free(Action):
@@ -912,8 +946,8 @@ class action_play_revealed_deck_card_for_free(Action):
         game_state = context.game_state
         from engine.selectors import get_possible_card_plays
 
-        deck: "Deck" = game_state["deck"]
-        discardpile: "DiscardPile" = game_state["discardpile"]
+        deck: "Deck" = game_state.deck
+        discardpile: "DiscardPile" = game_state.discardpile
 
         revealed_cards = deck.draw_cards(self.nr_see, discardpile)
 
@@ -956,24 +990,24 @@ class action_play_cards_from_deck_or_discardpile(Action):
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
         game_state = context.game_state
-        deck: "Deck" = game_state["deck"]
-        discardpile: "DiscardPile" = game_state["discardpile"]
+        deck: "Deck" = game_state.deck
+        discardpile: "DiscardPile" = game_state.discardpile
         deck_or_discardpile = player.decide(
-            game_state, "card_deck_or_discardpile", None
+            game_state, DecisionKind.CARD_DECK_OR_DISCARD_PILE, None
         )
 
         # Obtain possible cards
         # If there are no cards in the discardpile, it will automatically
         # take cards from the deck
-        if deck_or_discardpile == "deck" or len(discardpile.cards) == 0:
+        if deck_or_discardpile == CardZone.DECK or len(discardpile.cards) == 0:
             possible_cards = deck.draw_cards(self.nr_see, discardpile)
         else:
             nr_draw = min(self.nr_see, len(discardpile.cards))
             possible_cards = discardpile.draw_cards(nr_draw)
 
         # Place the card in the player's city for free
-        card = player.decide(game_state, "card_new", possible_cards)
-        player.cards_add([card], "city")
+        card = player.decide(game_state, DecisionKind.CARD_NEW, possible_cards)
+        player.cards_add([card], CardZone.CITY)
 
         # Add the other opened cards to the discardpile
         possible_cards.remove(card)
@@ -987,18 +1021,18 @@ class action_give_discard_refill_hand(Action):
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
         game_state = context.game_state
-        deck: "Deck" = game_state["deck"]
-        discardpile: "DiscardPile" = game_state["discardpile"]
+        deck: "Deck" = game_state.deck
+        discardpile: "DiscardPile" = game_state.discardpile
 
         # Give exactly nr_give cards to another eligible player.
-        players = game_state["players"]
+        players = game_state.players
         nr_to_give = self.nr_give
         eligible_targets = [
             p
             for p in players
             if p != player
             and not p.finished
-            and p.cards_get_open_spaces("hand") >= nr_to_give
+            and p.cards_get_open_spaces(CardZone.HAND) >= nr_to_give
         ]
 
         if len(player.hand) < nr_to_give:
@@ -1009,36 +1043,36 @@ class action_give_discard_refill_hand(Action):
         cards_to_give = []
         selectable = player.hand.copy()
         for _ in range(nr_to_give):
-            card = player.decide(game_state, "card_discard", selectable)
+            card = player.decide(game_state, DecisionKind.CARD_DISCARD, selectable)
             cards_to_give.append(card)
             selectable.remove(card)
 
         target = player.decide(
-            game_state, "player_to_receive_cards_hand", eligible_targets
+            game_state, DecisionKind.PLAYER_TO_RECEIVE_CARDS_HAND, eligible_targets
         )
 
-        player.cards_remove(cards_to_give, "hand")
-        target.cards_add(cards_to_give, "hand")
+        player.cards_remove(cards_to_give, CardZone.HAND)
+        target.cards_add(cards_to_give, CardZone.HAND)
 
         # Discard a number of cards by choice from hand
         nr_discard = player.decide(
-            game_state, "nr_cards_discard_hand", len(player.hand)
+            game_state, DecisionKind.NR_CARDS_DISCARD_HAND, len(player.hand)
         )
         cards_to_discard = []
         selectable = player.hand.copy()
         for _ in range(nr_discard):
-            card = player.decide(game_state, "card_discard", selectable)
+            card = player.decide(game_state, DecisionKind.CARD_DISCARD, selectable)
             cards_to_discard.append(card)
             selectable.remove(card)
 
-        player.cards_remove(cards_to_discard, "hand")
+        player.cards_remove(cards_to_discard, CardZone.HAND)
         discardpile.add_to_discardpile(cards_to_discard)
 
         # Refill hand to the limit
-        spaces = player.cards_get_open_spaces("hand")
+        spaces = player.cards_get_open_spaces(CardZone.HAND)
         if spaces > 0:
             new_cards = deck.draw_cards(spaces, discardpile)
-            player.cards_add(new_cards, "hand")
+            player.cards_add(new_cards, CardZone.HAND)
 
 
 class action_reactivate_green_card(Action):
@@ -1058,14 +1092,20 @@ class action_reactivate_green_card(Action):
         game_state = context.game_state
         if self.from_own_city:
             # Reactivate a green card from own city
-            green_cards = [card for card in player.city if card.color == "green"]
+            green_cards = [
+                card for card in player.city if card.color == CardColor.GREEN
+            ]
         else:
             # Reactivate a green card from other players' cities
             green_cards = []
-            for other_player in game_state["players"]:
+            for other_player in game_state.players:
                 if other_player != player:
                     green_cards.extend(
-                        [card for card in other_player.city if card.color == "green"]
+                        [
+                            card
+                            for card in other_player.city
+                            if card.color == CardColor.GREEN
+                        ]
                     )
 
         # Cards without a reactivate action (e.g. Man, handled elsewhere) can't be reactivated here
@@ -1088,7 +1128,9 @@ class action_reactivate_green_card(Action):
         # Else, allow all
 
         if len(green_cards) > 0:
-            card = player.decide(game_state, "card_reactivate_green", green_cards)
+            card = player.decide(
+                game_state, DecisionKind.CARD_REACTIVATE_GREEN, green_cards
+            )
             if not card.action_on_reactivate:
                 raise ValueError(f"{card.name} has no action_on_reactivate")
             card.action_on_reactivate.execute(
@@ -1105,7 +1147,7 @@ class action_reactivate_all_green_cards(Action):
         player: "Player" = context.player
         card: "Card"
         for card in player.city:
-            if card.color == "green" and card.action_on_reactivate:
+            if card.color == CardColor.GREEN and card.action_on_reactivate:
                 card.action_on_reactivate.execute(
                     context=ActionContext(
                         player=context.player,
@@ -1130,7 +1172,13 @@ class action_grant_man_vrouw_production_resources(Action):
             return
 
         action_resources_by_choice(
-            ["twig", "resin", "pebble", "berry"], nr_pairs
+            [
+                ResourceType.TWIG,
+                ResourceType.RESIN,
+                ResourceType.PEBBLE,
+                ResourceType.BERRY,
+            ],
+            nr_pairs,
         ).execute(context=context)
 
 
@@ -1153,12 +1201,12 @@ class action_point_on_location_take_cards(Action):
             game_state=game_state,
         )
 
-        target_card.card_storage["point_tokens"] += self.nr_points
-        nr_point_tokens = target_card.card_storage["point_tokens"]
+        target_card.card_storage[CardStorageKey.POINT_TOKENS] += self.nr_points
+        nr_point_tokens = target_card.card_storage[CardStorageKey.POINT_TOKENS]
 
-        deck: "Deck" = game_state["deck"]
-        discardpile: "DiscardPile" = game_state["discardpile"]
-        spaces_hand = player.cards_get_open_spaces("hand")
+        deck: "Deck" = game_state.deck
+        discardpile: "DiscardPile" = game_state.discardpile
+        spaces_hand = player.cards_get_open_spaces(CardZone.HAND)
         nr_draw = min(self.nr_cards * nr_point_tokens, spaces_hand)
         listofcards = deck.draw_cards(nr_draw, discardpile)
-        player.cards_add(listofcards, "hand")
+        player.cards_add(listofcards, CardZone.HAND)

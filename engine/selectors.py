@@ -3,6 +3,20 @@ from typing import TYPE_CHECKING, Any
 
 from shared.context_contracts import SelectorPlayContext
 from shared.play_plan import EXTERNAL_PLAY_ABILITY, build_play_plan
+from shared.game_types import (
+    CardColor,
+    CardStorageKey,
+    CardType,
+    CardZone,
+    GameMove,
+    LocationType,
+    PlayMethodKind,
+    PlayTag,
+    PlayTiming,
+    RequirementKind,
+    ResourceType,
+    Season,
+)
 
 if TYPE_CHECKING:
     from class_card import Card
@@ -24,15 +38,15 @@ __all__ = [
 
 @dataclass(frozen=True)
 class PlayMethod:
-    method: str
+    method: PlayMethodKind
     requires_city_discard: bool
     city_discard_optional: bool
-    pay_requirements: dict[str, int] | None = None
+    pay_requirements: dict[ResourceType, int] | None = None
     source_card: Any = None
     consumed_cards: tuple[Any, ...] = ()
     creates_city_space_before_place: bool = False
-    play_tags: tuple[str, ...] = ()
-    play_conflicts: tuple[str, ...] = ()
+    play_tags: tuple[PlayTag, ...] = ()
+    play_conflicts: tuple[PlayTag, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -51,29 +65,31 @@ def _has_resources(resources, requirements):
 def _location_requirement_met(player, loc, requirement, game_state):
     kind = requirement.get("kind")
 
-    if kind == "min_color_cards":
-        color = requirement.get("color")
+    if kind == RequirementKind.MIN_COLOR_CARDS:
+        color: CardColor = requirement["color"]
         count = requirement.get("count", 0)
         city_count = len([card for card in player.city if card.color == color])
         return city_count >= count
 
-    if kind == "required_cards_in_city":
+    if kind == RequirementKind.REQUIRED_CARDS_IN_CITY:
         required_cards = requirement.get("cards", [])
         city_names = {card.name for card in player.city}
         return all(card_name in city_names for card_name in required_cards)
 
     from class_card import Critter, Construction
 
-    if kind == "min_cards_of_type":
+    if kind == RequirementKind.MIN_CARDS_OF_TYPE:
         card_type_name = requirement.get("card_type")
         card_type = (
             Critter
-            if card_type_name == "critter"
-            else Construction if card_type_name == "construction" else None
+            if card_type_name == CardType.CRITTER
+            else Construction if card_type_name == CardType.CONSTRUCTION else None
         )
         area = requirement.get("area")
         card_area = (
-            player.city if area == "city" else player.hand if area == "hand" else None
+            player.city
+            if area == CardZone.CITY
+            else player.hand if area == CardZone.HAND else None
         )
         if card_type is None or card_area is None:
             return False
@@ -86,50 +102,54 @@ def _location_requirement_met(player, loc, requirement, game_state):
                     return True
         return count <= 0
 
-    if kind == "has_resource_type":
+    if kind == RequirementKind.HAS_RESOURCE_TYPE:
         resource = requirement.get("resource")
         amount = requirement.get("amount", 1)
         return player.resources.get(resource, 0) >= amount
 
-    if kind == "has_any_resource":
+    if kind == RequirementKind.HAS_ANY_RESOURCE:
         return sum(player.resources.values()) >= 1
 
-    if kind == "has_total_resources":
+    if kind == RequirementKind.HAS_TOTAL_RESOURCES:
         amount = requirement.get("amount", 1)
         return sum(player.resources.values()) >= amount
 
-    if kind == "has_hand_cards":
+    if kind == RequirementKind.HAS_HAND_CARDS:
         amount = requirement.get("amount", 1)
         return len(player.hand) >= amount
 
-    if kind == "other_player_has_hand_space":
+    if kind == RequirementKind.OTHER_PLAYER_HAS_HAND_SPACE:
         amount = requirement.get("amount", 1)
         return any(
-            p != player and not p.finished and p.cards_get_open_spaces("hand") >= amount
-            for p in game_state["players"]
+            p != player
+            and not p.finished
+            and p.cards_get_open_spaces(CardZone.HAND) >= amount
+            for p in game_state.players
         )
 
-    if kind == "has_placed_worker":
+    if kind == RequirementKind.HAS_PLACED_WORKER:
         return any(
             loc.get_player_workers(player) > 0
             and not getattr(loc, "permanent_workers", False)
-            for loc in game_state["locations"]
+            for loc in game_state.locations
         )
 
-    if kind == "has_city_cards":
+    if kind == RequirementKind.HAS_CITY_CARDS:
         amount = requirement.get("amount", 1)
         return len(player.city) >= amount
 
-    if kind == "has_city_space":
-        return player.cards_get_open_spaces("city") > 0
+    if kind == RequirementKind.HAS_CITY_SPACE:
+        return player.cards_get_open_spaces(CardZone.CITY) > 0
 
-    if kind == "other_player_has_city_space":
+    if kind == RequirementKind.OTHER_PLAYER_HAS_CITY_SPACE:
         return any(
-            p != player and not p.finished and p.cards_get_open_spaces("city") > 0
-            for p in game_state["players"]
+            p != player
+            and not p.finished
+            and p.cards_get_open_spaces(CardZone.CITY) > 0
+            for p in game_state.players
         )
 
-    if kind == "has_playable_meadow_card":
+    if kind == RequirementKind.HAS_PLAYABLE_MEADOW_CARD:
         discount = requirement.get("discount", 3)
         return (
             len(
@@ -140,7 +160,7 @@ def _location_requirement_met(player, loc, requirement, game_state):
             > 0
         )
 
-    if kind == "has_playable_card_with_max_points":
+    if kind == RequirementKind.HAS_PLAYABLE_CARD_WITH_MAX_POINTS:
         max_points = requirement.get("max_points", 99)
         return (
             len(
@@ -206,18 +226,18 @@ def _iter_discounted_requirements(requirements, discount):
     the discount itself costs the player nothing. The only real choice is
     *which* resource types absorb the reduction.
     """
-    twig = requirements.get("twig", 0)
-    resin = requirements.get("resin", 0)
-    pebble = requirements.get("pebble", 0)
-    berry = requirements.get("berry", 0)
+    twig = requirements.get(ResourceType.TWIG, 0)
+    resin = requirements.get(ResourceType.RESIN, 0)
+    pebble = requirements.get(ResourceType.PEBBLE, 0)
+    berry = requirements.get(ResourceType.BERRY, 0)
 
     if discount == 0 and min(twig, resin, pebble, berry) >= 0:
         return [
             {
-                "twig": twig,
-                "resin": resin,
-                "pebble": pebble,
-                "berry": berry,
+                ResourceType.TWIG: twig,
+                ResourceType.RESIN: resin,
+                ResourceType.PEBBLE: pebble,
+                ResourceType.BERRY: berry,
             }
         ]
 
@@ -242,17 +262,17 @@ def _iter_discounted_requirements(requirements, discount):
                         continue
 
                     cost = {
-                        "twig": twig - twig_reduce,
-                        "resin": resin - resin_reduce,
-                        "pebble": pebble - pebble_reduce,
-                        "berry": berry - berry_reduce,
+                        ResourceType.TWIG: twig - twig_reduce,
+                        ResourceType.RESIN: resin - resin_reduce,
+                        ResourceType.PEBBLE: pebble - pebble_reduce,
+                        ResourceType.BERRY: berry - berry_reduce,
                     }
 
                     key = (
-                        cost["twig"],
-                        cost["resin"],
-                        cost["pebble"],
-                        cost["berry"],
+                        cost[ResourceType.TWIG],
+                        cost[ResourceType.RESIN],
+                        cost[ResourceType.PEBBLE],
+                        cost[ResourceType.BERRY],
                     )
                     if key not in seen:
                         seen.add(key)
@@ -266,7 +286,12 @@ def get_valid_rechter_swaps(player, card):
     All (remove_type, add_type) pairs where swapping 1 unit of remove_type
     for 1 unit of add_type in the card's cost still leaves it payable.
     """
-    resource_types = ("twig", "resin", "pebble", "berry")
+    resource_types = (
+        ResourceType.TWIG,
+        ResourceType.RESIN,
+        ResourceType.PEBBLE,
+        ResourceType.BERRY,
+    )
     valid_swaps = []
 
     for remove_type in resource_types:
@@ -302,7 +327,7 @@ def _get_rechter_methods(player, card):
 
     return [
         PlayMethod(
-            method="rechter_substitution",
+            method=PlayMethodKind.RECHTER_SUBSTITUTION,
             requires_city_discard=False,
             city_discard_optional=False,
             pay_requirements=None,
@@ -331,7 +356,7 @@ def _get_kraan_methods(player, card):
         if _has_resources(player.resources, reduced_cost):
             methods.append(
                 PlayMethod(
-                    method="kraan_discount",
+                    method=PlayMethodKind.KRAAN_DISCOUNT,
                     requires_city_discard=False,
                     city_discard_optional=False,
                     pay_requirements=reduced_cost,
@@ -359,16 +384,16 @@ def _get_herbergier_methods(player, card):
     if herbergier is None:
         return []
 
-    discount = min(3, card.costs.get("berry", 0))
+    discount = min(3, card.costs.get(ResourceType.BERRY, 0))
     reduced_cost = dict(card.costs)
-    reduced_cost["berry"] -= discount
+    reduced_cost[ResourceType.BERRY] -= discount
 
     if not _has_resources(player.resources, reduced_cost):
         return []
 
     return [
         PlayMethod(
-            method="herbergier_discount",
+            method=PlayMethodKind.HERBERGIER_DISCOUNT,
             requires_city_discard=False,
             city_discard_optional=False,
             pay_requirements=reduced_cost,
@@ -396,7 +421,7 @@ def _get_kerker_methods(player, card):
 
     has_boswachter = any(city_card.name == "Boswachter" for city_card in player.city)
     capacity = 2 if has_boswachter else 1
-    if len(kerker.card_storage["cards"]) >= capacity:
+    if len(kerker.card_storage[CardStorageKey.CARDS]) >= capacity:
         return []
 
     prisoners = [
@@ -409,7 +434,7 @@ def _get_kerker_methods(player, card):
             if _has_resources(player.resources, reduced_cost):
                 methods.append(
                     PlayMethod(
-                        method="kerker_discount",
+                        method=PlayMethodKind.KERKER_DISCOUNT,
                         requires_city_discard=False,
                         city_discard_optional=False,
                         pay_requirements=reduced_cost,
@@ -433,7 +458,10 @@ def _card_can_create_space_before_place(player, card, game_state):
     actions = child_actions if child_actions is not None else [effect]
 
     for action in actions:
-        if getattr(action, "play_timing", "post_place") != "pre_place":
+        if (
+            getattr(action, "play_timing", PlayTiming.POST_PLACE)
+            != PlayTiming.PRE_PLACE
+        ):
             continue
         if not getattr(action, "creates_city_space_before_place", False):
             continue
@@ -484,7 +512,7 @@ def _get_methods_for_card(
     if not pay:
         methods.append(
             PlayMethod(
-                method="free_no_pay",
+                method=PlayMethodKind.FREE_NO_PAY,
                 requires_city_discard=False,
                 city_discard_optional=False,
                 pay_requirements=None,
@@ -500,7 +528,7 @@ def _get_methods_for_card(
             if _has_resources(player.resources, reduced_cost):
                 methods.append(
                     PlayMethod(
-                        method="pay_resources",
+                        method=PlayMethodKind.PAY_RESOURCES,
                         requires_city_discard=False,
                         city_discard_optional=(discount == 0),
                         pay_requirements=reduced_cost,
@@ -519,7 +547,7 @@ def _get_methods_for_card(
                 ):
                     methods.append(
                         PlayMethod(
-                            method="related_free",
+                            method=PlayMethodKind.RELATED_FREE,
                             requires_city_discard=False,
                             city_discard_optional=False,
                             pay_requirements=None,
@@ -570,7 +598,7 @@ def get_possible_card_plays(
     pay=True,
     extra_cards=None,
 ):
-    meadow = game_state["meadow"]
+    meadow = game_state.meadow
     all_cards = player.hand + meadow.cards + (extra_cards or [])
     possible_card_plays: list[PlayCardOption] = []
 
@@ -622,7 +650,7 @@ def get_possible_cards(
 
 
 def get_possible_locations(game_state, player):
-    locations = game_state["locations"]
+    locations = game_state.locations
     loc: "Location"
     possible_locations = []
 
@@ -631,19 +659,19 @@ def get_possible_locations(game_state, player):
             continue
 
         # Basic locations
-        if loc.location_type == "basic" and loc.get_open_spaces() > 0:
+        if loc.location_type == LocationType.BASIC and loc.get_open_spaces() > 0:
             possible_locations.append(loc)
 
         # Forest locations (allow at most one worker from each player)
         if (
-            loc.location_type == "forest"
+            loc.location_type == LocationType.FOREST
             and loc.get_open_spaces() > 0
             and loc.get_player_workers(player) == 0
         ):
             possible_locations.append(loc)
 
         # Destination cards
-        if loc.location_type == "destination_card":
+        if loc.location_type == LocationType.DESTINATION_CARD:
             owner = getattr(loc, "owner", None)
             in_own_city = owner == player
             accessible_open = owner is not None and (owner != player and loc.is_open)
@@ -652,12 +680,12 @@ def get_possible_locations(game_state, player):
                 possible_locations.append(loc)
 
         # Haven locations
-        if loc.location_type == "haven" and loc.get_open_spaces() > 0:
+        if loc.location_type == LocationType.HAVEN and loc.get_open_spaces() > 0:
             possible_locations.append(loc)
 
         # Journey locations (autumn only)
-        if loc.location_type == "journey":
-            in_autumn = player.season == "autumn"
+        if loc.location_type == LocationType.JOURNEY:
+            in_autumn = player.season == Season.AUTUMN
             has_space = loc.get_open_spaces() > 0
             can_discard_required_cards = len(player.hand) >= loc.points
 
@@ -666,7 +694,7 @@ def get_possible_locations(game_state, player):
 
         # Event locations (unclaimed only; claimed events are in player.events)
         if (
-            loc.location_type in {"basic_event", "special_event"}
+            loc.location_type in {LocationType.BASIC_EVENT, LocationType.SPECIAL_EVENT}
             and loc.get_open_spaces() > 0
         ):
             possible_locations.append(loc)
@@ -681,11 +709,11 @@ def get_possible_moves_and_card_plays(game_state, player):
     workers = player.workers
 
     if possible_card_plays:
-        possible_moves.append("play_card")
+        possible_moves.append(GameMove.PLAY_CARD)
     if len(possible_locations) > 0 and workers > 0:
-        possible_moves.append("place_worker")
-    if player.season != "autumn" and workers == 0:
-        possible_moves.append("advance_season")
+        possible_moves.append(GameMove.PLACE_WORKER)
+    if player.season != Season.AUTUMN and workers == 0:
+        possible_moves.append(GameMove.ADVANCE_SEASON)
     return possible_moves, possible_card_plays
 
 
@@ -706,7 +734,7 @@ def get_possible_meadow_card_plays_with_discount(
     Any future method added to _get_methods_for_card with allow_* flags will
     be picked up here too once the appropriate flag is added.
     """
-    meadow = game_state["meadow"]
+    meadow = game_state.meadow
 
     result = []
     cards_to_check = meadow.cards if candidate_cards is None else candidate_cards
@@ -741,7 +769,7 @@ def get_possible_meadow_card_plays_with_discount(
 def get_critters_constructions_city(game_state, critter_and_construction):
     from class_card import Construction, Critter
 
-    player = game_state["current_player"]
+    player = game_state.current_player
     critter = critter_and_construction[0]
     construction = critter_and_construction[1]
 

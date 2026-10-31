@@ -1,19 +1,51 @@
+from __future__ import annotations
+
 from collections import defaultdict
-from typing import Any
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any
+
+from shared.game_types import (
+    CardZone,
+    DecisionKind,
+    PointCategory,
+    ResourceType,
+    Season,
+)
+
+if TYPE_CHECKING:
+    from class_card import Card
+    from class_location import Location
+    from shared.game_state import GameState
 
 
+@dataclass(eq=False)
 class Player:
-    def __init__(self):
-        self.index = 0
-        self.strategy: Any = None
-        self.hand = []  # Initiate a hand without cards
-        self.city = []  # Initiate an empty city without cards
-        self.workers = 0  # Initiate the number of workers to zero
-        self.season = "winter"  # A player starts in winter
-        self.points = dict(card=0, token=0, prosperity=0, journey=0, event=0)
-        self.resources = dict(twig=0, resin=0, pebble=0, berry=0)
-        self.finished = False  # Track if the player has finished their game
-        self.events = []  # Event locations claimed by this player
+    index: int = 0
+    strategy: Any = None
+    hand: list[Card] = field(default_factory=list)
+    city: list[Card] = field(default_factory=list)
+    workers: int = 0
+    season: Season = Season.WINTER
+    points: dict[PointCategory, int] = field(
+        default_factory=lambda: {category: 0 for category in PointCategory}
+    )
+    resources: dict[ResourceType, int] = field(
+        default_factory=lambda: {resource: 0 for resource in ResourceType}
+    )
+    finished: bool = False
+    events: list[Location] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.season, Season):
+            raise TypeError("season must be a Season")
+        if any(not isinstance(resource, ResourceType) for resource in self.resources):
+            raise TypeError("Player resources must use ResourceType keys")
+        if set(self.resources) != set(ResourceType):
+            raise ValueError("Player resources must define every ResourceType")
+        if any(
+            type(amount) is not int or amount < 0 for amount in self.resources.values()
+        ):
+            raise ValueError("Player resource amounts must be non-negative integers")
 
     def __str__(self):
         a = str("Index: " + str(self.index))
@@ -50,12 +82,21 @@ class Player:
         )
 
     # Function to add cards to the player"s hand or city
-    def cards_add(self, listofcards, handorcity):
-        target = self.hand if handorcity == "hand" else self.city
+    def _cards_in_zone(self, zone: CardZone) -> list[Card]:
+        if not isinstance(zone, CardZone):
+            raise TypeError("zone must be a CardZone")
+        if zone == CardZone.HAND:
+            return self.hand
+        if zone == CardZone.CITY:
+            return self.city
+        raise ValueError(f"Unsupported player card zone: {zone}")
+
+    def cards_add(self, listofcards: list[Card], handorcity: CardZone) -> list[Card]:
+        target = self._cards_in_zone(handorcity)
         target.extend(listofcards)
         return target
 
-    def _city_spaces_occupied_for_cards(self, cards):
+    def _city_spaces_occupied_for_cards(self, cards: list[Card]) -> int:
         total = 0
         grouped_cards = defaultdict(list)
 
@@ -82,65 +123,83 @@ class Player:
 
         return total
 
-    def city_spaces_occupied(self):
+    def city_spaces_occupied(self) -> int:
         return self._city_spaces_occupied_for_cards(self.city)
 
-    def card_fits_in_city(self, card):
+    def card_fits_in_city(self, card: Card) -> bool:
         return self._city_spaces_occupied_for_cards(self.city + [card]) <= 15
 
     # Function to remove cards from the player"s hand or city
-    def cards_remove(self, listofcards, handorcity):
-        target = self.hand if handorcity == "hand" else self.city
+    def cards_remove(self, listofcards: list[Card], handorcity: CardZone) -> list[Card]:
+        target = self._cards_in_zone(handorcity)
         for card in listofcards:
             target.remove(card)
         return target
 
     # Function to check the open spaces in hand or city
-    def cards_get_open_spaces(self, handorcity):
-        target = self.hand if handorcity == "hand" else self.city
-        if handorcity == "hand":
+    def cards_get_open_spaces(self, handorcity: CardZone) -> int:
+        target = self._cards_in_zone(handorcity)
+        if handorcity == CardZone.HAND:
             return 8 - len(target)  # Max hand size is 8
         else:
             return 15 - self.city_spaces_occupied()  # Max city size is 15
 
     # Function to add workers
-    def workers_add(self, amount):
+    def workers_add(self, amount: int) -> int:
         self.workers += amount
         return self.workers
 
     # Function to remove workers
-    def workers_remove(self, amount):
+    def workers_remove(self, amount: int) -> int:
         self.workers -= amount
         return self.workers
 
     # Function to add resources to a specific category
-    def resources_add(self, resource, amount):
+    def resources_add(
+        self, resource: ResourceType, amount: int
+    ) -> dict[ResourceType, int]:
+        if not isinstance(resource, ResourceType):
+            raise TypeError(f"Expected ResourceType, got {type(resource).__name__}")
         self.resources[resource] += amount
         return self.resources
 
     # Function to remove resources from a specific category
-    def resources_remove(self, resoure, amount):
-        self.resources[resoure] -= amount
+    def resources_remove(
+        self, resource: ResourceType, amount: int
+    ) -> dict[ResourceType, int]:
+        if not isinstance(resource, ResourceType):
+            raise TypeError(f"Expected ResourceType, got {type(resource).__name__}")
+        self.resources[resource] -= amount
         return self.resources
 
     # Calculate the total remaining resources of the player
-    def resources_total(self):
+    def resources_total(self) -> int:
         return sum(self.resources.values())
 
     # Function to add points to a specific category
-    def points_add(self, category, points):
+    def points_add(
+        self, category: PointCategory, points: int
+    ) -> dict[PointCategory, int]:
+        if not isinstance(category, PointCategory):
+            raise TypeError("category must be a PointCategory")
         self.points[category] += points
         return self.points
 
     # Function to remove points from a specific category
-    def points_remove(self, category, points):
+    def points_remove(
+        self, category: PointCategory, points: int
+    ) -> dict[PointCategory, int]:
+        if not isinstance(category, PointCategory):
+            raise TypeError("category must be a PointCategory")
         self.points[category] -= points
         return self.points
 
     # Calculate the total points of the player
-    def points_total(self):
+    def points_total(self) -> int:
         return sum(self.points.values())
 
     # Function to make a decision based on the strategy and game state
-    def decide(self, game_state: Any, decision_kind: str, options: Any) -> Any:
+    def decide(
+        self, game_state: GameState, decision_kind: DecisionKind, options: Any
+    ) -> Any:
         return self.strategy.decide(game_state, decision_kind, options)

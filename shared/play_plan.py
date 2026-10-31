@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from typing import Any
 
+from shared.game_types import PlayTag, PlayTiming
+
 # Abilities that modify card-play terms (discount, substitution, alternative play)
 # share this tag and can conflict with each other.
-EXTERNAL_PLAY_ABILITY = "external_play_ability"
+EXTERNAL_PLAY_ABILITY = PlayTag.EXTERNAL_PLAY_ABILITY
 
 
 @dataclass(frozen=True)
@@ -46,10 +48,10 @@ def build_play_plan(card, selected_method):
                 f"Play effect {action.__class__.__name__} cannot be combined with method '{selected_method.method}'"
             )
 
-        timing = getattr(action, "play_timing", "post_place")
-        if timing == "pre_place":
+        timing = getattr(action, "play_timing", PlayTiming.POST_PLACE)
+        if timing == PlayTiming.PRE_PLACE:
             pre_place_actions.append(action)
-        elif timing == "post_place":
+        elif timing == PlayTiming.POST_PLACE:
             post_place_actions.append(action)
         else:
             raise ValueError(

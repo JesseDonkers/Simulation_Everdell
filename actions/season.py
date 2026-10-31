@@ -6,6 +6,7 @@ from actions.cards import (
     action_reactivate_all_green_cards,
 )
 from actions.locations import action_activate_worker_location_for_point_token
+from shared.game_types import LocationType, Season
 
 __all__ = ["action_advance_season"]
 
@@ -18,19 +19,19 @@ class action_advance_season(Action):
     def execute_action(self, context: ActionContext):
         player: "Player" = context.player
         game_state = context.game_state
-        seasons = ["winter", "spring", "summer", "autumn"]
+        seasons = [Season.WINTER, Season.SPRING, Season.SUMMER, Season.AUTUMN]
         current_season = player.season
         current_index = seasons.index(player.season)
 
-        if current_season == "winter":
+        if current_season == Season.WINTER:
             player.workers_add(1)
             action_reactivate_all_green_cards().execute(context=context)
 
-        elif current_season == "spring":
+        elif current_season == Season.SPRING:
             player.workers_add(1)
             action_cards_from_meadow_to_hand(2).execute(context=context)
 
-        elif current_season == "summer":
+        elif current_season == Season.SUMMER:
             player.workers_add(2)
             action_reactivate_all_green_cards().execute(context=context)
 
@@ -40,7 +41,7 @@ class action_advance_season(Action):
         for card in player.city:
             if card.name == "Klokkentoren":
                 action_activate_worker_location_for_point_token(
-                    ["basic", "forest"]
+                    [LocationType.BASIC, LocationType.FOREST]
                 ).execute(
                     context=ActionContext(
                         player=player,
@@ -50,7 +51,7 @@ class action_advance_season(Action):
                     )
                 )
 
-        for location in game_state["locations"]:
+        for location in game_state.locations:
             # Do not return workers placed on permanent locations
             if location.get_player_workers(player) > 0 and not getattr(
                 location, "permanent_workers", False

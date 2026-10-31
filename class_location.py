@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from actions.base import CompositeAction
@@ -28,17 +29,44 @@ from actions.resources import (
     action_resources_for_cards,
     action_resources_to_location,
 )
+from shared.game_types import (
+    CardColor,
+    CardStorageKey,
+    CardType,
+    CardZone,
+    CityAssetType,
+    LocationType,
+    PointCategory,
+    RequirementKind,
+    ResourceType,
+)
 
 if TYPE_CHECKING:
     from class_card import Card
     from class_player import Player
 
 
+@dataclass(init=False, eq=False, repr=False)
 class Location:
+    name: str
+    location_type: LocationType
+    maxworkers: int
+    action_on_place_worker: Any
+    is_open: bool
+    action_on_finish: Any
+    workers: dict["Player", int]
+    resources: dict[ResourceType, int]
+    card_storage: dict[CardStorageKey, Any]
+    permanent_workers: bool
+    owner: "Player | None"
+    points: int
+    requirements: Any
+    source_card_id: str | None
+
     def __init__(
         self,
         name: str,
-        location_type: str,
+        location_type: LocationType,
         maxworkers: int,
         action_on_place_worker: Any,
         *,
@@ -50,6 +78,8 @@ class Location:
         requirements: Any = None,
         source_card_id: str | None = None,
     ):
+        if not isinstance(location_type, LocationType):
+            raise TypeError("location_type must be a LocationType")
         self.name = name
         self.location_type = location_type  # For example basic, journey, haven
         self.is_open = is_open  # Attribute for destination cards
@@ -57,8 +87,8 @@ class Location:
         self.action_on_place_worker = action_on_place_worker
         self.action_on_finish = action_on_finish
         self.workers: dict["Player", int] = {}
-        self.resources = dict(twig=0, resin=0, pebble=0, berry=0)
-        self.card_storage: dict[str, list["Card"]] = {"cards": []}
+        self.resources = {resource: 0 for resource in ResourceType}
+        self.card_storage: dict[CardStorageKey, Any] = {CardStorageKey.CARDS: []}
         self.permanent_workers = permanent_workers
         self.owner = owner  # Player that owns this destination location
         self.points = points
@@ -90,12 +120,20 @@ class Location:
         return self.workers.get(player, 0)
 
     # Function to add resources to a specific category
-    def resources_add(self, resource, amount):
+    def resources_add(
+        self, resource: ResourceType, amount: int
+    ) -> dict[ResourceType, int]:
+        if not isinstance(resource, ResourceType):
+            raise TypeError("resource must be a ResourceType")
         self.resources[resource] += amount
         return self.resources
 
     # Function to remove resources from a specific category
-    def resources_remove(self, resource, amount):
+    def resources_remove(
+        self, resource: ResourceType, amount: int
+    ) -> dict[ResourceType, int]:
+        if not isinstance(resource, ResourceType):
+            raise TypeError("resource must be a ResourceType")
         self.resources[resource] -= amount
         return self.resources
 
@@ -109,11 +147,13 @@ init_locations = []
 
 # A temporary location is added which can be used when a location is removed
 # and already placed workers need to be stored somewhere temporarily.
-temp = Location("Temporary", "temporary", 0, None)
+temp = Location("Temporary", LocationType.TEMPORARY, 0, None)
 
 # A permanent location is added which can be used when a permanent location
 # is removed and already placed workers need to be stored somewhere.
-permanent = Location("Permanent", "permanent", 0, None, permanent_workers=True)
+permanent = Location(
+    "Permanent", LocationType.PERMANENT, 0, None, permanent_workers=True
+)
 
 init_locations.append(temp)
 init_locations.append(permanent)
@@ -123,51 +163,59 @@ init_locations.append(permanent)
 # BASIC
 # ============================================
 
-twigs = Location("Three_twigs", "basic", 1, action_resource_general("twig", 3))
-resins = Location("Two_resins", "basic", 1, action_resource_general("resin", 2))
-pebble = Location("One_pebble", "basic", 1, action_resource_general("pebble", 1))
-berry = Location("One_berry", "basic", 99, action_resource_general("berry", 1))
+twigs = Location(
+    "Three_twigs", LocationType.BASIC, 1, action_resource_general(ResourceType.TWIG, 3)
+)
+resins = Location(
+    "Two_resins", LocationType.BASIC, 1, action_resource_general(ResourceType.RESIN, 2)
+)
+pebble = Location(
+    "One_pebble", LocationType.BASIC, 1, action_resource_general(ResourceType.PEBBLE, 1)
+)
+berry = Location(
+    "One_berry", LocationType.BASIC, 99, action_resource_general(ResourceType.BERRY, 1)
+)
 
 twigs_card = Location(
     "Twigs_Card",
-    "basic",
+    LocationType.BASIC,
     99,
     CompositeAction(
         [
-            action_resource_general("twig", 2),
+            action_resource_general(ResourceType.TWIG, 2),
             action_cards_from_deck_to_hand(1),
         ]
     ),
 )
 resin_card = Location(
     "Resin_Card",
-    "basic",
+    LocationType.BASIC,
     99,
     CompositeAction(
         [
-            action_resource_general("resin", 1),
+            action_resource_general(ResourceType.RESIN, 1),
             action_cards_from_deck_to_hand(1),
         ]
     ),
 )
 cards_point = Location(
     "Cards_Point",
-    "basic",
+    LocationType.BASIC,
     99,
     CompositeAction(
         [
-            action_points_general("token", 1),
+            action_points_general(PointCategory.TOKEN, 1),
             action_cards_from_deck_to_hand(2),
         ]
     ),
 )
 berry_card = Location(
     "Berry_Card",
-    "basic",
+    LocationType.BASIC,
     1,
     CompositeAction(
         [
-            action_resource_general("berry", 1),
+            action_resource_general(ResourceType.BERRY, 1),
             action_cards_from_deck_to_hand(1),
         ]
     ),
@@ -185,102 +233,123 @@ forest_locations: list[Location] = []
 
 cards_for_resources = Location(
     "Cards_For_Resources",
-    "forest",
+    LocationType.FOREST,
     1,
     action_resources_for_cards(max_discard=3, cards_per_resource=1),
-    requirements={"kind": "has_hand_cards", "amount": 1},
+    requirements={"kind": RequirementKind.HAS_HAND_CARDS, "amount": 1},
 )
 card_for_cards = Location(
     "Cards_For_Cards",
-    "forest",
+    LocationType.FOREST,
     1,
     action_discard_cards_for_deck_cards(),
-    requirements={"kind": "has_hand_cards", "amount": 1},
+    requirements={"kind": RequirementKind.HAS_HAND_CARDS, "amount": 1},
 )
 card_from_meadow = Location(
     "Card_From_Meadow",
-    "forest",
+    LocationType.FOREST,
     1,
     action_play_two_meadow_cards_with_discount(),
     requirements=[
-        {"kind": "has_city_space"},
-        {"kind": "has_playable_meadow_card", "discount": 1},
+        {"kind": RequirementKind.HAS_CITY_SPACE},
+        {"kind": RequirementKind.HAS_PLAYABLE_MEADOW_CARD, "discount": 1},
     ],
 )
 copy_basic_location = Location(
     "Copy_Basic",
-    "forest",
+    LocationType.FOREST,
     1,
     CompositeAction(
         [
-            action_location_copy_action(["basic"]),
+            action_location_copy_action([LocationType.BASIC]),
             action_cards_from_deck_to_hand(1),
         ]
     ),
 )
 two_resources = Location(
     "Two_resources",
-    "forest",
+    LocationType.FOREST,
     1,
-    action_resources_by_choice(["twig", "resin", "pebble", "berry"], 2),
+    action_resources_by_choice(
+        [
+            ResourceType.TWIG,
+            ResourceType.RESIN,
+            ResourceType.PEBBLE,
+            ResourceType.BERRY,
+        ],
+        2,
+    ),
 )
 cards_resource = Location(
     "Cards_Resource",
-    "forest",
+    LocationType.FOREST,
     1,
     CompositeAction(
         [
-            action_resources_by_choice(["twig", "resin", "pebble", "berry"], 1),
+            action_resources_by_choice(
+                [
+                    ResourceType.TWIG,
+                    ResourceType.RESIN,
+                    ResourceType.PEBBLE,
+                    ResourceType.BERRY,
+                ],
+                1,
+            ),
             action_cards_from_deck_to_hand(2),
         ]
     ),
 )
 twig_resin_berry = Location(
     "Twig_Resin_Berry",
-    "forest",
+    LocationType.FOREST,
     1,
     CompositeAction(
         [
-            action_resource_general("twig", 1),
-            action_resource_general("resin", 1),
-            action_resource_general("berry", 1),
+            action_resource_general(ResourceType.TWIG, 1),
+            action_resource_general(ResourceType.RESIN, 1),
+            action_resource_general(ResourceType.BERRY, 1),
         ]
     ),
 )
 cards_pebble = Location(
     "Cards_Pebble",
-    "forest",
+    LocationType.FOREST,
     1,
     CompositeAction(
         [
-            action_resource_general("pebble", 1),
+            action_resource_general(ResourceType.PEBBLE, 1),
             action_cards_from_deck_to_hand(3),
         ]
     ),
 )
 berries_card = Location(
     "Berries_Card",
-    "forest",
+    LocationType.FOREST,
     1,
     CompositeAction(
         [
-            action_resource_general("berry", 2),
+            action_resource_general(ResourceType.BERRY, 2),
             action_cards_from_deck_to_hand(1),
         ]
     ),
 )
 resins_twig = Location(
     "Resins_Twig",
-    "forest",
+    LocationType.FOREST,
     1,
     CompositeAction(
         [
-            action_resource_general("resin", 2),
-            action_resource_general("twig", 1),
+            action_resource_general(ResourceType.RESIN, 2),
+            action_resource_general(ResourceType.TWIG, 1),
         ]
     ),
 )
-berries = Location("Three_berries", "forest", 1, action_resource_general("berry", 3))
+berries = Location(
+    "Three_berries",
+    LocationType.FOREST,
+    1,
+    action_resource_general(ResourceType.BERRY, 3),
+)
 
 
 forest_locations.extend(
@@ -305,35 +374,51 @@ forest_locations.extend(
 # ============================================
 monument = Location(
     "Monument",
-    "basic_event",
+    LocationType.BASIC_EVENT,
     1,
     None,
-    action_on_finish=action_points_general("event", 3),
-    requirements={"kind": "min_color_cards", "color": "blue", "count": 3},
+    action_on_finish=action_points_general(PointCategory.EVENT, 3),
+    requirements={
+        "kind": RequirementKind.MIN_COLOR_CARDS,
+        "color": CardColor.BLUE,
+        "count": 3,
+    },
 )
 tour = Location(
     "Tour",
-    "basic_event",
+    LocationType.BASIC_EVENT,
     1,
     None,
-    action_on_finish=action_points_general("event", 3),
-    requirements={"kind": "min_color_cards", "color": "red", "count": 3},
+    action_on_finish=action_points_general(PointCategory.EVENT, 3),
+    requirements={
+        "kind": RequirementKind.MIN_COLOR_CARDS,
+        "color": CardColor.RED,
+        "count": 3,
+    },
 )
 festival = Location(
     "Festival",
-    "basic_event",
+    LocationType.BASIC_EVENT,
     1,
     None,
-    action_on_finish=action_points_general("event", 3),
-    requirements={"kind": "min_color_cards", "color": "green", "count": 4},
+    action_on_finish=action_points_general(PointCategory.EVENT, 3),
+    requirements={
+        "kind": RequirementKind.MIN_COLOR_CARDS,
+        "color": CardColor.GREEN,
+        "count": 4,
+    },
 )
 expedition = Location(
     "Expedition",
-    "basic_event",
+    LocationType.BASIC_EVENT,
     1,
     None,
-    action_on_finish=action_points_general("event", 3),
-    requirements={"kind": "min_color_cards", "color": "tan", "count": 3},
+    action_on_finish=action_points_general(PointCategory.EVENT, 3),
+    requirements={
+        "kind": RequirementKind.MIN_COLOR_CARDS,
+        "color": CardColor.TAN,
+        "count": 3,
+    },
 )
 
 init_locations.extend([monument, tour, festival, expedition])
@@ -348,68 +433,72 @@ special_events = []
 
 behe = Location(
     "Behe",
-    "special_event",
+    LocationType.SPECIAL_EVENT,
     1,
     None,
     action_on_finish=action_points_for_city_assets(
-        "destination_workers", 3, card_name="Begraafplaats"
+        CityAssetType.DESTINATION_WORKERS, 3, card_name="Begraafplaats"
     ),
     requirements={
-        "kind": "required_cards_in_city",
+        "kind": RequirementKind.REQUIRED_CARDS_IN_CITY,
         "cards": ["Begraafplaats", "Herder"],
     },
 )
 
 beki = Location(
     "Beki",
-    "special_event",
+    LocationType.SPECIAL_EVENT,
     1,
     CompositeAction(
         [
-            action_resource_general("berry", -2),
+            action_resource_general(ResourceType.BERRY, -2),
             action_discard_cards_from_city(2),
         ]
     ),
-    action_on_finish=action_points_general("event", 6),
+    action_on_finish=action_points_general(PointCategory.EVENT, 6),
     requirements=[
         {
-            "kind": "required_cards_in_city",
+            "kind": RequirementKind.REQUIRED_CARDS_IN_CITY,
             "cards": ["Begrafenisondernemer", "Kikkerkapitein"],
         },
-        {"kind": "has_city_cards", "amount": 2},
-        {"kind": "has_resource_type", "resource": "berry", "amount": 2},
+        {"kind": RequirementKind.HAS_CITY_CARDS, "amount": 2},
+        {
+            "kind": RequirementKind.HAS_RESOURCE_TYPE,
+            "resource": ResourceType.BERRY,
+            "amount": 2,
+        },
     ],
 )
 
 dopo = Location(
     "Dopo",
-    "special_event",
+    LocationType.SPECIAL_EVENT,
     1,
     None,
     action_on_finish=action_points_for_city_assets(
-        "card_pairs", 3, paired_card_names=("Man", "Vrouw")
+        CityAssetType.CARD_PAIRS, 3, paired_card_names=("Man", "Vrouw")
     ),
     requirements={
-        "kind": "required_cards_in_city",
+        "kind": RequirementKind.REQUIRED_CARDS_IN_CITY,
         "cards": ["Dokter", "Postduif"],
     },
 )
 
 gebo = Location(
     "Gebo",
-    "special_event",
+    LocationType.SPECIAL_EVENT,
     1,
-    action_store_critter_cards("city", 2),
+    action_store_critter_cards(CardZone.CITY, 2),
     action_on_finish=action_points_for_cards_in_event_location(3),
     requirements=[
         {
-            "kind": "required_cards_in_city",
+            "kind": RequirementKind.REQUIRED_CARDS_IN_CITY,
             "cards": ["Gerechtsgebouw", "Boswachter"],
         },
         {
-            "kind": "min_cards_of_type",
-            "card_type": "critter",
-            "area": "city",
+            "kind": RequirementKind.MIN_CARDS_OF_TYPE,
+            "card_type": CardType.CRITTER,
+            "area": CardZone.CITY,
             "count": 1,
         },
     ],
@@ -417,77 +506,95 @@ gebo = Location(
 
 heza = Location(
     "Heza",
-    "special_event",
+    LocationType.SPECIAL_EVENT,
     1,
-    action_resources_to_location("Heza", ["berry"], 3, {"berry": 2}),
+    action_resources_to_location(
+        "Heza", [ResourceType.BERRY], 3, {ResourceType.BERRY: 2}
+    ),
     action_on_finish=action_points_for_resources_event_location(
-        ["berry"], 2, location_name="Heza"
+        [ResourceType.BERRY], 2, location_name="Heza"
     ),
     requirements=[
-        {"kind": "required_cards_in_city", "cards": ["Herberg", "Zanger"]},
-        {"kind": "has_resource_type", "resource": "berry", "amount": 1},
+        {
+            "kind": RequirementKind.REQUIRED_CARDS_IN_CITY,
+            "cards": ["Herberg", "Zanger"],
+        },
+        {
+            "kind": RequirementKind.HAS_RESOURCE_TYPE,
+            "resource": ResourceType.BERRY,
+            "amount": 1,
+        },
     ],
 )
 
 hiru = Location(
     "Hiru",
-    "special_event",
+    LocationType.SPECIAL_EVENT,
     1,
     action_cards_from_deck_to_hand_or_location(5, "Hiru"),
     action_on_finish=action_points_for_cards_in_event_location(),
     requirements={
-        "kind": "required_cards_in_city",
+        "kind": RequirementKind.REQUIRED_CARDS_IN_CITY,
         "cards": ["Historicus", "Ruines"],
     },
 )
 
 hoka = Location(
     "Hoka",
-    "special_event",
+    LocationType.SPECIAL_EVENT,
     1,
     CompositeAction(
         [
             action_cards_from_deck_to_hand(1),
             action_resources_by_choice_for_card_tokens(
-                "Kapel", ["twig", "resin", "pebble", "berry"]
+                "Kapel",
+                [
+                    ResourceType.TWIG,
+                    ResourceType.RESIN,
+                    ResourceType.PEBBLE,
+                    ResourceType.BERRY,
+                ],
             ),
         ]
     ),
     action_on_finish=action_points_for_tokens_on_card(
-        "Kapel", points_per_token=2, category="event"
+        "Kapel", points_per_token=2, category=PointCategory.EVENT
     ),
     requirements={
-        "kind": "required_cards_in_city",
+        "kind": RequirementKind.REQUIRED_CARDS_IN_CITY,
         "cards": ["Houtsnijder", "Kapel"],
     },
 )
 
 klzw = Location(
     "Klzw",
-    "special_event",
+    LocationType.SPECIAL_EVENT,
     1,
     None,
     action_on_finish=action_points_for_city_assets(
-        "destination_workers", 3, card_name="Klooster"
+        CityAssetType.DESTINATION_WORKERS, 3, card_name="Klooster"
     ),
     requirements={
-        "kind": "required_cards_in_city",
+        "kind": RequirementKind.REQUIRED_CARDS_IN_CITY,
         "cards": ["Klooster", "Zwerver"],
     },
 )
 
 leun = Location(
     "Leun",
-    "special_event",
+    LocationType.SPECIAL_EVENT,
     1,
-    action_store_critter_cards("hand", 3),
+    action_store_critter_cards(CardZone.HAND, 3),
     action_on_finish=action_points_for_cards_in_event_location(2),
     requirements=[
-        {"kind": "required_cards_in_city", "cards": ["Leraar", "Universiteit"]},
         {
-            "kind": "min_cards_of_type",
-            "card_type": "critter",
-            "area": "hand",
+            "kind": RequirementKind.REQUIRED_CARDS_IN_CITY,
+            "cards": ["Leraar", "Universiteit"],
+        },
+        {
+            "kind": RequirementKind.MIN_CARDS_OF_TYPE,
+            "card_type": CardType.CRITTER,
+            "area": CardZone.HAND,
             "count": 1,
         },
     ],
@@ -495,48 +602,71 @@ leun = Location(
 
 mawi = Location(
     "Mawi",
-    "special_event",
+    LocationType.SPECIAL_EVENT,
     1,
     action_resources_to_location(
         "Mawi",
-        ["berry", "twig", "resin", "pebble"],
+        [
+            ResourceType.BERRY,
+            ResourceType.TWIG,
+            ResourceType.RESIN,
+            ResourceType.PEBBLE,
+        ],
         3,
-        points_per_resource={"berry": 1, "twig": 1, "resin": 2, "pebble": 2},
+        points_per_resource={
+            ResourceType.BERRY: 1,
+            ResourceType.TWIG: 1,
+            ResourceType.RESIN: 2,
+            ResourceType.PEBBLE: 2,
+        },
     ),
     action_on_finish=action_points_for_resources_event_location(
-        ["berry", "twig", "resin", "pebble"],
-        {"berry": 1, "twig": 1, "resin": 2, "pebble": 2},
+        [
+            ResourceType.BERRY,
+            ResourceType.TWIG,
+            ResourceType.RESIN,
+            ResourceType.PEBBLE,
+        ],
+        {
+            ResourceType.BERRY: 1,
+            ResourceType.TWIG: 1,
+            ResourceType.RESIN: 2,
+            ResourceType.PEBBLE: 2,
+        },
         location_name="Mawi",
     ),
     requirements=[
-        {"kind": "required_cards_in_city", "cards": ["Marskramer", "Winkel"]},
-        {"kind": "has_any_resource"},
+        {
+            "kind": RequirementKind.REQUIRED_CARDS_IN_CITY,
+            "cards": ["Marskramer", "Winkel"],
+        },
+        {"kind": RequirementKind.HAS_ANY_RESOURCE},
     ],
 )
 
 moke = Location(
     "Moke",
-    "special_event",
+    LocationType.SPECIAL_EVENT,
     1,
     None,
     action_on_finish=action_points_for_city_assets(
-        "stored_cards", 3, card_name="Kerker"
+        CityAssetType.STORED_CARDS, 3, card_name="Kerker"
     ),
     requirements={
-        "kind": "required_cards_in_city",
+        "kind": RequirementKind.REQUIRED_CARDS_IN_CITY,
         "cards": ["Monnik", "Kerker"],
     },
 )
 
 reko = Location(
     "Reko",
-    "special_event",
+    LocationType.SPECIAL_EVENT,
     1,
     action_reactivate_all_green_cards(),
-    action_on_finish=action_points_general("event", 3),
+    action_on_finish=action_points_general(PointCategory.EVENT, 3),
     requirements=[
         {
-            "kind": "required_cards_in_city",
+            "kind": RequirementKind.REQUIRED_CARDS_IN_CITY,
             "cards": ["Rechter", "Koningin"],
         },
     ],
@@ -544,53 +674,65 @@ reko = Location(
 
 sckl = Location(
     "Sckl",
-    "special_event",
+    LocationType.SPECIAL_EVENT,
     1,
     action_retake_worker(),
-    action_on_finish=action_points_general("event", 4),
+    action_on_finish=action_points_general(PointCategory.EVENT, 4),
     requirements=[
         {
-            "kind": "required_cards_in_city",
+            "kind": RequirementKind.REQUIRED_CARDS_IN_CITY,
             "cards": ["Schoonmaker", "Klokkentoren"],
         },
-        {"kind": "has_placed_worker"},
+        {"kind": RequirementKind.HAS_PLACED_WORKER},
     ],
 )
 
 twve = Location(
     "Twve",
-    "special_event",
+    LocationType.SPECIAL_EVENT,
     1,
     None,
-    action_on_finish=action_points_general("event", 9),
+    action_on_finish=action_points_general(PointCategory.EVENT, 9),
     requirements=[
-        {"kind": "min_color_cards", "color": color, "count": 1}
-        for color in ("tan", "red", "green", "blue", "purple")
+        {"kind": RequirementKind.MIN_COLOR_CARDS, "color": color, "count": 1}
+        for color in CardColor
     ],
 )
 
 uimi = Location(
     "Uimi",
-    "special_event",
+    LocationType.SPECIAL_EVENT,
     1,
-    action_resources_to_location("Uimi", ["twig"], 3, {"twig": 2}),
+    action_resources_to_location(
+        "Uimi", [ResourceType.TWIG], 3, {ResourceType.TWIG: 2}
+    ),
     action_on_finish=action_points_for_resources_event_location(
-        ["twig"], 2, location_name="Uimi"
+        [ResourceType.TWIG], 2, location_name="Uimi"
     ),
     requirements=[
-        {"kind": "required_cards_in_city", "cards": ["Uitkijkpost", "Mijnwerker mol"]},
-        {"kind": "has_resource_type", "resource": "twig", "amount": 1},
+        {
+            "kind": RequirementKind.REQUIRED_CARDS_IN_CITY,
+            "cards": ["Uitkijkpost", "Mijnwerker mol"],
+        },
+        {
+            "kind": RequirementKind.HAS_RESOURCE_TYPE,
+            "resource": ResourceType.TWIG,
+            "amount": 1,
+        },
     ],
 )
 
 wipo = Location(
     "Wipo",
-    "special_event",
+    LocationType.SPECIAL_EVENT,
     1,
     action_points_for_given_resources(max_nr_resources=3, points_per_resource=2),
     requirements=[
-        {"kind": "required_cards_in_city", "cards": ["Winkelier", "Postkantoor"]},
-        {"kind": "has_any_resource"},
+        {
+            "kind": RequirementKind.REQUIRED_CARDS_IN_CITY,
+            "cards": ["Winkelier", "Postkantoor"],
+        },
+        {"kind": RequirementKind.HAS_ANY_RESOURCE},
     ],
 )
 
@@ -622,7 +764,7 @@ special_events.extend(
 # HAVEN
 # ============================================
 
-haven = Location("Haven", "haven", 99, action_resources_for_cards())
+haven = Location("Haven", LocationType.HAVEN, 99, action_resources_for_cards())
 init_locations.append(haven)
 
 # ============================================
@@ -631,7 +773,7 @@ init_locations.append(haven)
 
 journey_2 = Location(
     "Journey_2",
-    "journey",
+    LocationType.JOURNEY,
     99,
     action_discard_cards_from_hand(2),
     permanent_workers=True,
@@ -639,7 +781,7 @@ journey_2 = Location(
 )
 journey_3 = Location(
     "Journey_3",
-    "journey",
+    LocationType.JOURNEY,
     1,
     action_discard_cards_from_hand(3),
     permanent_workers=True,
@@ -647,7 +789,7 @@ journey_3 = Location(
 )
 journey_4 = Location(
     "Journey_4",
-    "journey",
+    LocationType.JOURNEY,
     1,
     action_discard_cards_from_hand(4),
     permanent_workers=True,
@@ -655,7 +797,7 @@ journey_4 = Location(
 )
 journey_5 = Location(
     "Journey_5",
-    "journey",
+    LocationType.JOURNEY,
     1,
     action_discard_cards_from_hand(5),
     permanent_workers=True,

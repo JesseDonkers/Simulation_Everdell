@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 from typing import Any, TYPE_CHECKING
 
 from shared.context_contracts import PlayCheckContext
+from shared.game_state import GameState
+from shared.game_types import PlayTag, PlayTiming
 
 if TYPE_CHECKING:
     from class_player import Player
@@ -12,7 +14,7 @@ __all__ = ["Action", "ActionContext", "CompositeAction"]
 @dataclass
 class ActionContext:
     player: "Player"
-    game_state: dict[str, Any]
+    game_state: GameState
     host_card: Any = None
     played_card: Any = None
     trigger_location: Any = None
@@ -22,13 +24,13 @@ class ActionContext:
 
 class Action:
     # Default timing for effects tied to card play.
-    play_timing = "post_place"
+    play_timing = PlayTiming.POST_PLACE
     # Whether this action can create city space before the played card is placed.
     creates_city_space_before_place = False
     # Tags describing what this action contributes to a play plan.
-    play_tags: tuple[str, ...] = ()
+    play_tags: tuple[PlayTag, ...] = ()
     # Tags that are incompatible with the action.
-    play_conflicts: tuple[str, ...] = ()
+    play_conflicts: tuple[PlayTag, ...] = ()
 
     def execute(
         self,
@@ -42,7 +44,7 @@ class Action:
         if context is None:
             if game_state is None:
                 raise ValueError("game_state is required when no context is provided")
-            active_player = game_state["current_player"]
+            active_player = game_state.current_player
             context = ActionContext(
                 player=active_player,
                 game_state=game_state,

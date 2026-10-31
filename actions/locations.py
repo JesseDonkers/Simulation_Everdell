@@ -1,7 +1,13 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Sequence
 
 from actions.base import Action, ActionContext
 from engine.selectors import get_possible_locations
+from shared.game_types import (
+    CardStorageKey,
+    DecisionKind,
+    LocationType,
+    PointCategory,
+)
 
 __all__ = [
     "action_activate_worker_location_for_point_token",
@@ -27,7 +33,7 @@ def _resolve_worker_placement(
     player: "Player" = context.player
     game_state = context.game_state
 
-    if location.location_type == "forest" and location.get_player_workers(player) > 0:
+    if location.location_type == LocationType.FOREST and location.get_player_workers(player) > 0:
         raise ValueError("Player may only place one worker on a forest location")
 
     location.add_worker(player)
@@ -37,14 +43,14 @@ def _resolve_worker_placement(
 
     # If another player uses your open destination location, owner
     # gains 1 token.
-    if location.location_type == "destination_card":
+    if location.location_type == LocationType.DESTINATION_CARD:
         owner = getattr(location, "owner", None)
         if owner is not None and owner != player and location.is_open:
-            owner.points_add("token", 1)
+            owner.points_add(PointCategory.TOKEN, 1)
 
     # Event locations: move to player's events
-    if location.location_type in {"basic_event", "special_event"}:
-        game_state["locations"].remove(location)
+    if location.location_type in {LocationType.BASIC_EVENT, LocationType.SPECIAL_EVENT}:
+        game_state.locations.remove(location)
         player.events.append(location)
 
     host_card = context.host_card
@@ -84,7 +90,7 @@ class action_place_worker(Action):
             raise ValueError("No possible locations to place worker")
 
         preferred_location = player.decide(
-            game_state, "location_place_worker", possib_loc
+            game_state, DecisionKind.LOCATION_PLACE_WORKER, possib_loc
         )
         _resolve_worker_placement(context, preferred_location, remove_from_supply=True)
 
@@ -93,7 +99,7 @@ class action_add_destination_card_as_location(Action):
     def __init__(
         self,
         name: str,
-        location_type: str,
+        location_type: LocationType,
         maxworkers: int,
         action_on_place_worker: Any,
         *,
@@ -114,7 +120,7 @@ class action_add_destination_card_as_location(Action):
 
         player: "Player" = context.player
         game_state = context.game_state
-        locations = game_state["locations"]
+        locations = game_state.locations
         source_card_id = getattr(context.host_card, "card_id", None)
         dest_card = Location(
             self.name,
@@ -139,7 +145,7 @@ class action_add_destination_if_card_present(Action):
     def __init__(
         self,
         name: str,
-        location_type: str,
+        location_type: LocationType,
         maxworkers: int,
         action_on_place_worker: Any,
         check_card_name: str,
@@ -162,7 +168,7 @@ class action_add_destination_if_card_present(Action):
 
         player: "Player" = context.player
         game_state = context.game_state
-        locations = game_state["locations"]
+        locations = game_state.locations
         source_card_id = getattr(context.host_card, "card_id", None)
 
         # Check if the specified card is in the player's city
@@ -194,7 +200,7 @@ class action_remove_destination(Action):
 
     def execute_action(self, context: ActionContext):
         game_state = context.game_state
-        locations = game_state["locations"]
+        locations = game_state.locations
         effective_card_id = getattr(context.host_card, "card_id", None)
 
         if effective_card_id is not None:
@@ -206,8 +212,8 @@ class action_remove_destination(Action):
         else:
             targets = [loc for loc in locations if loc.name == self.location_name]
 
-        temp_loc = next(l for l in locations if l.location_type == "temporary")
-        perm_loc = next(l for l in locations if l.location_type == "permanent")
+        temp_loc = next(l for l in locations if l.location_type == LocationType.TEMPORARY)
+        perm_loc = next(l for l in locations if l.location_type == LocationType.PERMANENT)
 
         for loc in targets:
             # Choose where to move workers depending on the source location
@@ -234,7 +240,9 @@ class action_remove_destination(Action):
 
 
 class action_location_copy_action(Action):
-    def __init__(self, possible_types):
+    def __init__(self, possible_types: Sequence[LocationType]):
+        if any(not isinstance(location_type, LocationType) for location_type in possible_types):
+            raise TypeError("possible_types must contain LocationType values")
         self.possible_types = possible_types
 
     def execute_action(self, context: ActionContext):
@@ -242,14 +250,14 @@ class action_location_copy_action(Action):
         game_state = context.game_state
         from engine.selectors import _requirements_met
 
-        locations = game_state["locations"]
+        locations = game_state.locations
         locations_of_type = [
             l
             for l in locations
             if l.location_type in self.possible_types
             and _requirements_met(player, l, game_state)
         ]
-        loc = player.decide(game_state, "location_place_worker", locations_of_type)
+        loc = player.decide(game_state, DecisionKind.LOCATION_PLACE_WORKER, locations_of_type)
         loc.action_on_place_worker.execute(
             context=ActionContext(
                 player=player,
@@ -263,7 +271,9 @@ class action_activate_worker_location_for_point_token(Action):
     """Clock Tower: spend 1 point token from the host card to activate a
     basic/forest location where the player already has a worker deployed."""
 
-    def __init__(self, possible_types):
+    def __init__(self, possible_types: Sequence[LocationType]):
+        if any(not isinstance(location_type, LocationType) for location_type in possible_types):
+            raise TypeError("possible_types must contain LocationType values")
         self.possible_types = possible_types
 
     def execute_action(self, context: ActionContext):
@@ -272,12 +282,12 @@ class action_activate_worker_location_for_point_token(Action):
         host_card = context.host_card
         from engine.selectors import _requirements_met
 
-        if host_card.card_storage["point_tokens"] <= 0:
+        if host_card.card_storage[CardStorageKey.POINT_TOKENS] <= 0:
             return
 
         locations = [
             l
-            for l in game_state["locations"]
+            for l in game_state.locations
             if l.location_type in self.possible_types
             and l.get_player_workers(player) > 0
             and _requirements_met(player, l, game_state)
@@ -286,11 +296,11 @@ class action_activate_worker_location_for_point_token(Action):
             return
 
         # Spending the point token is optional, so a None choice means skip.
-        loc = player.decide(game_state, "location_activate_with_point_token", locations)
+        loc = player.decide(game_state, DecisionKind.LOCATION_ACTIVATE_WITH_POINT_TOKEN, locations)
         if loc is None:
             return
 
-        host_card.card_storage["point_tokens"] -= 1
+        host_card.card_storage[CardStorageKey.POINT_TOKENS] -= 1
         loc.action_on_place_worker.execute(
             context=ActionContext(
                 player=player,
@@ -308,7 +318,7 @@ class action_replace_worker(Action):
         # is present and the worker is allowed to be removed.
         removable_locations = [
             loc
-            for loc in game_state["locations"]
+            for loc in game_state.locations
             if loc.get_player_workers(player) > 0
             and not getattr(loc, "permanent_workers", False)
         ]
@@ -317,7 +327,7 @@ class action_replace_worker(Action):
             raise ValueError("No placed worker can be removed")
 
         loc_from = player.decide(
-            game_state, "location_take_worker", removable_locations
+            game_state, DecisionKind.LOCATION_TAKE_WORKER, removable_locations
         )
 
         loc_from.remove_worker(player)
@@ -330,7 +340,7 @@ class action_replace_worker(Action):
             raise ValueError("No possible location to replace worker")
 
         loc_to = player.decide(
-            game_state, "location_place_worker", possible_target_locations
+            game_state, DecisionKind.LOCATION_PLACE_WORKER, possible_target_locations
         )
 
         _resolve_worker_placement(context, loc_to, remove_from_supply=False)
@@ -342,7 +352,7 @@ class action_retake_worker(Action):
         game_state = context.game_state
         removable_locations = [
             loc
-            for loc in game_state["locations"]
+            for loc in game_state.locations
             if loc.get_player_workers(player) > 0
             and not getattr(loc, "permanent_workers", False)
         ]
@@ -351,7 +361,7 @@ class action_retake_worker(Action):
             raise ValueError("No placed worker can be removed")
 
         loc_from = player.decide(
-            game_state, "location_take_worker", removable_locations
+            game_state, DecisionKind.LOCATION_TAKE_WORKER, removable_locations
         )
 
         loc_from.remove_worker(player)

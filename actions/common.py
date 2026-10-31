@@ -20,7 +20,7 @@ def resolve_city_card_target(
         # Cross-player copy effects (e.g. Mijnwerkermol) host a card that
         # lives in another player's city; accept it if it's still in play.
         if game_state is not None and any(
-            card in other_player.city for other_player in game_state["players"]
+            card in other_player.city for other_player in game_state.players
         ):
             return card
         raise ValueError("Target card is not in player's city")

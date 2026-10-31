@@ -3,6 +3,8 @@ import os
 import shutil
 from tabulate import tabulate
 
+from shared.game_types import LocationType, PointCategory, ResourceType
+
 
 def clear_test_results():
     """
@@ -47,17 +49,17 @@ def game_state_as_df_to_text(game_state, output_file=None):
     """
 
     # Extract game state components
-    deck = game_state["deck"]
-    discardpile = game_state["discardpile"]
-    meadow = game_state["meadow"]
-    locations = game_state["locations"]
-    players = game_state["players"]
+    deck = game_state.deck
+    discardpile = game_state.discardpile
+    meadow = game_state.meadow
+    locations = game_state.locations
+    players = game_state.players
 
     # ============================================
     # TEXT FIELDS
     # ============================================
 
-    current_player = game_state["current_player"]
+    current_player = game_state.current_player
     current_player_text = f"CURRENT PLAYER: Player {current_player.index}"
 
     from engine.selectors import get_possible_moves
@@ -96,41 +98,41 @@ def game_state_as_df_to_text(game_state, output_file=None):
     left_rows = []
     left_rows.extend(
         _locations_to_rows(
-            [loc for loc in locations if loc.location_type == "permanent"]
+            [loc for loc in locations if loc.location_type == LocationType.PERMANENT]
         )
     )
     left_rows.extend(
         _locations_to_rows(
-            [loc for loc in locations if loc.location_type == "temporary"]
+            [loc for loc in locations if loc.location_type == LocationType.TEMPORARY]
         )
     )
     left_rows.extend(
-        _locations_to_rows([loc for loc in locations if loc.location_type == "basic"])
+        _locations_to_rows([loc for loc in locations if loc.location_type == LocationType.BASIC])
     )
     left_rows.extend(
-        _locations_to_rows([loc for loc in locations if loc.location_type == "journey"])
+        _locations_to_rows([loc for loc in locations if loc.location_type == LocationType.JOURNEY])
     )
 
     right_rows = []
     right_rows.extend(
-        _locations_to_rows([loc for loc in locations if loc.location_type == "haven"])
+        _locations_to_rows([loc for loc in locations if loc.location_type == LocationType.HAVEN])
     )
     right_rows.extend(
-        _locations_to_rows([loc for loc in locations if loc.location_type == "forest"])
+        _locations_to_rows([loc for loc in locations if loc.location_type == LocationType.FOREST])
     )
     right_rows.extend(
         _locations_to_rows(
-            [loc for loc in locations if loc.location_type == "basic_event"]
+            [loc for loc in locations if loc.location_type == LocationType.BASIC_EVENT]
         )
     )
     right_rows.extend(
         _locations_to_rows(
-            [loc for loc in locations if loc.location_type == "special_event"]
+            [loc for loc in locations if loc.location_type == LocationType.SPECIAL_EVENT]
         )
     )
     right_rows.extend(
         _locations_to_rows(
-            [loc for loc in locations if loc.location_type == "destination_card"]
+            [loc for loc in locations if loc.location_type == LocationType.DESTINATION_CARD]
         )
     )
 
@@ -227,7 +229,7 @@ def game_state_as_df_to_text(game_state, output_file=None):
             ", ".join(
                 [
                     str(p.points[pt])
-                    for pt in ["card", "token", "prosperity", "journey", "event"]
+                    for pt in PointCategory
                 ]
             )
             for p in players
@@ -239,7 +241,7 @@ def game_state_as_df_to_text(game_state, output_file=None):
     all_rows.append(
         [
             ", ".join(
-                [str(p.resources[rt]) for rt in ["twig", "resin", "pebble", "berry"]]
+                [str(p.resources[rt]) for rt in [ResourceType.TWIG, ResourceType.RESIN, ResourceType.PEBBLE, ResourceType.BERRY]]
             )
             for p in players
         ]
